@@ -18,7 +18,7 @@
 
         <view v-else class="page-wrap detail">
             <view v-if="phase === 'loading' || phase === 'idle'">
-                <base-skeleton :rows="4" />
+                <base-skeleton :rows="4" variant="card" />
             </view>
 
             <base-empty
@@ -39,11 +39,11 @@
                         <text class="hero__eyebrow">SERVICE ORDER</text>
                         <status-tag :label="statusLabel" :tone="statusTone" size="sm" />
                     </view>
-                    <text class="hero__sn">{{ order.order_sn || '服务订单' }}</text>
+                    <text class="hero__sn t-num">{{ order.order_sn || '服务订单' }}</text>
                     <view class="hero__facts">
                         <view v-for="fact in heroFacts" :key="fact.key" class="hero-fact">
                             <text class="hero-fact__label">{{ fact.label }}</text>
-                            <text class="hero-fact__value">{{ fact.value }}</text>
+                            <text class="hero-fact__value t-num">{{ fact.value }}</text>
                             <view class="hero-fact__meta">
                                 <text
                                     v-if="fact.stateText"
@@ -119,12 +119,12 @@
                                 item.desc
                             }}</text>
                             <view class="service__meta">
-                                <text>{{ item.dateText }}</text>
-                                <text>{{ item.quantityText }}</text>
+                                <text class="t-num">{{ item.dateText }}</text>
+                                <text class="t-num">{{ item.quantityText }}</text>
                             </view>
                             <view class="service__amount-row">
                                 <text class="service__amount-label">服务小计</text>
-                                <text class="service__amount">{{ item.amountText }}</text>
+                                <text class="service__amount t-num">{{ item.amountText }}</text>
                             </view>
                             <view v-if="item.addons.length" class="addons">
                                 <text class="addons__title">附加服务</text>
@@ -134,8 +134,8 @@
                                     class="addons__row"
                                 >
                                     <text class="addons__name ellipsis">{{ addon.name }}</text>
-                                    <text class="addons__quantity">× {{ addon.quantity }}</text>
-                                    <text class="addons__amount">{{ addon.amountText }}</text>
+                                    <text class="addons__quantity t-num">× {{ addon.quantity }}</text>
+                                    <text class="addons__amount t-num">{{ addon.amountText }}</text>
                                 </view>
                             </view>
                         </view>
@@ -164,7 +164,7 @@
                     >
                         <text class="row__label">{{ row.label }}</text>
                         <text
-                            class="row__value row__value--money"
+                            class="row__value row__value--money t-num"
                             :class="{ 'row__value--strong': row.strong }"
                             >{{ money(row.value) }}</text
                         >
@@ -200,15 +200,15 @@
                             <view class="installment__grid">
                                 <view class="installment__cell">
                                     <text class="installment__cell-label">应收</text>
-                                    <text class="installment__cell-value">{{ money(stage.amount) }}</text>
+                                    <text class="installment__cell-value t-num">{{ money(stage.amount) }}</text>
                                 </view>
                                 <view class="installment__cell">
                                     <text class="installment__cell-label">已付</text>
-                                    <text class="installment__cell-value">{{ money(stage.paid) }}</text>
+                                    <text class="installment__cell-value t-num">{{ money(stage.paid) }}</text>
                                 </view>
                                 <view class="installment__cell">
                                     <text class="installment__cell-label">待付</text>
-                                    <text class="installment__cell-value">{{ money(stage.unpaid) }}</text>
+                                    <text class="installment__cell-value t-num">{{ money(stage.unpaid) }}</text>
                                 </view>
                             </view>
                         </view>
@@ -231,15 +231,15 @@
                         <view class="installment__grid">
                             <view class="installment__cell">
                                 <text class="installment__cell-label">应付</text>
-                                <text class="installment__cell-value">{{ money(fullSettle.pay) }}</text>
+                                <text class="installment__cell-value t-num">{{ money(fullSettle.pay) }}</text>
                             </view>
                             <view class="installment__cell">
                                 <text class="installment__cell-label">已付</text>
-                                <text class="installment__cell-value">{{ money(fullSettle.paid) }}</text>
+                                <text class="installment__cell-value t-num">{{ money(fullSettle.paid) }}</text>
                             </view>
                             <view class="installment__cell">
                                 <text class="installment__cell-label">待付</text>
-                                <text class="installment__cell-value">{{ money(fullSettle.unpaid) }}</text>
+                                <text class="installment__cell-value t-num">{{ money(fullSettle.unpaid) }}</text>
                             </view>
                         </view>
                     </view>
@@ -259,15 +259,15 @@
                         >
                             <view class="flow__head">
                                 <text class="flow__type">{{ flow.typeText }}</text>
-                                <text class="flow__amount">{{ money(flow.amount) }}</text>
+                                <text class="flow__amount t-num">{{ money(flow.amount) }}</text>
                             </view>
                             <view class="flow__meta">
                                 <text class="flow__way">{{ flow.wayText }}</text>
-                                <text v-if="flow.timeText" class="flow__time">{{
+                                <text v-if="flow.timeText" class="flow__time t-num">{{
                                     flow.timeText
                                 }}</text>
                             </view>
-                            <text v-if="flow.sn" class="flow__sn">支付单号 {{ flow.sn }}</text>
+                            <text v-if="flow.sn" class="flow__sn t-num">支付单号 {{ flow.sn }}</text>
                             <text v-if="flow.remark" class="flow__remark">备注：{{ flow.remark }}</text>
                         </view>
                     </view>
@@ -310,7 +310,7 @@
                     <view class="row">
                         <text class="row__label">订单编号</text>
                         <view class="order-sn">
-                            <text class="order-sn__value">{{ order.order_sn || '—' }}</text>
+                            <text class="order-sn__value t-num">{{ order.order_sn || '—' }}</text>
                             <text
                                 v-if="order.order_sn"
                                 class="order-sn__copy"
@@ -530,7 +530,11 @@
                     <text class="readonly-note__text">收款审核与异常处理请联系门店管理员</text>
                 </view>
 
-                <!-- 取消 / 拒绝接单原因弹窗 -->
+                <!-- 取消 / 拒绝接单原因弹窗。
+                     这里是不可逆的破坏性操作，刻意**保留 tn-popup 不改 snap-sheet**：
+                     底部抽屉支持下拉轻滑关闭，误滑一下就把已填写的取消原因丢掉，
+                     风险高于「统一交互形态」的收益。内部表面按浮层口径升级（surface-float / r-48 /
+                     shadow-sheet / control-border），快捷原因热区 88rpx。 -->
                 <tn-popup
                     :model-value="cancelSheetVisible"
                     open-direction="bottom"
@@ -558,7 +562,7 @@
                             <view class="cancel-summary">
                                 <view class="cancel-summary__row">
                                     <text class="cancel-summary__label">订单编号</text>
-                                    <text class="cancel-summary__value ellipsis">{{
+                                    <text class="cancel-summary__value ellipsis t-num">{{
                                         order.order_sn || '—'
                                     }}</text>
                                 </view>
@@ -734,6 +738,7 @@ import { useStaffGuard } from '@/composables/useStaffGuard'
 import { useBadgeStore } from '@/stores/badge'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { toast } from '@/composables/useToast'
 import type { LoadPhase } from '@/api/types'
 
@@ -775,6 +780,7 @@ const letterOutdated = computed(() => Number(latestLetter.value?.is_outdated || 
 function dialContactMobile() {
     const mobile = String(order.value.contact_mobile || '').trim()
     if (!mobile) return
+    haptic('light', 'staff-order-dial')
     uni.makePhoneCall({ phoneNumber: mobile, fail: () => {} })
 }
 
@@ -815,10 +821,13 @@ async function fetchTemplateVersions() {
 
 function selectTemplateVersion(configId: number) {
     const id = Number(configId || 0)
-    if (id > 0) selectedConfigId.value = id
+    if (id <= 0 || id === selectedConfigId.value) return
+    haptic('light', 'staff-order-template')
+    selectedConfigId.value = id
 }
 
 function toggleHistory() {
+    haptic('light', 'staff-order-history')
     historyExpanded.value = !historyExpanded.value
 }
 
@@ -1249,6 +1258,8 @@ function cancelSuccessText(label: string) {
 function onFulfillAction() {
     const action = fulfillAction.value
     if (!guardAllowed.value || acting.value || !action || !orderId.value) return
+    haptic('medium', 'staff-order-fulfill')
+    // 确认类二次弹窗保留居中形态：uni.showModal 是系统原生模态，不做可下拉关闭的抽屉
     uni.showModal({
         title: action.modalTitle,
         content: action.modalContent,
@@ -1279,6 +1290,7 @@ function onFulfillAction() {
 
 function openCancelSheet() {
     if (!canCancel.value || cancelSubmitting.value) return
+    haptic('heavy', 'staff-order-cancel')
     cancelReason.value = ''
     cancelError.value = ''
     cancelSheetVisible.value = true
@@ -1296,6 +1308,7 @@ function onCancelPopupChange(visible: boolean) {
 
 function pickQuickReason(reason: string) {
     if (cancelSubmitting.value) return
+    haptic('light', 'staff-order-cancel-reason')
     cancelReason.value = cancelReason.value === reason ? '' : reason
     cancelError.value = ''
 }
@@ -1317,6 +1330,7 @@ async function submitCancel() {
     }
     cancelError.value = ''
     cancelSubmitting.value = true
+    haptic('heavy', 'staff-order-cancel-submit')
     try {
         await staffOrderCancel({ id: orderId.value, reason })
         badgeStore.invalidate()
@@ -1382,6 +1396,7 @@ const orderChanges = computed(() => {
 })
 
 function copyOrderSn() {
+    haptic('light', 'staff-order-copy')
     uni.setClipboardData({
         data: String(order.value.order_sn || ''),
         success: () => toast.success('订单编号已复制')
@@ -2352,11 +2367,12 @@ function onRefresh(done: () => void) {
     }
 }
 
-/* ---- 取消 / 拒绝接单弹窗 ---- */
+/* ---- 取消 / 拒绝接单弹窗（保留 tn-popup：破坏性操作不做可下拉关闭的抽屉） ---- */
 .cancel-sheet {
-    background: var(--c-surface);
+    background: var(--c-surface-float);
     padding: var(--sp-4) var(--page-gutter) calc(var(--sp-4) + var(--safe-bottom));
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    border-radius: var(--r-48) var(--r-48) 0 0;
+    box-shadow: var(--shadow-sheet);
 
     &__head {
         display: flex;
@@ -2469,10 +2485,21 @@ function onRefresh(done: () => void) {
 }
 
 .cancel-chip {
-    padding: var(--sp-1) var(--sp-3);
+    display: inline-flex;
+    align-items: center;
+    min-height: 88rpx;
+    padding: 0 var(--sp-3);
     border: 1rpx solid var(--c-control-border);
     border-radius: var(--r-pill);
     background: var(--c-surface);
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.97);
+    }
 
     &__text {
         font-size: var(--fs-xs);
@@ -2518,5 +2545,15 @@ function onRefresh(done: () => void) {
     line-height: var(--lh-body);
     color: var(--c-danger);
     overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cancel-chip {
+        transition: none;
+
+        &.is-pressed {
+            transform: none;
+        }
+    }
 }
 </style>

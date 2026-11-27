@@ -35,7 +35,7 @@
             <!-- 电子名片视图 -->
             <view v-if="activeTab === 'card'" class="page-pad tab-body">
                 <view v-if="cardLoading">
-                    <base-skeleton :rows="4" />
+                    <base-skeleton :rows="4" variant="card" />
                 </view>
 
                 <base-empty
@@ -82,7 +82,7 @@
                                             : ''
                                     }}
                                 </text>
-                                <text class="business-card__price">{{
+                                <text class="business-card__price t-num">{{
                                     card.staff.price_text || '详询档期报价'
                                 }}</text>
                             </view>
@@ -90,17 +90,19 @@
 
                         <view class="business-card__metrics">
                             <view class="metric-item">
-                                <text class="metric-item__val"
+                                <text class="metric-item__val t-num"
                                     >{{ Number(card.staff.rating || 5).toFixed(1) }} 分</text
                                 >
                                 <text class="metric-item__label">综合口碑</text>
                             </view>
                             <view class="metric-item">
-                                <text class="metric-item__val">{{ card.staff.order_count }} 场</text>
+                                <text class="metric-item__val t-num"
+                                    >{{ card.staff.order_count }} 场</text
+                                >
                                 <text class="metric-item__label">累计服务</text>
                             </view>
                             <view class="metric-item">
-                                <text class="metric-item__val"
+                                <text class="metric-item__val t-num"
                                     >{{ card.available_days_14d }} / 14</text
                                 >
                                 <text class="metric-item__label">近两周可约</text>
@@ -128,7 +130,7 @@
                         <view class="business-card__foot">
                             <view class="business-card__foot-texts">
                                 <text class="business-card__foot-title">长按或微信扫码直约档期</text>
-                                <text class="business-card__foot-sub">
+                                <text class="business-card__foot-sub t-num">
                                     {{
                                         card.staff.mobile_masked
                                             ? `工作联系：${card.staff.mobile_masked}`
@@ -160,7 +162,7 @@
                                 class="avail-cell"
                                 :class="day.available ? 'is-free' : 'is-busy'"
                             >
-                                <text class="avail-cell__date">{{ day.md_label }}</text>
+                                <text class="avail-cell__date t-num">{{ day.md_label }}</text>
                                 <text class="avail-cell__week">{{ day.weekday }}</text>
                                 <text class="avail-cell__status">{{
                                     day.available ? '可约' : '已满'
@@ -185,7 +187,7 @@
                                         pkg.duration_desc
                                     }}</text>
                                 </view>
-                                <text class="pkg-row__price">¥{{ pkg.price }}</text>
+                                <text class="pkg-row__price t-num">¥{{ pkg.price }}</text>
                             </view>
                         </view>
                     </base-card>
@@ -218,6 +220,7 @@
                             variant="ink"
                             size="lg"
                             block
+                            haptic-level="medium"
                             :loading="exporting"
                             :disabled="exporting"
                             @click="handleSaveCardImage"
@@ -233,7 +236,11 @@
                                 />
                             </view>
                             <view class="action-bar__half">
-                                <button open-type="share" class="share-native-btn">
+                                <button
+                                    open-type="share"
+                                    class="share-native-btn"
+                                    @tap="onShareTap"
+                                >
                                     转发给客户
                                 </button>
                             </view>
@@ -270,6 +277,7 @@ import { useBrand } from '@/composables/useBrand'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { haptic } from '@/utils/haptics'
 
 const {
     guardPhase,
@@ -314,6 +322,7 @@ async function fetchCard(): Promise<void> {
 
 function switchTab(tab: 'card' | 'poster'): void {
     if (tab === activeTab.value) return
+    haptic('light', 'card-poster-tab')
     activeTab.value = tab
     if (tab === 'card' && !card.value && !cardLoading.value) {
         void fetchCard()
@@ -322,7 +331,13 @@ function switchTab(tab: 'card' | 'poster'): void {
 
 function previewUrl(url: string): void {
     if (!url) return
+    haptic('light', 'card-poster-preview')
     uni.previewImage({ urls: [url], current: url })
+}
+
+/** open-type="share" 由原生按钮触发分享，这里只补一次轻触觉，不拦默认行为 */
+function onShareTap(): void {
+    haptic('light', 'card-poster-share')
 }
 
 function saveToAlbumWithAuth(filePath: string): Promise<void> {
@@ -333,6 +348,7 @@ function saveToAlbumWithAuth(filePath: string): Promise<void> {
             fail: (err) => {
                 const msg = String(err?.errMsg || '')
                 if (msg.includes('auth deny') || msg.includes('authorize')) {
+                    // 确认类二次弹窗保留居中形态：uni.showModal 是系统原生模态，不做可下拉关闭的抽屉
                     uni.showModal({
                         title: '需要相册权限',
                         content: '请在设置中允许保存图片到相册后重试',
@@ -452,16 +468,24 @@ onShow(() => {
         padding: 6rpx;
         border-radius: var(--r-pill);
         background: var(--c-surface-2);
-        border: 1rpx solid var(--c-line);
+        border: 1rpx solid var(--c-control-border);
     }
 
     &__item {
         flex: 1;
-        height: 68rpx;
+        min-height: 88rpx;
         border-radius: var(--r-pill);
         display: flex;
         align-items: center;
         justify-content: center;
+        box-sizing: border-box;
+        transition:
+            background-color var(--dur-fast) var(--ease-out),
+            transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.98);
+        }
 
         &.is-active {
             background: var(--c-active-bg);
@@ -489,9 +513,10 @@ onShow(() => {
 .business-card {
     padding: var(--sp-4);
     border-radius: var(--r-lg);
-    background: linear-gradient(155deg, var(--c-dark-1), var(--c-dark-2));
+    background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
     color: var(--c-on-dark);
-    border: 1rpx solid var(--c-primary-border);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
@@ -798,8 +823,8 @@ onShow(() => {
 
 .share-native-btn {
     width: 100%;
-    height: 80rpx;
-    line-height: 80rpx;
+    height: 88rpx;
+    line-height: 88rpx;
     margin: 0;
     padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
@@ -813,6 +838,17 @@ onShow(() => {
 
     &::after {
         border: none;
+    }
+}
+
+/* v10 §3.13：减弱动效下 tab 不缩放、不做颜色过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .tab-bar__item {
+        transition: none;
+
+        &.is-pressed {
+            transform: none;
+        }
     }
 }
 </style>

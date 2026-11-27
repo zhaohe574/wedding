@@ -15,7 +15,7 @@
             <view class="month">
                 <view
                     hover-class="is-pressed"
-                    class="month__nav"
+                    class="month__nav hit-88"
                     aria-label="上一个月"
                     aria-role="button"
                     @tap="prevMonth"
@@ -31,7 +31,7 @@
                 <text class="month__text">{{ year }} 年 {{ month }} 月</text>
                 <view
                     hover-class="is-pressed"
-                    class="month__nav"
+                    class="month__nav hit-88"
                     aria-label="下一个月"
                     aria-role="button"
                     @tap="nextMonth"
@@ -49,21 +49,28 @@
             <!-- 汇总 -->
             <view class="summary">
                 <view class="summary__item">
-                    <text class="summary__num">{{ summary.available_days ?? 0 }}</text>
+                    <rolling-number
+                        class="summary__num"
+                        :value="statNum(summary.available_days)"
+                    />
                     <text class="summary__label">可预约</text>
                 </view>
                 <view class="summary__item">
-                    <text class="summary__num">{{ summary.occupied_days ?? 0 }}</text>
+                    <rolling-number class="summary__num" :value="statNum(summary.occupied_days)" />
                     <text class="summary__label">已占用</text>
                 </view>
                 <view class="summary__item">
-                    <text class="summary__num">{{ summary.unavailable_days ?? 0 }}</text>
+                    <rolling-number
+                        class="summary__num"
+                        :value="statNum(summary.unavailable_days)"
+                    />
                     <text class="summary__label">不可约</text>
                 </view>
                 <view class="summary__item">
-                    <text class="summary__num">{{
-                        summary.pending_service_count ?? pendingOrders.length
-                    }}</text>
+                    <rolling-number
+                        class="summary__num"
+                        :value="statNum(summary.pending_service_count ?? pendingOrders.length)"
+                    />
                     <text class="summary__label">待服务</text>
                 </view>
             </view>
@@ -91,7 +98,7 @@
             </view>
 
             <view v-if="loading" class="page-pad">
-                <base-skeleton :rows="2" />
+                <base-skeleton :rows="2" variant="card" />
             </view>
 
             <base-empty
@@ -135,7 +142,7 @@
                                     :aria-label="`${month} 月 ${cell.day} 日，${toneLabel(
                                         cell.tone
                                     )}${cell.isToday ? '，今天' : ''}`"
-                                    @tap="selected = cell.date || ''"
+                                    @tap="pickDate(cell.date || '')"
                                 >
                                     <text class="cell__day">{{ cell.day }}</text>
                                     <view v-if="cell.tone !== 'none'" class="cell__dot" />
@@ -333,7 +340,7 @@
                             <view
                                 hover-class="is-pressed"
                                 class="order"
-                                @tap="selected = String(m.schedule_date || '')"
+                                @tap="pickDate(String(m.schedule_date || ''))"
                             >
                                 <view class="order__body">
                                     <text class="order__sn">{{
@@ -399,6 +406,7 @@ import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { toast } from '@/composables/useToast'
 
 const {
@@ -474,6 +482,18 @@ function getTodayStr(): string {
 }
 
 const todayStr = computed(() => getTodayStr())
+
+/** 汇总数字：rolling-number 只接受有限数，缺字段时落 0 */
+function statNum(value: unknown): number {
+    const n = Number(value ?? 0)
+    return Number.isFinite(n) ? n : 0
+}
+
+function pickDate(date: string): void {
+    if (!date || date === selected.value) return
+    haptic('light', 'schedule-pick-day')
+    selected.value = date
+}
 
 function maskMobile(value?: string): string {
     return String(value || '').replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2')
@@ -606,11 +626,13 @@ function orderStatusTone(o: any) {
 function goOrderDetail(o: any) {
     const id = Number(o?.order_id || o?.id || 0)
     if (!id) return
+    haptic('light', 'schedule-order-detail')
     navigate({ path: '/packages/pkg-staff/pages/order-detail/order-detail', query: { id } })
 }
 
 function goWaitlist() {
     if (!guardAllowed.value) return
+    haptic('light', 'schedule-waitlist')
     navigate({ path: '/packages/pkg-staff/pages/waitlist/waitlist' })
 }
 
@@ -682,6 +704,7 @@ function onToggleScheduleStatus() {
 
 function openAddManual() {
     if (!guardAllowed.value || acting.value || !selected.value) return
+    haptic('light', 'schedule-add-manual')
     editingManual.value = null
     sheetDate.value = selected.value
     sheetVisible.value = true
@@ -689,6 +712,7 @@ function openAddManual() {
 
 function openEditManual(item: any) {
     if (!guardAllowed.value || acting.value) return
+    haptic('light', 'schedule-edit-manual')
     editingManual.value = item
     sheetDate.value = String(item?.schedule_date || selected.value || '')
     sheetVisible.value = true
@@ -752,6 +776,7 @@ function onCompleteManual(item: any) {
 
 function goServiceDay() {
     if (!guardAllowed.value) return
+    haptic('light', 'schedule-service-day')
     navigate({
         path: '/packages/pkg-staff/pages/service-day/service-day',
         query: selected.value ? { date: selected.value } : undefined
@@ -793,6 +818,7 @@ async function onManualSaved(savedDate: string) {
 
 function prevMonth() {
     if (!guardAllowed.value) return
+    haptic('light', 'schedule-month')
     if (month.value === 1) {
         month.value = 12
         year.value -= 1
@@ -804,6 +830,7 @@ function prevMonth() {
 
 function nextMonth() {
     if (!guardAllowed.value) return
+    haptic('light', 'schedule-month')
     if (month.value === 12) {
         month.value = 1
         year.value += 1
@@ -998,6 +1025,8 @@ onLoad(() => void load())
         &.is-selected {
             background: var(--c-active-bg);
             border-color: var(--c-active-border);
+            /* 选中当日轻量弹性回弹：只动 transform，切格重挂动画自然重启 */
+            animation: cal-day-pop 260ms var(--ease-spring-soft) both;
         }
 
         &.is-selected .cell__day {
@@ -1064,7 +1093,6 @@ onLoad(() => void load())
     justify-content: center;
     gap: var(--sp-2) var(--sp-4);
     padding: var(--sp-3) 0;
-
     &__item {
         display: flex;
         align-items: center;
@@ -1121,7 +1149,7 @@ onLoad(() => void load())
     }
 
     &__state {
-        font-size: var(--fs-sm);
+        font-size: var(--fs-md);
         font-weight: var(--fw-medium);
         color: var(--c-ink);
     }
@@ -1235,5 +1263,24 @@ onLoad(() => void load())
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* 日历选中日弹性回弹（轻量：0.9 → 1.04 → 1，260ms） */
+@keyframes cal-day-pop {
+    0% {
+        transform: scale(0.9);
+    }
+    60% {
+        transform: scale(1.04);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cell__inner.is-selected {
+        animation: none;
+    }
 }
 </style>

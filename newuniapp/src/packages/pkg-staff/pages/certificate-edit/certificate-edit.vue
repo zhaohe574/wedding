@@ -99,7 +99,9 @@
                             <view class="picker-row__main">
                                 <text
                                     :class="
-                                        form.issue_date ? 'picker-row__text' : 'picker-row__ph'
+                                        form.issue_date
+                                            ? 'picker-row__text t-num'
+                                            : 'picker-row__ph'
                                     "
                                 >
                                     {{ form.issue_date || '选择发证日期' }}
@@ -109,9 +111,9 @@
                         </picker>
                         <view
                             v-if="form.issue_date"
-                            class="picker-row__clear"
+                            class="picker-row__clear hit-88"
                             hover-class="is-pressed"
-                            @tap.stop="form.issue_date = ''"
+                            @tap.stop="clearIssueDate"
                         >
                             <text class="picker-row__clear-text">清空</text>
                         </view>
@@ -130,7 +132,9 @@
                             <view class="picker-row__main">
                                 <text
                                     :class="
-                                        form.expire_date ? 'picker-row__text' : 'picker-row__ph'
+                                        form.expire_date
+                                            ? 'picker-row__text t-num'
+                                            : 'picker-row__ph'
                                     "
                                 >
                                     {{ form.expire_date || '选择有效期截止日期' }}
@@ -140,9 +144,9 @@
                         </picker>
                         <view
                             v-if="form.expire_date"
-                            class="picker-row__clear"
+                            class="picker-row__clear hit-88"
                             hover-class="is-pressed"
-                            @tap.stop="form.expire_date = ''"
+                            @tap.stop="clearExpireDate"
                         >
                             <text class="picker-row__clear-text">清空</text>
                         </view>
@@ -157,6 +161,7 @@
                     variant="danger"
                     size="md"
                     :loading="deleting"
+                    haptic-level="heavy"
                     @click="onDelete"
                 />
             </view>
@@ -175,6 +180,7 @@
                         :block="false"
                         :loading="submitting"
                         :disabled="submitting"
+                        haptic-level="medium"
                         @click="submit"
                     />
                 </template>
@@ -206,6 +212,8 @@ import { useStaffGuard } from '@/composables/useStaffGuard'
 import { useStaffWriteGate, STAFF_WRITE_GATE_TIP } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
+import { schemeColor } from '@/utils/scheme-color'
 
 const editId = ref(0)
 const isEdit = computed(() => editId.value > 0)
@@ -275,6 +283,16 @@ function onPickExpireDate(e: any) {
     }
 }
 
+function clearIssueDate() {
+    haptic('light', 'cert-clear-issue-date')
+    form.issue_date = ''
+}
+
+function clearExpireDate() {
+    haptic('light', 'cert-clear-expire-date')
+    form.expire_date = ''
+}
+
 /* ---------------- 校验与提交 ---------------- */
 
 function validate(): boolean {
@@ -342,7 +360,8 @@ function onDelete() {
         content: '删除后不可恢复，确认删除这个证书？',
         confirmText: '删除',
         cancelText: '取消',
-        confirmColor: '#D8584A',
+        // 删除属不可逆操作，uni.showModal 居中确认弹窗保持原生居中形态
+        confirmColor: schemeColor('danger'),
         success: async (r) => {
             if (!r.confirm) return
             deleting.value = true
@@ -498,14 +517,34 @@ onLoad((options: any) => {
 
     &__clear {
         flex-shrink: 0;
-        padding: 4rpx 14rpx;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 56rpx;
+        padding: 0 var(--sp-2);
         border-radius: var(--r-pill);
         background: var(--c-neutral-bg);
+        transition: transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.94);
+        }
     }
 
     &__clear-text {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
+    }
+}
+
+/* v10 §3.13：减弱动效下按压不缩放 */
+@media (prefers-reduced-motion: reduce) {
+    .picker-row__clear {
+        transition: none;
+    }
+
+    .picker-row__clear.is-pressed {
+        transform: none;
     }
 }
 </style>

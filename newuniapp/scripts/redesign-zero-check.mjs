@@ -76,11 +76,9 @@ const ALLOW_SCOPED = [
   { file: 'utils/link.ts', rule: 'R12-toast', line: /uni\.showToast\(\{ title: '功能开发中'/, why: '路由工具层（非页面散调用）；04 硬约束不改路由工具' },
   // ---- R3 原生属性 / SCSS 变量桥接（4 处）：平台限制或已冻结登记 ----
   { file: 'pages/index/index.vue', rule: 'R3-hex', line: /indicator-active-color="#FFFFFF"/, why: 'swiper 原生属性只接受字面色值，不支持 var()；03 §7.10 白名单' },
-  { file: 'packages/pkg-order/pages/review/publish.vue', rule: 'R3-hex', line: /<switch[^>]*color="#C6A15B"/, why: 'switch 原生组件属性只接受字面色值（品牌色），不支持 var()' },
   { file: 'uni.scss', rule: 'R3-hex', line: /\$-color-white: #ffffff;|\$u-color-btn-text: #ffffff;/, why: 'B1 冻结登记（03 §2.5）：uView SCSS 变量桥接白值，非业务代码 hex；零改动' },
+  { file: 'packages/pkg-staff/components/schedule-poster-editor/schedule-poster-editor.vue', rule: 'R3-hex', line: /value:\s*'#(?:191713|2B2118|4A1E24|F5EFE4)'/, why: '档期确认函海报业务底色预设（提交给后端海报渲染服务，非页面 UI token）' },
   // ---- v2 24 屏：原生 API 属性 / 尺寸位（逐项登记，非整页豁免）----
-  { file: 'packages/pkg-user/pages/activity/activity.vue', rule: 'R3-hex', line: /confirmColor: '#B4453C'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()；与 --c-danger 同值' },
-  { file: 'pages/message/message.vue', rule: 'R3-hex', line: /backgroundColor: '#B4453C'/, why: 'tn-swipe-action 的 options.style 走行内样式对象，wxss 变量在行内样式里不生效；与 --c-danger 同值' },
   { file: 'packages/pkg-catalog/pages/booking/booking.vue', rule: 'R8-spacing', line: /max-width: 200rpx/, why: '03 §7.4 缩略图/标签尺寸位，非间距' },
   { file: 'packages/pkg-catalog/pages/booking/components/booking-confirm-step.vue', rule: 'R8-spacing', line: /max-width:\s*220rpx/, why: '订单确认卡主持人姓名截断宽度（尺寸位，非间距）' },
   { file: 'packages/pkg-catalog/pages/booking/components/booking-edit-sheet.vue', rule: 'R8-spacing', line: /height:\s*180rpx/, why: '03 §5.2 备注 textarea 固定高度（尺寸位，非间距）' },
@@ -88,15 +86,6 @@ const ALLOW_SCOPED = [
   { file: 'packages/pkg-service/pages/questionnaire/detail.vue', rule: 'R8-spacing', line: /padding: 30rpx 42rpx 180rpx/, why: '03 §5.7 吸底提交栏等高占位（180rpx），是占位尺寸非间距' },
   { file: 'components/region-columns/region-columns.vue', rule: 'R8-spacing', line: /max-width:\s*220rpx/, why: '地区多级 tab 文案截断最大宽度（尺寸位，非间距）' },
   { file: 'components/splash-screen/splash-screen.vue', rule: 'R8-spacing', line: /top:\s*180rpx/, why: '开屏品牌 Logo 顶部定位尺寸位（位置非间距）' },
-  // ---- 工作台写能力 P0：原生模态框 / switch 只接受字面 hex ----
-  { file: 'packages/pkg-staff/pages/certificate-edit/certificate-edit.vue', rule: 'R3-hex', line: /confirmColor:\s*'#D8584A'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()' },
-  { file: 'packages/pkg-staff/pages/certificate-list/certificate-list.vue', rule: 'R3-hex', line: /confirmColor:\s*'#D8584A'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()' },
-  { file: 'packages/pkg-staff/pages/dynamic-list/dynamic-list.vue', rule: 'R3-hex', line: /confirmColor:\s*'#D8584A'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()' },
-  { file: 'packages/pkg-staff/pages/dynamic-publish/dynamic-publish.vue', rule: 'R3-hex', line: /confirmColor:\s*'#D8584A'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()' },
-  { file: 'packages/pkg-staff/pages/dynamic-publish/dynamic-publish.vue', rule: 'R3-hex', line: /^\s*color="#C6A15B"\s*$/, why: 'switch 原生组件 color 属性只接受字面色值（品牌金），不支持 var()' },
-  { file: 'packages/pkg-staff/pages/work-edit/work-edit.vue', rule: 'R3-hex', line: /<switch[^>]*color="#C6A15B"/, why: 'switch 原生组件 color 属性只接受字面色值（品牌金），不支持 var()' },
-  { file: 'packages/pkg-staff/pages/work-edit/work-edit.vue', rule: 'R3-hex', line: /confirmColor:\s*'#D8584A'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()' },
-  { file: 'packages/pkg-staff/pages/work-list/work-list.vue', rule: 'R3-hex', line: /confirmColor:\s*'#D8584A'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()' },
 ]
 
 /** 逐项白名单判定：仅当文件 + 规则 + 精确行内容三者同时命中才豁免 */

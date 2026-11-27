@@ -27,7 +27,7 @@
             </view>
 
             <view v-if="phase === 'loading' || phase === 'idle'" class="page-pad">
-                <base-skeleton :rows="3" />
+                <base-skeleton :rows="3" variant="card" />
             </view>
 
             <base-empty
@@ -62,124 +62,139 @@
                 />
 
                 <view v-else class="page-pad list">
-                    <base-card
-                        v-for="item in filteredList"
-                        :key="item.id"
-                        compact
-                        clickable
-                        :aria-label="`编辑套餐：${item.name || '未命名套餐'}`"
-                        @tap="goEdit(item)"
-                    >
-                        <view class="pcard">
-                            <view class="pcard__cover">
-                                <image
-                                    v-if="item.image"
-                                    class="pcard__img"
-                                    :src="item.image"
-                                    mode="aspectFill"
-                                    aria-label="套餐封面"
-                                />
-                                <view v-else class="pcard__ph" aria-hidden="true">
-                                    <tn-icon name="image" :size="40" class="pcard__ph-icon" />
-                                </view>
-                            </view>
-
-                            <view class="pcard__body">
-                                <view class="pcard__head">
-                                    <text class="pcard__name ellipsis">{{
-                                        item.name || '未命名套餐'
-                                    }}</text>
-                                    <status-tag
-                                        v-if="Number(item.is_recommend) === 1"
-                                        label="推荐"
-                                        tone="primary"
-                                        size="sm"
-                                        :dot="false"
+                    <view class="list__items" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                        <base-card
+                            v-for="(item, index) in filteredList"
+                            :key="item.id"
+                            compact
+                            clickable
+                            :style="{ '--i': index }"
+                            :aria-label="`编辑套餐：${item.name || '未命名套餐'}`"
+                            @tap="goEdit(item)"
+                        >
+                            <view class="pcard">
+                                <view class="pcard__cover">
+                                    <image
+                                        v-if="item.image"
+                                        class="pcard__img"
+                                        :src="item.image"
+                                        mode="aspectFill"
+                                        aria-label="套餐封面"
                                     />
-                                    <view
-                                        v-if="canWrite"
-                                        class="sw"
-                                        :class="{
-                                            'is-on': Number(item.is_show) === 1,
-                                            'is-busy': togglingId === Number(item.id)
-                                        }"
-                                        hover-class="is-pressed"
-                                        aria-role="switch"
-                                        :aria-checked="Number(item.is_show) === 1"
-                                        :aria-label="`${
-                                            Number(item.is_show) === 1 ? '下架' : '上架'
-                                        }套餐：${item.name || ''}`"
-                                        @tap.stop="onToggleShow(item)"
-                                    >
-                                        <view class="sw__knob" />
+                                    <view v-else class="pcard__ph" aria-hidden="true">
+                                        <tn-icon name="image" :size="40" class="pcard__ph-icon" />
                                     </view>
-                                    <status-tag
-                                        v-else
-                                        :label="Number(item.is_show) === 1 ? '已上架' : '已停用'"
-                                        :tone="Number(item.is_show) === 1 ? 'success' : 'neutral'"
-                                        size="sm"
-                                        :dot="false"
-                                    />
                                 </view>
 
-                                <view class="pcard__price">
-                                    <price
-                                        size="md"
-                                        :content="item.price"
-                                        color="var(--c-brand-text)"
-                                    />
-                                    <text
-                                        v-if="Number(item.original_price) > 0"
-                                        class="pcard__origin"
-                                    >
-                                        ¥{{ item.original_price }}
-                                    </text>
-                                </view>
+                                <view class="pcard__body">
+                                    <view class="pcard__head">
+                                        <text class="pcard__name ellipsis">{{
+                                            item.name || '未命名套餐'
+                                        }}</text>
+                                        <status-tag
+                                            v-if="Number(item.is_recommend) === 1"
+                                            label="推荐"
+                                            tone="primary"
+                                            size="sm"
+                                            :dot="false"
+                                        />
+                                        <view
+                                            v-if="canWrite"
+                                            class="sw hit-88"
+                                            :class="{
+                                                'is-on': Number(item.is_show) === 1,
+                                                'is-busy': togglingId === Number(item.id)
+                                            }"
+                                            hover-class="is-pressed"
+                                            aria-role="switch"
+                                            :aria-checked="Number(item.is_show) === 1"
+                                            :aria-label="`${
+                                                Number(item.is_show) === 1 ? '下架' : '上架'
+                                            }套餐：${item.name || ''}`"
+                                            @tap.stop="onToggleShow(item)"
+                                        >
+                                            <view class="sw__knob" />
+                                        </view>
+                                        <status-tag
+                                            v-else
+                                            :label="
+                                                Number(item.is_show) === 1 ? '已上架' : '已停用'
+                                            "
+                                            :tone="
+                                                Number(item.is_show) === 1 ? 'success' : 'neutral'
+                                            "
+                                            size="sm"
+                                            :dot="false"
+                                        />
+                                    </view>
 
-                                <view class="pcard__meta">
-                                    <text v-if="Number(item.duration) > 0" class="meta">
-                                        {{ item.duration }} 小时
-                                    </text>
-                                    <text v-else class="meta">不限时长</text>
-                                    <text v-if="addonCount(item)" class="meta">
-                                        {{ addonCount(item) }} 项加购
-                                    </text>
-                                    <text v-if="regionPriceCount(item)" class="meta">
-                                        {{ regionPriceCount(item) }} 条地区价
-                                    </text>
-                                    <text class="meta">排序 {{ Number(item.sort || 0) }}</text>
-                                    <status-tag
-                                        v-if="regionPriceCount(item) === 0"
-                                        label="未配地区价"
-                                        tone="warning"
-                                        size="sm"
-                                        :dot="false"
-                                    />
+                                    <view class="pcard__price">
+                                        <price
+                                            size="md"
+                                            :content="item.price"
+                                            color="var(--c-brand-text)"
+                                        />
+                                        <text
+                                            v-if="Number(item.original_price) > 0"
+                                            class="pcard__origin t-num"
+                                        >
+                                            ¥{{ item.original_price }}
+                                        </text>
+                                    </view>
+
+                                    <view class="pcard__meta">
+                                        <text
+                                            v-if="Number(item.duration) > 0"
+                                            class="meta t-num"
+                                        >
+                                            {{ item.duration }} 小时
+                                        </text>
+                                        <text v-else class="meta">不限时长</text>
+                                        <text v-if="addonCount(item)" class="meta t-num">
+                                            {{ addonCount(item) }} 项加购
+                                        </text>
+                                        <text
+                                            v-if="regionPriceCount(item)"
+                                            class="meta t-num"
+                                        >
+                                            {{ regionPriceCount(item) }} 条地区价
+                                        </text>
+                                        <text class="meta t-num"
+                                            >排序 {{ Number(item.sort || 0) }}</text
+                                        >
+                                        <status-tag
+                                            v-if="regionPriceCount(item) === 0"
+                                            label="未配地区价"
+                                            tone="warning"
+                                            size="sm"
+                                            :dot="false"
+                                        />
+                                    </view>
                                 </view>
                             </view>
-                        </view>
 
-                        <view v-if="canWrite" class="ops">
-                            <view
-                                hover-class="is-pressed"
-                                class="ops__btn"
-                                aria-role="button"
-                                :aria-label="`编辑套餐：${item.name || ''}`"
-                                @tap.stop="goEdit(item)"
-                            >
-                                <text class="ops__text">编辑</text>
+                            <view v-if="canWrite" class="ops">
+                                <view
+                                    hover-class="is-pressed"
+                                    class="ops__btn"
+                                    aria-role="button"
+                                    :aria-label="`编辑套餐：${item.name || ''}`"
+                                    @tap.stop="goEdit(item)"
+                                >
+                                    <text class="ops__text">编辑</text>
+                                </view>
+                                <view
+                                    hover-class="is-pressed"
+                                    class="ops__btn"
+                                    aria-role="button"
+                                    :aria-label="`删除套餐：${item.name || ''}`"
+                                    @tap.stop="onDelete(item)"
+                                >
+                                    <text class="ops__text ops__text--danger">删除</text>
+                                </view>
                             </view>
-                            <view
-                                hover-class="is-pressed"
-                                class="ops__btn"
-                                aria-role="button"
-                                :aria-label="`删除套餐：${item.name || ''}`"
-                                @tap.stop="onDelete(item)"
-                            >
-                                <text class="ops__text ops__text--danger">删除</text>
-                            </view>
-                        </view>
-                    </base-card>
+                        </base-card>
+                    </view>
 
                     <load-more :status="loadMoreStatus" @retry="loadMore" />
                 </view>
@@ -197,7 +212,7 @@
 
 <script setup lang="ts">
 /** 服务人员：我的套餐（支持增删改与快捷上下架）。 */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     getStaffPackageList,
@@ -212,6 +227,8 @@ import { useStaffWriteGate } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
+import { schemeColor } from '@/utils/scheme-color'
 
 const { canWrite } = useStaffWriteGate()
 const { guardPhase, guardReason, guardError, guardAllowed, verify, onGuardRetry, onGuardAction } =
@@ -261,6 +278,29 @@ const filteredList = computed(() => {
     return list.value.filter((item) => Number(item.is_show) === Number(active.value))
 })
 
+/* ---- 列表错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
+
 let hasLoaded = false
 
 function addonCount(item: StaffPackageListItem): number {
@@ -273,6 +313,7 @@ function regionPriceCount(item: StaffPackageListItem): number {
 
 function goCreate() {
     if (!guardAllowed.value) return
+    // 触觉由底栏 base-button 统一发 light，页面不重复触发（避免双震）
     navigate({ path: '/packages/pkg-staff/pages/package-edit/package-edit' })
 }
 
@@ -282,6 +323,7 @@ function goEdit(item: StaffPackageListItem) {
         toast.warning('套餐编号缺失，请刷新后重试')
         return
     }
+    haptic('light', 'pkg-list-edit')
     navigate({
         path: '/packages/pkg-staff/pages/package-edit/package-edit',
         query: { id: item.id }
@@ -296,6 +338,7 @@ function goEdit(item: StaffPackageListItem) {
 async function onToggleShow(item: StaffPackageListItem) {
     if (!guardAllowed.value || togglingId.value > 0) return
     if (!item?.id) return
+    haptic('light', 'pkg-list-toggle')
     const nextShow = Number(item.is_show) === 1 ? 0 : 1
     togglingId.value = Number(item.id)
     try {
@@ -326,11 +369,14 @@ function onDelete(item: StaffPackageListItem) {
         toast.warning('套餐编号缺失，请刷新后重试')
         return
     }
+    haptic('heavy', 'pkg-list-delete')
     uni.showModal({
         title: '删除套餐',
         content: '删除后不可恢复，确认删除这个套餐？',
         confirmText: '删除',
         cancelText: '取消',
+        // 删除属不可逆操作，uni.showModal 居中确认弹窗保持原生居中形态
+        confirmColor: schemeColor('danger'),
         success: async (r) => {
             if (!r.confirm) return
             try {
@@ -346,6 +392,7 @@ function onDelete(item: StaffPackageListItem) {
 
 function switchTab(key: string | number) {
     if (!guardAllowed.value) return
+    // 触觉由 chip-group 内部统一发 light，页面不重复触发（避免双震）
     active.value = key
 }
 
@@ -417,6 +464,12 @@ async function onRefresh(done: () => void) {
     gap: var(--sp-2);
 }
 
+.list__items {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
 .pcard {
     display: flex;
     gap: var(--sp-3);
@@ -427,7 +480,7 @@ async function onRefresh(done: () => void) {
         border-radius: var(--r-sm);
         overflow: hidden;
         background: var(--c-surface-2);
-        border: 1rpx solid var(--c-line);
+        border: 1rpx solid var(--c-card-border);
         flex-shrink: 0;
     }
 
@@ -511,12 +564,19 @@ async function onRefresh(done: () => void) {
     background: var(--c-control-border);
     display: flex;
     align-items: center;
-    transition: background var(--dur-fast) var(--ease-out);
+    transition:
+        background var(--dur-fast) var(--ease-out),
+        transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.94);
+    }
 
     &__knob {
         width: 36rpx;
         height: 36rpx;
         border-radius: var(--r-pill);
+        /* 滑块跟随表面色：浅色暖白、暗色深墨，两态都与轨道拉开对比 */
         background: var(--c-surface);
         transition: transform var(--dur-fast) var(--ease-out);
     }
@@ -544,11 +604,18 @@ async function onRefresh(done: () => void) {
     border-top: 1rpx solid var(--c-line);
 
     &__btn {
-        min-height: 56rpx;
-        padding: var(--sp-1) var(--sp-3);
+        /* 相邻小按钮不叠加 .hit-88（伪元素会互相覆盖），直接把盒高做到 88rpx */
+        min-height: 88rpx;
+        padding: 0 var(--sp-3);
         border-radius: var(--r-pill);
         display: flex;
         align-items: center;
+        justify-content: center;
+        transition: transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.96);
+        }
     }
 
     &__text {
@@ -558,6 +625,20 @@ async function onRefresh(done: () => void) {
         &--danger {
             color: var(--c-danger);
         }
+    }
+}
+
+/* v10 §3.13：减弱动效下按压不缩放、开关不位移过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .sw,
+    .sw__knob,
+    .ops__btn {
+        transition: none;
+    }
+
+    .sw.is-pressed,
+    .ops__btn.is-pressed {
+        transform: none;
     }
 }
 </style>

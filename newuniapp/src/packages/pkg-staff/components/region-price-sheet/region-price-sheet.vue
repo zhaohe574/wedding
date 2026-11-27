@@ -1,327 +1,290 @@
 <template>
-    <tn-popup
-        :model-value="modelValue"
-        open-direction="bottom"
-        bg-color="transparent"
-        radius="0"
-        :safe-area-inset-bottom="true"
-        @update:model-value="onPopupChange"
+    <!-- 地区价格：磁吸半屏抽屉。标题 / 关闭 / 拖拽 / 脚部安全区由 snap-sheet 统一承担，
+         原 .sheet 包裹层已去掉，样式全部扁平化到插槽内容上 -->
+    <snap-sheet
+        v-model="visible"
+        :title="isEdit ? '编辑地区价格' : '添加地区价格'"
+        :enable-full="true"
+        :has-foot="true"
     >
-        <view class="sheet">
-            <view class="sheet__head">
-                <view class="sheet__head-main">
-                    <text class="sheet__title">{{ isEdit ? '编辑地区价格' : '添加地区价格' }}</text>
-                    <text class="sheet__sub">优先级：区县价 &gt; 城市价 &gt; 省级价 &gt; 基础价</text>
-                </view>
+        <!-- 原顶部副标题移到主体首行：snap-sheet 的 head 是单行标题结构，副标题放这里更清晰 -->
+        <view class="priority-tip">
+            <tn-icon name="tips" :size="22" class="priority-tip__icon" />
+            <text class="priority-tip__text">优先级：区县价 &gt; 城市价 &gt; 省级价 &gt; 基础价</text>
+        </view>
+
+        <!-- 1. 价格层级 -->
+        <view class="block">
+            <view class="block__head">
+                <text class="block__label">1. 价格层级</text>
+                <text v-if="isEdit" class="block__tip">编辑时不可切换层级</text>
+            </view>
+            <view class="level-tabs">
                 <view
+                    v-for="opt in LEVEL_OPTIONS"
+                    :key="opt.value"
                     hover-class="is-pressed"
-                    class="sheet__close"
-                    aria-role="button"
-                    aria-label="关闭"
-                    @tap="close"
+                    class="level-tab"
+                    :class="{
+                        'is-on': level === opt.value,
+                        'is-locked': isEdit && level !== opt.value
+                    }"
+                    @tap="selectLevel(opt.value)"
                 >
-                    <tn-icon name="close" :size="28" class="sheet__close-icon" />
+                    <text class="level-tab__title">{{ opt.label }}</text>
+                    <text class="level-tab__desc">{{ opt.desc }}</text>
+                </view>
+            </view>
+        </view>
+
+        <!-- 2. 地区选择 -->
+        <view class="block">
+            <view class="block__head">
+                <text class="block__label">2. 选择服务地区 *</text>
+                <text class="block__tip">{{ regionSelectionSummary }}</text>
+            </view>
+
+            <view v-if="treeLoading && !regionTree.length" class="tree-state">
+                <text class="tree-state__text">正在加载已开通服务地区…</text>
+            </view>
+
+            <view v-else-if="treeError && !regionTree.length" class="tree-state">
+                <text class="tree-state__text">地区列表加载失败</text>
+                <view hover-class="is-pressed" class="tree-state__btn" @tap="onRetryTree">
+                    <text class="tree-state__btn-text">重新加载</text>
                 </view>
             </view>
 
-            <scroll-view class="sheet__body" scroll-y>
-                <!-- 1. 价格层级 -->
-                <view class="block">
-                    <view class="block__head">
-                        <text class="block__label">1. 价格层级</text>
-                        <text v-if="isEdit" class="block__tip">编辑时不可切换层级</text>
-                    </view>
-                    <view class="level-tabs">
-                        <view
-                            v-for="opt in LEVEL_OPTIONS"
-                            :key="opt.value"
-                            hover-class="is-pressed"
-                            class="level-tab"
-                            :class="{
-                                'is-on': level === opt.value,
-                                'is-locked': isEdit && level !== opt.value
-                            }"
-                            @tap="selectLevel(opt.value)"
-                        >
-                            <text class="level-tab__title">{{ opt.label }}</text>
-                            <text class="level-tab__desc">{{ opt.desc }}</text>
-                        </view>
+            <view v-else-if="!regionTree.length" class="tree-state">
+                <text class="tree-state__text">暂未开通可配置的服务地区，请联系管理员</text>
+            </view>
+
+            <template v-else>
+                <!-- 省级价：省份网格单选 -->
+                <view v-if="level === REGION_LEVEL_PROVINCE" class="chip-grid">
+                    <view
+                        v-for="p in regionTree"
+                        :key="p.province_code"
+                        hover-class="is-pressed"
+                        class="region-chip"
+                        :class="{
+                            'is-on': selectedProvinceCode === p.province_code,
+                            'is-occupied': isProvinceOccupied(p.province_code)
+                        }"
+                        @tap="pickProvinceOption(p)"
+                    >
+                        <text class="region-chip__name ellipsis">{{ p.province_name }}</text>
+                        <text v-if="isProvinceOccupied(p.province_code)" class="region-chip__tag t-num">
+                            已设 ¥{{ formatOccupiedPrice(`1:${p.province_code}`) }}
+                        </text>
+                        <text v-else class="region-chip__sub t-num">
+                            {{ p.cities.length }} 个开通城市
+                        </text>
                     </view>
                 </view>
 
-                <!-- 2. 地区选择 -->
-                <view class="block">
-                    <view class="block__head">
-                        <text class="block__label">2. 选择服务地区 *</text>
-                        <text class="block__tip">{{ regionSelectionSummary }}</text>
-                    </view>
-
-                    <view v-if="treeLoading && !regionTree.length" class="tree-state">
-                        <text class="tree-state__text">正在加载已开通服务地区…</text>
-                    </view>
-
-                    <view v-else-if="treeError && !regionTree.length" class="tree-state">
-                        <text class="tree-state__text">地区列表加载失败</text>
-                        <view
-                            hover-class="is-pressed"
-                            class="tree-state__btn"
-                            @tap="emit('retry-tree')"
-                        >
-                            <text class="tree-state__btn-text">重新加载</text>
-                        </view>
-                    </view>
-
-                    <view v-else-if="!regionTree.length" class="tree-state">
-                        <text class="tree-state__text">暂未开通可配置的服务地区，请联系管理员</text>
-                    </view>
-
-                    <template v-else>
-                        <!-- 省级价：省份网格单选 -->
-                        <view v-if="level === REGION_LEVEL_PROVINCE" class="chip-grid">
+                <!-- 城市价：省份筛选 + 城市网格单选 -->
+                <template v-else-if="level === REGION_LEVEL_CITY">
+                    <scroll-view
+                        v-if="regionTree.length > 1"
+                        class="prov-scroll"
+                        scroll-x
+                        show-scrollbar="false"
+                    >
+                        <view class="prov-row">
                             <view
                                 v-for="p in regionTree"
                                 :key="p.province_code"
                                 hover-class="is-pressed"
-                                class="region-chip"
-                                :class="{
-                                    'is-on': selectedProvinceCode === p.province_code,
-                                    'is-occupied': isProvinceOccupied(p.province_code)
-                                }"
-                                @tap="pickProvinceOption(p)"
+                                class="prov-pill"
+                                :class="{ 'is-on': selectedProvinceCode === p.province_code }"
+                                @tap="onProvinceFilterTap(p.province_code)"
                             >
-                                <text class="region-chip__name ellipsis">{{ p.province_name }}</text>
-                                <text
-                                    v-if="isProvinceOccupied(p.province_code)"
-                                    class="region-chip__tag"
-                                >
-                                    已设 ¥{{ formatOccupiedPrice(`1:${p.province_code}`) }}
-                                </text>
-                                <text v-else class="region-chip__sub">
-                                    {{ p.cities.length }} 个开通城市
-                                </text>
+                                <text class="prov-pill__text">{{ p.province_name }}</text>
                             </view>
                         </view>
+                    </scroll-view>
 
-                        <!-- 城市价：省份筛选 + 城市网格单选 -->
-                        <template v-else-if="level === REGION_LEVEL_CITY">
-                            <scroll-view
-                                v-if="regionTree.length > 1"
-                                class="prov-scroll"
-                                scroll-x
-                                show-scrollbar="false"
+                    <view v-if="activeCities.length" class="chip-grid">
+                        <view
+                            v-for="c in activeCities"
+                            :key="c.city_code"
+                            hover-class="is-pressed"
+                            class="region-chip"
+                            :class="{
+                                'is-on': selectedCityCode === c.city_code,
+                                'is-occupied': isCityOccupied(c.city_code)
+                            }"
+                            @tap="pickCityOption(c)"
+                        >
+                            <text class="region-chip__name ellipsis">{{ c.city_name }}</text>
+                            <text v-if="isCityOccupied(c.city_code)" class="region-chip__tag t-num">
+                                已设 ¥{{ formatOccupiedPrice(`2:${c.city_code}`) }}
+                            </text>
+                            <text
+                                v-else-if="Array.isArray(c.districts) && c.districts.length"
+                                class="region-chip__sub t-num"
                             >
-                                <view class="prov-row">
-                                    <view
-                                        v-for="p in regionTree"
-                                        :key="p.province_code"
-                                        hover-class="is-pressed"
-                                        class="prov-pill"
-                                        :class="{ 'is-on': selectedProvinceCode === p.province_code }"
-                                        @tap="onProvinceFilterTap(p.province_code)"
-                                    >
-                                        <text class="prov-pill__text">{{ p.province_name }}</text>
-                                    </view>
-                                </view>
-                            </scroll-view>
+                                {{ c.districts.length }} 个区县
+                            </text>
+                        </view>
+                    </view>
+                    <view v-else class="tree-state">
+                        <text class="tree-state__text">该省份下暂无已开通城市</text>
+                    </view>
+                </template>
 
-                            <view v-if="activeCities.length" class="chip-grid">
+                <!-- 区县价：选省 -> 选城市 -> 区县多选 -->
+                <template v-else>
+                    <scroll-view
+                        v-if="regionTree.length > 1"
+                        class="prov-scroll"
+                        scroll-x
+                        show-scrollbar="false"
+                    >
+                        <view class="prov-row">
+                            <view
+                                v-for="p in regionTree"
+                                :key="p.province_code"
+                                hover-class="is-pressed"
+                                class="prov-pill"
+                                :class="{ 'is-on': selectedProvinceCode === p.province_code }"
+                                @tap="onProvinceFilterTap(p.province_code)"
+                            >
+                                <text class="prov-pill__text">{{ p.province_name }}</text>
+                            </view>
+                        </view>
+                    </scroll-view>
+
+                    <scroll-view
+                        v-if="activeCities.length"
+                        class="city-scroll"
+                        scroll-x
+                        show-scrollbar="false"
+                    >
+                        <view class="prov-row">
+                            <view
+                                v-for="c in activeCities"
+                                :key="c.city_code"
+                                hover-class="is-pressed"
+                                class="city-pill"
+                                :class="{ 'is-on': selectedCityCode === c.city_code }"
+                                @tap="selectDistrictCity(c)"
+                            >
+                                <text class="city-pill__text">{{ c.city_name }}</text>
+                            </view>
+                        </view>
+                    </scroll-view>
+
+                    <view v-if="activeCityNode" class="district-box">
+                        <view class="district-box__bar">
+                            <text class="district-box__hint">
+                                {{ activeCityNode.city_name }}区县（可多选，统一执行下方价格）
+                            </text>
+                            <view class="district-box__ops">
                                 <view
-                                    v-for="c in activeCities"
-                                    :key="c.city_code"
+                                    v-if="availableDistricts.length"
                                     hover-class="is-pressed"
-                                    class="region-chip"
-                                    :class="{
-                                        'is-on': selectedCityCode === c.city_code,
-                                        'is-occupied': isCityOccupied(c.city_code)
-                                    }"
-                                    @tap="pickCityOption(c)"
+                                    class="district-box__op"
+                                    @tap="selectAllAvailableDistricts"
                                 >
-                                    <text class="region-chip__name ellipsis">{{ c.city_name }}</text>
-                                    <text
-                                        v-if="isCityOccupied(c.city_code)"
-                                        class="region-chip__tag"
+                                    <text class="district-box__op-text">全选可选</text>
+                                </view>
+                                <view
+                                    v-if="selectedDistrictCodes.length"
+                                    hover-class="is-pressed"
+                                    class="district-box__op district-box__op--muted"
+                                    @tap="clearDistricts"
+                                >
+                                    <text class="district-box__op-text district-box__op-text--muted"
+                                        >清空</text
                                     >
-                                        已设 ¥{{ formatOccupiedPrice(`2:${c.city_code}`) }}
-                                    </text>
-                                    <text
-                                        v-else-if="Array.isArray(c.districts) && c.districts.length"
-                                        class="region-chip__sub"
-                                    >
-                                        {{ c.districts.length }} 个区县
-                                    </text>
                                 </view>
                             </view>
-                            <view v-else class="tree-state">
-                                <text class="tree-state__text">该省份下暂无已开通城市</text>
-                            </view>
-                        </template>
+                        </view>
 
-                        <!-- 区县价：选省 -> 选城市 -> 区县多选 -->
-                        <template v-else>
-                            <scroll-view
-                                v-if="regionTree.length > 1"
-                                class="prov-scroll"
-                                scroll-x
-                                show-scrollbar="false"
+                        <view v-if="activeDistricts.length" class="district-grid">
+                            <view
+                                v-for="d in activeDistricts"
+                                :key="d.district_code"
+                                hover-class="is-pressed"
+                                class="district-chip"
+                                :class="{
+                                    'is-on': selectedDistrictCodes.includes(d.district_code),
+                                    'is-occupied': isDistrictOccupied(d.city_code, d.district_code)
+                                }"
+                                @tap="toggleDistrict(d)"
                             >
-                                <view class="prov-row">
-                                    <view
-                                        v-for="p in regionTree"
-                                        :key="p.province_code"
-                                        hover-class="is-pressed"
-                                        class="prov-pill"
-                                        :class="{ 'is-on': selectedProvinceCode === p.province_code }"
-                                        @tap="onProvinceFilterTap(p.province_code)"
-                                    >
-                                        <text class="prov-pill__text">{{ p.province_name }}</text>
-                                    </view>
-                                </view>
-                            </scroll-view>
-
-                            <scroll-view
-                                v-if="activeCities.length"
-                                class="city-scroll"
-                                scroll-x
-                                show-scrollbar="false"
-                            >
-                                <view class="prov-row">
-                                    <view
-                                        v-for="c in activeCities"
-                                        :key="c.city_code"
-                                        hover-class="is-pressed"
-                                        class="city-pill"
-                                        :class="{ 'is-on': selectedCityCode === c.city_code }"
-                                        @tap="selectDistrictCity(c)"
-                                    >
-                                        <text class="city-pill__text">{{ c.city_name }}</text>
-                                    </view>
-                                </view>
-                            </scroll-view>
-
-                            <view v-if="activeCityNode" class="district-box">
-                                <view class="district-box__bar">
-                                    <text class="district-box__hint">
-                                        {{ activeCityNode.city_name }}区县（可多选，统一执行下方价格）
-                                    </text>
-                                    <view class="district-box__ops">
-                                        <text
-                                            v-if="availableDistricts.length"
-                                            class="district-box__op"
-                                            @tap="selectAllAvailableDistricts"
-                                        >
-                                            全选可选
-                                        </text>
-                                        <text
-                                            v-if="selectedDistrictCodes.length"
-                                            class="district-box__op district-box__op--muted"
-                                            @tap="selectedDistrictCodes = []"
-                                        >
-                                            清空
-                                        </text>
-                                    </view>
-                                </view>
-
-                                <view v-if="activeDistricts.length" class="district-grid">
-                                    <view
-                                        v-for="d in activeDistricts"
-                                        :key="d.district_code"
-                                        hover-class="is-pressed"
-                                        class="district-chip"
-                                        :class="{
-                                            'is-on': selectedDistrictCodes.includes(d.district_code),
-                                            'is-occupied': isDistrictOccupied(
-                                                d.city_code,
-                                                d.district_code
-                                            )
-                                        }"
-                                        @tap="toggleDistrict(d)"
-                                    >
-                                        <text class="district-chip__name ellipsis">{{
-                                            d.district_name
-                                        }}</text>
-                                        <text
-                                            v-if="isDistrictOccupied(d.city_code, d.district_code)"
-                                            class="district-chip__tag"
-                                        >
-                                            ¥{{
-                                                formatOccupiedPrice(
-                                                    `3:${d.city_code}:${d.district_code}`
-                                                )
-                                            }}
-                                        </text>
-                                    </view>
-                                </view>
-                                <view v-else class="tree-state">
-                                    <text class="tree-state__text">该城市下暂无区县数据</text>
-                                </view>
+                                <text class="district-chip__name ellipsis">{{
+                                    d.district_name
+                                }}</text>
+                                <text
+                                    v-if="isDistrictOccupied(d.city_code, d.district_code)"
+                                    class="district-chip__tag t-num"
+                                >
+                                    ¥{{
+                                        formatOccupiedPrice(
+                                            `3:${d.city_code}:${d.district_code}`
+                                        )
+                                    }}
+                                </text>
                             </view>
-                        </template>
-                    </template>
+                        </view>
+                        <view v-else class="tree-state">
+                            <text class="tree-state__text">该城市下暂无区县数据</text>
+                        </view>
+                    </view>
+                </template>
+            </template>
+        </view>
+
+        <!-- 3. 地区售价 -->
+        <view class="block">
+            <view class="block__head">
+                <text class="block__label">3. 地区售价 *</text>
+                <text v-if="basePrice > 0" class="block__tip t-num">
+                    基础价 ¥{{ formatMoneyNum(basePrice) }}
+                    <template v-if="liveDiffText"> · {{ liveDiffText }}</template>
+                </text>
+            </view>
+
+            <view class="price-input-wrap">
+                <text class="price-input-wrap__prefix">¥</text>
+                <input
+                    v-model="priceInput"
+                    class="price-input-wrap__field t-num"
+                    type="digit"
+                    placeholder="请输入该地区执行售价"
+                    placeholder-class="price-input-wrap__ph"
+                />
+                <text class="price-input-wrap__unit">元</text>
+            </view>
+
+            <view v-if="basePrice > 0" class="quick-prices">
+                <view hover-class="is-pressed" class="quick-pill" @tap="applyQuickPrice(0)">
+                    <text class="quick-pill__text">同基础价</text>
                 </view>
-
-                <!-- 3. 地区售价 -->
-                <view class="block">
-                    <view class="block__head">
-                        <text class="block__label">3. 地区售价 *</text>
-                        <text v-if="basePrice > 0" class="block__tip">
-                            基础价 ¥{{ formatMoneyNum(basePrice) }}
-                            <template v-if="liveDiffText"> · {{ liveDiffText }}</template>
-                        </text>
-                    </view>
-
-                    <view class="price-input-wrap">
-                        <text class="price-input-wrap__prefix">¥</text>
-                        <input
-                            v-model="priceInput"
-                            class="price-input-wrap__field"
-                            type="digit"
-                            placeholder="请输入该地区执行售价"
-                            placeholder-class="price-input-wrap__ph"
-                        />
-                        <text class="price-input-wrap__unit">元</text>
-                    </view>
-
-                    <view v-if="basePrice > 0" class="quick-prices">
-                        <view
-                            hover-class="is-pressed"
-                            class="quick-pill"
-                            @tap="applyQuickPrice(0)"
-                        >
-                            <text class="quick-pill__text">同基础价</text>
-                        </view>
-                        <view
-                            hover-class="is-pressed"
-                            class="quick-pill"
-                            @tap="applyQuickPrice(200)"
-                        >
-                            <text class="quick-pill__text">+200 元</text>
-                        </view>
-                        <view
-                            hover-class="is-pressed"
-                            class="quick-pill"
-                            @tap="applyQuickPrice(500)"
-                        >
-                            <text class="quick-pill__text">+500 元</text>
-                        </view>
-                        <view
-                            hover-class="is-pressed"
-                            class="quick-pill"
-                            @tap="applyQuickPrice(1000)"
-                        >
-                            <text class="quick-pill__text">+1000 元</text>
-                        </view>
-                    </view>
+                <view hover-class="is-pressed" class="quick-pill" @tap="applyQuickPrice(200)">
+                    <text class="quick-pill__text t-num">+200 元</text>
                 </view>
-            </scroll-view>
+                <view hover-class="is-pressed" class="quick-pill" @tap="applyQuickPrice(500)">
+                    <text class="quick-pill__text t-num">+500 元</text>
+                </view>
+                <view hover-class="is-pressed" class="quick-pill" @tap="applyQuickPrice(1000)">
+                    <text class="quick-pill__text t-num">+1000 元</text>
+                </view>
+            </view>
+        </view>
 
-            <view class="sheet__foot">
-                <view v-if="isEdit" class="sheet__btn sheet__btn--sm">
+        <template #foot>
+            <view class="foot">
+                <view v-if="isEdit" class="foot__btn foot__btn--sm">
                     <base-button text="删除" variant="danger" size="md" block @click="onDeleteTap" />
                 </view>
-                <view class="sheet__btn">
+                <view class="foot__btn">
                     <base-button text="取消" variant="ghost" size="md" block @click="close" />
                 </view>
-                <view class="sheet__btn sheet__btn--primary">
+                <view class="foot__btn foot__btn--primary">
                     <base-button
                         :text="isEdit ? '保存修改' : '确认添加'"
                         variant="ink"
@@ -331,8 +294,8 @@
                     />
                 </view>
             </view>
-        </view>
-    </tn-popup>
+        </template>
+    </snap-sheet>
 </template>
 
 <script setup lang="ts">
@@ -340,6 +303,7 @@ import { computed, ref, watch } from 'vue'
 import type { CityNodeVO, DistrictNodeVO, RegionProvinceVO } from '@/api/types/catalog'
 import type { StaffPackageRegionPriceItem } from '@/api/staff-center'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 import {
     REGION_LEVEL_CITY,
     REGION_LEVEL_DISTRICT,
@@ -375,6 +339,11 @@ const emit = defineEmits<{
     ): void
     (e: 'delete', groupKey: string): void
 }>()
+
+const visible = computed({
+    get: () => props.modelValue,
+    set: (value: boolean) => emit('update:modelValue', value)
+})
 
 const level = ref<1 | 2 | 3>(REGION_LEVEL_CITY)
 const selectedProvinceCode = ref('')
@@ -537,6 +506,7 @@ function selectLevel(next: 1 | 2 | 3) {
         return
     }
     if (level.value === next) return
+    haptic('light', 'region-price-level')
     level.value = next
     syncDefaultsForLevel(next)
 }
@@ -546,11 +516,14 @@ function pickProvinceOption(p: RegionProvinceVO) {
         toast.info('该省份已配置价格，请直接点击原规则编辑')
         return
     }
+    if (selectedProvinceCode.value === p.province_code) return
+    haptic('light', 'region-price-region')
     selectedProvinceCode.value = p.province_code
 }
 
 function onProvinceFilterTap(provinceCode: string) {
     if (selectedProvinceCode.value === provinceCode) return
+    haptic('light', 'region-price-province')
     selectedProvinceCode.value = provinceCode
     const cities = props.regionTree.find((p) => p.province_code === provinceCode)?.cities || []
     if (level.value === REGION_LEVEL_CITY) {
@@ -567,12 +540,15 @@ function pickCityOption(c: CityNodeVO) {
         toast.info('该城市已配置价格，请直接点击原规则编辑')
         return
     }
+    if (selectedCityCode.value === c.city_code) return
+    haptic('light', 'region-price-region')
     selectedProvinceCode.value = c.province_code
     selectedCityCode.value = c.city_code
 }
 
 function selectDistrictCity(c: CityNodeVO) {
     if (selectedCityCode.value === c.city_code) return
+    haptic('light', 'region-price-city')
     selectedProvinceCode.value = c.province_code
     selectedCityCode.value = c.city_code
     selectedDistrictCodes.value = []
@@ -583,6 +559,7 @@ function toggleDistrict(d: DistrictNodeVO) {
         toast.info('该区县已配置价格，请直接点击对应规则编辑')
         return
     }
+    haptic('light', 'region-price-district')
     const idx = selectedDistrictCodes.value.indexOf(d.district_code)
     if (idx >= 0) {
         selectedDistrictCodes.value = selectedDistrictCodes.value.filter(
@@ -594,26 +571,39 @@ function toggleDistrict(d: DistrictNodeVO) {
 }
 
 function selectAllAvailableDistricts() {
+    haptic('light', 'region-price-district-all')
     selectedDistrictCodes.value = availableDistricts.value.map((d) => d.district_code)
 }
 
+function clearDistricts() {
+    haptic('light', 'region-price-district-clear')
+    selectedDistrictCodes.value = []
+}
+
 function applyQuickPrice(delta: number) {
+    haptic('light', 'region-price-quick')
     const base = Number.isFinite(props.basePrice) && props.basePrice > 0 ? props.basePrice : 0
     const next = Math.max(0, Math.round((base + delta) * 100) / 100)
     priceInput.value = formatMoneyNum(next)
+}
+
+function onRetryTree() {
+    haptic('light', 'region-price-retry')
+    emit('retry-tree')
 }
 
 function close() {
     emit('update:modelValue', false)
 }
 
-function onPopupChange(v: boolean) {
-    emit('update:modelValue', v)
-}
-
+/**
+ * 删除是不可逆操作：保留居中确认弹窗形态（uni.showModal 为系统原生模态，
+ * 不做可下拉轻滑关闭的普通抽屉），并在确认后才发 delete。
+ */
 function onDeleteTap() {
     if (!props.editingGroup) return
     const key = props.editingGroup.key
+    haptic('heavy', 'region-price-delete')
     uni.showModal({
         title: '移除地区价格',
         content: '确认移除这条地区价格规则？修改将在点击底部保存后生效',
@@ -651,6 +641,7 @@ function onConfirm() {
             toast.info('该省份已配置价格，请直接编辑原规则')
             return
         }
+        haptic('medium', 'region-price-save')
         emit('save', {
             replaceGroupKey: props.editingGroup?.key ?? null,
             items: [
@@ -690,6 +681,7 @@ function onConfirm() {
             toast.info('该城市已配置价格，请直接编辑原规则')
             return
         }
+        haptic('medium', 'region-price-save')
         emit('save', {
             replaceGroupKey: props.editingGroup?.key ?? null,
             items: [
@@ -748,6 +740,7 @@ function onConfirm() {
         })
     }
 
+    haptic('medium', 'region-price-save')
     emit('save', {
         replaceGroupKey: props.editingGroup?.key ?? null,
         items
@@ -756,84 +749,47 @@ function onConfirm() {
 </script>
 
 <style lang="scss" scoped>
-.sheet {
-    background: var(--c-surface);
-    border-radius: var(--r-xl) var(--r-xl) 0 0;
-    padding: var(--sp-4) var(--sp-4) var(--sp-3);
-    box-shadow: var(--shadow-sheet);
-    max-height: 84vh;
+.foot {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-2);
+}
 
-    &__head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: var(--sp-2);
-        padding-bottom: var(--sp-3);
-        border-bottom: 1rpx solid var(--c-line);
+.foot__btn {
+    flex: 1;
+    min-width: 0;
+
+    &--sm {
+        flex: 0.72;
     }
 
-    &__head-main {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4rpx;
+    &--primary {
+        flex: 1.3;
     }
+}
 
-    &__title {
-        font-size: var(--fs-lg);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
+.priority-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-1);
+    margin-bottom: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--r-sm);
+    background: var(--c-brand-bg);
+    border: 1rpx solid var(--c-primary-border);
 
-    &__sub {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
-
-    &__close {
-        width: 56rpx;
-        height: 56rpx;
-        border-radius: var(--r-pill);
-        background: var(--c-surface-2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--c-ink-2);
+    &__icon {
         flex-shrink: 0;
+        margin-top: 2rpx;
+        color: var(--c-brand-text);
     }
 
-    &__close-icon {
-        color: inherit;
-    }
-
-    &__body {
-        margin-top: var(--sp-3);
-        max-height: 58vh;
-    }
-
-    &__foot {
-        display: flex;
-        align-items: center;
-        gap: var(--sp-2);
-        margin-top: var(--sp-3);
-        padding-top: var(--sp-3);
-        border-top: 1rpx solid var(--c-line);
-    }
-
-    &__btn {
+    &__text {
         flex: 1;
         min-width: 0;
-
-        &--sm {
-            flex: 0.72;
-        }
-
-        &--primary {
-            flex: 1.3;
-        }
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-brand-text);
     }
 }
 
@@ -857,6 +813,8 @@ function onConfirm() {
     }
 
     &__tip {
+        flex-shrink: 0;
+        max-width: 60%;
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
         text-align: right;
@@ -870,14 +828,25 @@ function onConfirm() {
 }
 
 .level-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4rpx;
+    min-height: 88rpx;
     padding: var(--sp-2);
     border-radius: var(--r-md);
     border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4rpx;
+    box-sizing: border-box;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.98);
+    }
 
     &__title {
         font-size: var(--fs-md);
@@ -926,7 +895,10 @@ function onConfirm() {
     }
 
     &__btn {
-        padding: 8rpx var(--sp-3);
+        display: inline-flex;
+        align-items: center;
+        min-height: 88rpx;
+        padding: 0 var(--sp-3);
         border-radius: var(--r-pill);
         background: var(--c-surface);
         border: 1rpx solid var(--c-control-border);
@@ -953,10 +925,17 @@ function onConfirm() {
 
 .prov-pill,
 .city-pill {
-    padding: 8rpx var(--sp-3);
+    display: inline-flex;
+    align-items: center;
+    min-height: 88rpx;
+    padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
-    border: 1rpx solid var(--c-line-strong);
+    border: 1rpx solid var(--c-control-border);
     background: var(--c-bg);
+    box-sizing: border-box;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out);
 
     &__text {
         font-size: var(--fs-xs);
@@ -992,14 +971,20 @@ function onConfirm() {
 }
 
 .region-chip {
-    padding: var(--sp-2) var(--sp-3);
-    border-radius: var(--r-md);
-    border: 1rpx solid var(--c-line);
-    background: var(--c-surface-2);
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: 4rpx;
     min-width: 0;
+    min-height: 88rpx;
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--r-md);
+    border: 1rpx solid var(--c-control-border);
+    background: var(--c-surface-2);
+    box-sizing: border-box;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out);
 
     &__name {
         font-size: var(--fs-md);
@@ -1038,7 +1023,7 @@ function onConfirm() {
 }
 
 .district-box {
-    padding: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3) var(--sp-3);
     border-radius: var(--r-md);
     background: var(--c-surface-2);
     border: 1rpx solid var(--c-line);
@@ -1061,11 +1046,19 @@ function onConfirm() {
     &__ops {
         display: flex;
         align-items: center;
-        gap: var(--sp-2);
+        gap: var(--sp-1);
         flex-shrink: 0;
     }
 
+    /* 文字操作也按 88rpx 热区做，视觉上仍是小号链接 */
     &__op {
+        display: inline-flex;
+        align-items: center;
+        min-height: 88rpx;
+        padding: 0 var(--sp-2);
+    }
+
+    &__op-text {
         font-size: var(--fs-xs);
         color: var(--c-brand-text);
         font-weight: var(--fw-medium);
@@ -1083,15 +1076,21 @@ function onConfirm() {
 }
 
 .district-chip {
-    padding: var(--sp-2);
-    border-radius: var(--r-sm);
-    border: 1rpx solid var(--c-line-strong);
-    background: var(--c-surface);
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 2rpx;
     min-width: 0;
+    min-height: 88rpx;
+    padding: var(--sp-2);
+    border-radius: var(--r-sm);
+    border: 1rpx solid var(--c-control-border);
+    background: var(--c-surface);
+    box-sizing: border-box;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out);
 
     &__name {
         width: 100%;
@@ -1148,7 +1147,6 @@ function onConfirm() {
         font-size: var(--fs-lg);
         font-weight: var(--fw-medium);
         color: var(--c-ink);
-        font-variant-numeric: tabular-nums;
     }
 
     &__ph {
@@ -1171,14 +1169,37 @@ function onConfirm() {
 }
 
 .quick-pill {
-    padding: 8rpx var(--sp-3);
+    display: inline-flex;
+    align-items: center;
+    min-height: 88rpx;
+    padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
     background: var(--c-bg);
-    border: 1rpx solid var(--c-line-strong);
+    border: 1rpx solid var(--c-control-border);
+    transition: background-color var(--dur-fast) var(--ease-out);
+
+    &.is-pressed {
+        background: var(--c-surface-2);
+    }
 
     &__text {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .level-tab,
+    .prov-pill,
+    .city-pill,
+    .region-chip,
+    .district-chip,
+    .quick-pill {
+        transition: none;
+
+        &.is-pressed {
+            transform: none;
+        }
     }
 }
 </style>

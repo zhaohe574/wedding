@@ -17,7 +17,7 @@
 
         <view v-else class="page-wrap tpl-page">
             <view v-if="loading" class="page-pad loading-pad">
-                <base-skeleton :rows="4" />
+                <base-skeleton :rows="4" variant="card" />
             </view>
 
             <base-empty
@@ -48,9 +48,9 @@
                         <view class="target-row">
                             <view
                                 hover-class="is-pressed"
-                                class="target-chip"
+                                class="target-chip hit-88"
                                 :class="{ 'is-active': !selectedTargetKey }"
-                                @tap="selectedTargetKey = ''"
+                                @tap="selectTarget('')"
                             >
                                 <text class="target-chip__text">仅代入我的名片信息</text>
                             </view>
@@ -58,11 +58,11 @@
                                 v-for="t in data.recent_targets"
                                 :key="t.target_key"
                                 hover-class="is-pressed"
-                                class="target-chip"
+                                class="target-chip hit-88"
                                 :class="{ 'is-active': selectedTargetKey === t.target_key }"
-                                @tap="selectedTargetKey = t.target_key"
+                                @tap="selectTarget(t.target_key)"
                             >
-                                <text class="target-chip__text"
+                                <text class="target-chip__text t-num"
                                     >{{ t.service_date }} · {{ t.customer_name || t.title }}</text
                                 >
                             </view>
@@ -101,49 +101,62 @@
                     </text>
                 </base-card>
 
-                <base-card
-                    v-for="item in filteredCustoms"
-                    :key="item.id"
-                    compact
-                    class="tpl-card"
+                <view
+                    v-if="filteredCustoms.length"
+                    class="tpl-list"
+                    :class="{ stagger: staggerIn, 'is-in': staggerIn }"
                 >
-                    <view class="tpl-card__head">
-                        <view class="tpl-card__title-wrap">
-                            <text class="tpl-card__title">{{ item.title }}</text>
-                            <text class="tpl-card__meta"
-                                >已用 {{ item.use_count }} 次 · {{ item.update_time_text }}</text
-                            >
+                    <base-card
+                        v-for="(item, index) in filteredCustoms"
+                        :key="item.id"
+                        compact
+                        class="tpl-card"
+                        :style="{ '--i': index }"
+                    >
+                        <view class="tpl-card__head">
+                            <view class="tpl-card__title-wrap">
+                                <text class="tpl-card__title">{{ item.title }}</text>
+                                <text class="tpl-card__meta t-num"
+                                    >已用 {{ item.use_count }} 次 · {{ item.update_time_text }}</text
+                                >
+                            </view>
+                            <status-tag
+                                :label="item.scene_label"
+                                tone="primary"
+                                size="sm"
+                                :dot="false"
+                            />
                         </view>
-                        <status-tag :label="item.scene_label" tone="primary" size="sm" :dot="false" />
-                    </view>
 
-                    <text class="tpl-card__content">{{ renderContent(item.content) }}</text>
+                        <text class="tpl-card__content">{{ renderContent(item.content) }}</text>
 
-                    <view class="tpl-card__actions">
-                        <base-button
-                            text="一键复制"
-                            variant="ink"
-                            size="sm"
-                            :block="false"
-                            @click="handleCopyCustom(item)"
-                        />
-                        <base-button
-                            text="编辑"
-                            variant="ghost"
-                            size="sm"
-                            :block="false"
-                            @click="openEditSheet(item)"
-                        />
-                        <base-button
-                            text="删除"
-                            variant="danger"
-                            size="sm"
-                            :block="false"
-                            :disabled="saving"
-                            @click="handleDeleteCustom(item)"
-                        />
-                    </view>
-                </base-card>
+                        <view class="tpl-card__actions">
+                            <base-button
+                                text="一键复制"
+                                variant="ink"
+                                size="sm"
+                                :block="false"
+                                @click="handleCopyCustom(item)"
+                            />
+                            <base-button
+                                text="编辑"
+                                variant="ghost"
+                                size="sm"
+                                :block="false"
+                                @click="openEditSheet(item)"
+                            />
+                            <base-button
+                                text="删除"
+                                variant="danger"
+                                size="sm"
+                                :block="false"
+                                :disabled="saving"
+                                haptic-level="heavy"
+                                @click="handleDeleteCustom(item)"
+                            />
+                        </view>
+                    </base-card>
+                </view>
 
                 <!-- 平台统一预设模板区 -->
                 <section-header
@@ -157,39 +170,52 @@
                     <text class="empty-hint">当前场景暂无平台统一话术模板。</text>
                 </base-card>
 
-                <base-card
-                    v-for="item in filteredPresets"
-                    :key="item.preset_key"
-                    compact
-                    class="tpl-card"
+                <view
+                    v-if="filteredPresets.length"
+                    class="tpl-list"
+                    :class="{ stagger: staggerIn, 'is-in': staggerIn }"
                 >
-                    <view class="tpl-card__head">
-                        <view class="tpl-card__title-wrap">
-                            <text class="tpl-card__title">{{ item.title }}</text>
+                    <base-card
+                        v-for="(item, index) in filteredPresets"
+                        :key="item.preset_key"
+                        compact
+                        class="tpl-card"
+                        :style="{ '--i': index }"
+                    >
+                        <view class="tpl-card__head">
+                            <view class="tpl-card__title-wrap">
+                                <text class="tpl-card__title">{{ item.title }}</text>
+                            </view>
+                            <status-tag
+                                :label="item.scene_label"
+                                tone="neutral"
+                                size="sm"
+                                :dot="false"
+                            />
                         </view>
-                        <status-tag :label="item.scene_label" tone="neutral" size="sm" :dot="false" />
-                    </view>
 
-                    <text class="tpl-card__content">{{ renderContent(item.content) }}</text>
+                        <text class="tpl-card__content">{{ renderContent(item.content) }}</text>
 
-                    <view class="tpl-card__actions">
-                        <base-button
-                            text="一键复制"
-                            variant="ink"
-                            size="sm"
-                            :block="false"
-                            @click="handleCopyPreset(item)"
-                        />
-                        <base-button
-                            text="另存为我的"
-                            variant="ghost"
-                            size="sm"
-                            :block="false"
-                            :disabled="saving"
-                            @click="handleSavePresetToMine(item)"
-                        />
-                    </view>
-                </base-card>
+                        <view class="tpl-card__actions">
+                            <base-button
+                                text="一键复制"
+                                variant="ink"
+                                size="sm"
+                                :block="false"
+                                @click="handleCopyPreset(item)"
+                            />
+                            <base-button
+                                text="另存为我的"
+                                variant="ghost"
+                                size="sm"
+                                :block="false"
+                                :disabled="saving"
+                                haptic-level="medium"
+                                @click="handleSavePresetToMine(item)"
+                            />
+                        </view>
+                    </base-card>
+                </view>
             </view>
         </view>
 
@@ -208,7 +234,7 @@
 /**
  * 服务人员文案模板库：后台统一配置话术 + 个人模板 CRUD + 场次变量实时代入。
  */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     deleteStaffCopyTemplate,
@@ -224,6 +250,8 @@ import CopyTemplateSheet from '../../components/copy-template-sheet/copy-templat
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { haptic } from '@/utils/haptics'
+import { schemeColor } from '@/utils/scheme-color'
 
 const {
     guardPhase,
@@ -244,6 +272,29 @@ const activeScene = ref('all')
 const selectedTargetKey = ref('')
 const sheetOpen = ref(false)
 const editingItem = ref<StaffCopyTemplateCustom | null>(null)
+
+/* ---- 列表错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => (data.value?.customs?.length || 0) + (data.value?.presets?.length || 0),
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
 
 let initialOrderId = 0
 let initialManualId = 0
@@ -337,15 +388,24 @@ function reload(): void {
 }
 
 function onSceneChange(val: string | number): void {
+    // 触觉由 chip-group 内部统一发 light，页面不重复触发（避免双震）
     activeScene.value = String(val || 'all')
 }
 
+function selectTarget(key: string): void {
+    if (selectedTargetKey.value === key) return
+    haptic('light', 'tpl-target')
+    selectedTargetKey.value = key
+}
+
 function openCreateSheet(): void {
+    // 触觉由「新建模板」base-button 统一发 light
     editingItem.value = null
     sheetOpen.value = true
 }
 
 function openEditSheet(item: StaffCopyTemplateCustom): void {
+    // 触觉由「编辑」base-button 统一发 light
     editingItem.value = item
     sheetOpen.value = true
 }
@@ -421,6 +481,8 @@ function handleDeleteCustom(item: StaffCopyTemplateCustom): void {
         content: `确认删除模板「${item.title}」？删除后不可恢复。`,
         confirmText: '确认删除',
         cancelText: '取消',
+        // 删除属不可逆操作，uni.showModal 居中确认弹窗保持原生居中形态
+        confirmColor: schemeColor('danger'),
         success: async (r) => {
             if (!r.confirm) return
             saving.value = true
@@ -495,7 +557,10 @@ function onRefresh(done: () => void) {
 }
 
 .target-scroll {
-    margin-top: var(--sp-2);
+    /* 上下各留 16rpx：给 chip 的 .hit-88 伪元素留出竖向空间，
+       scroll-view 会裁掉溢出内容，不留白则 88rpx 热区被裁回 56rpx */
+    margin-top: 0;
+    padding: var(--sp-2) 0;
     white-space: nowrap;
 }
 
@@ -513,6 +578,11 @@ function onRefresh(done: () => void) {
     border-radius: var(--r-pill);
     border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
+    transition: transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.96);
+    }
 
     &.is-active {
         border-color: var(--c-brand-text);
@@ -535,6 +605,13 @@ function onRefresh(done: () => void) {
     align-items: center;
     justify-content: space-between;
     gap: var(--sp-2);
+}
+
+/* 两个模板列表共用错峰容器：卡片间距与 .tpl-body 的组间距一致 */
+.tpl-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
 }
 
 .empty-hint {
@@ -591,6 +668,17 @@ function onRefresh(done: () => void) {
         flex-wrap: wrap;
         gap: var(--sp-2);
         padding-top: var(--sp-1);
+    }
+}
+
+/* v10 §3.13：减弱动效下按压不缩放 */
+@media (prefers-reduced-motion: reduce) {
+    .target-chip {
+        transition: none;
+    }
+
+    .target-chip.is-pressed {
+        transform: none;
     }
 }
 </style>

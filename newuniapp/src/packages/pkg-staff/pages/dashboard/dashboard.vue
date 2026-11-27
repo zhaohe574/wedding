@@ -7,8 +7,8 @@
         @refresh="onRefresh"
     >
         <view class="page-wrap board">
-            <view v-if="phase === 'loading' || phase === 'idle'" class="page-pad">
-                <base-skeleton :rows="4" />
+            <view v-if="phase === 'loading' || phase === 'idle'">
+                <base-skeleton :rows="4" variant="card" />
             </view>
 
             <base-empty
@@ -35,39 +35,45 @@
             <template v-else>
                 <!-- 周期：默认本月至今，服务端按 start_date/end_date 统计 -->
                 <view class="period">
-                    <text class="period__text">{{ periodText }}</text>
+                    <text class="period__text t-num">{{ periodText }}</text>
                 </view>
 
-                <!-- 收入：一眼看到本期与环比 -->
-                <base-card>
-                    <view class="hero">
-                        <text class="hero__label">本期净收入</text>
-                        <price size="xl" :content="overview.net_income ?? 0" color="var(--c-ink)" />
-                        <view class="hero__growth" :class="growthClass(overview.income_growth)">
-                            <tn-icon
-                                :name="growthIcon(overview.income_growth)"
-                                :size="20"
-                                class="hero__growth-icon"
-                            />
-                            <text class="hero__growth-text">
-                                {{ growthText(overview.income_growth) }} 环比
-                            </text>
-                        </view>
+                <!-- 收入：深墨主卡，一眼看到本期净收入与环比 -->
+                <view class="income">
+                    <text class="income__label">本期净收入</text>
+                    <view class="income__value">
+                        <rolling-number
+                            :value="netIncome"
+                            prefix="¥"
+                            :decimals="2"
+                            :thousands="true"
+                            :min-chars="5"
+                        />
+                    </view>
+                    <view class="income__growth" :class="growthClass(overview.income_growth)">
+                        <tn-icon
+                            :name="growthIcon(overview.income_growth)"
+                            :size="20"
+                            class="income__growth-icon"
+                        />
+                        <text class="income__growth-text t-num">
+                            {{ growthText(overview.income_growth) }} 环比
+                        </text>
                     </view>
 
-                    <view class="mini">
-                        <view v-for="m in incomeRows" :key="m.key" class="mini__item">
-                            <text class="mini__num">{{ m.value }}</text>
-                            <text class="mini__label">{{ m.label }}</text>
+                    <view class="income__rows">
+                        <view v-for="m in incomeRows" :key="m.key" class="income-stat">
+                            <text class="income-stat__num t-num">{{ m.value }}</text>
+                            <text class="income-stat__label">{{ m.label }}</text>
                         </view>
                     </view>
-                </base-card>
+                </view>
 
                 <!-- 团队与产能 -->
                 <section-header title="团队与档期" :bar="true" />
                 <view class="sum">
                     <view v-for="s in teamRows" :key="s.key" class="sum__item">
-                        <text class="sum__num">{{ s.value }}</text>
+                        <text class="sum__num t-num">{{ s.value }}</text>
                         <text class="sum__label">{{ s.label }}</text>
                     </view>
                 </view>
@@ -78,16 +84,18 @@
                             <text class="rate__label"
                                 >{{ capacity.month_label || '本月' }} 档期占用</text
                             >
-                            <text class="rate__value">{{ capacity.booking_rate ?? 0 }}%</text>
+                            <text class="rate__value t-num">{{ capacityRateText }}%</text>
                         </view>
-                        <!-- 进度条：宽度用内联 style，刻度来自服务端，不用动画 -->
-                        <view class="rate__track">
-                            <view
-                                class="rate__fill"
-                                :style="{ width: barWidth(capacity.booking_rate) }"
-                            />
+
+                        <!-- 20 格刻度槽：填充层只改 transform: scaleX（不改 width），降级动效时直接落终态 -->
+                        <view class="rate__track" aria-hidden="true">
+                            <view class="rate__ticks">
+                                <view v-for="i in CAPACITY_SLOTS" :key="i" class="rate__tick" />
+                            </view>
+                            <view class="rate__fill" :style="{ transform: `scaleX(${capacityScale})` }" />
                         </view>
-                        <text class="rate__hint">
+
+                        <text class="rate__hint t-num">
                             已占 {{ capacity.month_occupied_slots ?? 0 }} / 共
                             {{ capacity.month_total_slots ?? 0 }} 个档期
                         </text>
@@ -97,22 +105,30 @@
                 <!-- 待办 -->
                 <section-header title="待处理" :bar="true" />
                 <base-card>
-                    <view
-                        v-for="(t, i) in todoRows"
-                        :key="t.key"
-                        class="todo__row"
-                        :class="{ 'todo__row--divided': i > 0 }"
-                    >
-                        <text class="todo__label">{{ t.label }}</text>
-                        <text class="todo__num">{{ t.value }}</text>
+                    <view class="todo" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                        <view
+                            v-for="(t, i) in todoRows"
+                            :key="t.key"
+                            class="todo__row"
+                            :class="{ 'todo__row--divided': i > 0 }"
+                            :style="{ '--i': i }"
+                        >
+                            <text class="todo__label">{{ t.label }}</text>
+                            <text class="todo__num t-num">{{ t.value }}</text>
+                        </view>
                     </view>
                 </base-card>
 
                 <!-- 成员负载 -->
                 <template v-if="members.length">
                     <section-header title="成员负载" :bar="true" />
-                    <view class="members">
-                        <base-card v-for="m in members" :key="m.id" compact>
+                    <view class="members" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                        <base-card
+                            v-for="(m, index) in members"
+                            :key="m.id"
+                            compact
+                            :style="{ '--i': index }"
+                        >
                             <view class="member">
                                 <image
                                     v-if="m.avatar"
@@ -128,12 +144,12 @@
                                 </view>
                                 <view class="member__body">
                                     <text class="member__name ellipsis">{{ m.name }}</text>
-                                    <text class="member__meta">
+                                    <text class="member__meta t-num">
                                         近 30 天 {{ m.recent_order_count ?? 0 }} 单 · 待跟进
                                         {{ m.follow_up_count ?? 0 }}
                                     </text>
                                 </view>
-                                <text class="member__slots">
+                                <text class="member__slots t-num">
                                     {{ m.upcoming_booked_slots ?? 0 }} 档
                                 </text>
                             </view>
@@ -151,9 +167,9 @@
  * 经营驾驶舱（管理员）。
  *
  * 小程序用户没有后台 token，服务端用「la_admin.user_id 绑定 + la_system_menu 节点」做鉴权桥接，
- * 所以这里先问 /dashboard/access 再决定是画数据还是画「无权限」—— 不发无谓的 403 请求。
+ * 所以这里先问 /dashboard/access 再决定是画数据还是画「无权限」——不发无谓的 403 请求。
  */
-import { computed, reactive, ref } from 'vue'
+import { computed, onUnmounted, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import {
     getDashboardAccess,
@@ -166,6 +182,9 @@ import { resolveErrorView } from '@/utils/resolveErrorView'
 import type { LoadPhase } from '@/api/types'
 
 type Phase = LoadPhase | 'denied'
+
+/** 产能刻度槽格数：20 格 = 5% 一格，只用 transform 推进，不做宽度动画 */
+const CAPACITY_SLOTS = 20
 
 const phase = ref<Phase>('idle')
 const rawError = ref<unknown>(null)
@@ -180,6 +199,12 @@ const members = ref<any[]>([])
 const periodText = computed(() => {
     const p = overview.period || {}
     return p.start_date && p.end_date ? `${p.start_date} 至 ${p.end_date}` : '本月至今'
+})
+
+/** 净收入必须落到有限数：接口可能回字符串 / null，rolling-number 收到 NaN 会渲染异常 */
+const netIncome = computed(() => {
+    const n = Number(overview.net_income)
+    return Number.isFinite(n) ? n : 0
 })
 
 const incomeRows = computed(() => [
@@ -203,6 +228,21 @@ const todoRows = computed(() => [
     { key: 'waitlist', label: '候补待跟进', value: todo.waitlist_total ?? 0 }
 ])
 
+/** 占用率：优先 booking_rate，缺失时用 已占/总档期 兜底，全部夹在 0–100 */
+const capacityRate = computed(() => {
+    const rate = Number(capacity.booking_rate)
+    if (Number.isFinite(rate) && rate > 0) return Math.min(100, rate)
+    const occupied = Number(capacity.month_occupied_slots)
+    const total = Number(capacity.month_total_slots)
+    if (Number.isFinite(occupied) && Number.isFinite(total) && total > 0) {
+        return Math.min(100, Math.max(0, (occupied / total) * 100))
+    }
+    return 0
+})
+
+const capacityScale = computed(() => capacityRate.value / 100)
+const capacityRateText = computed(() => Math.round(capacityRate.value))
+
 /** 金额：过万折成「万」，避免驾驶舱里一排 6 位数挤爆；格式化统一走 shared/utils/format */
 function money(v: any) {
     const n = Number(v || 0)
@@ -219,9 +259,9 @@ function growthIcon(v: any) {
 
 function growthClass(v: any) {
     const n = Number(v || 0)
-    if (n > 0) return 'hero__growth--up'
-    if (n < 0) return 'hero__growth--down'
-    return 'hero__growth--flat'
+    if (n > 0) return 'income__growth--up'
+    if (n < 0) return 'income__growth--down'
+    return 'income__growth--flat'
 }
 
 function growthText(v: any) {
@@ -230,10 +270,21 @@ function growthText(v: any) {
     return `${sign}${n}%`
 }
 
-function barWidth(rate: any) {
-    const n = Math.max(0, Math.min(100, Number(rate || 0)))
-    return `${n}%`
+/* ---- 错峰入场（§3.3）：待办与成员列表共用一条计时器，卸载时清理 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
 }
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
 
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
@@ -285,6 +336,7 @@ async function load() {
             members.value = Array.isArray(tm.members) ? tm.members : []
         }
         phase.value = 'ready'
+        playStagger()
     } catch (e) {
         rawError.value = e
         phase.value = 'error'
@@ -300,8 +352,7 @@ function onRefresh(done: () => void) {
 
 <style lang="scss" scoped>
 .board {
-    padding-top: var(--sp-2);
-    padding-bottom: calc(var(--sp-5) + var(--safe-bottom));
+    padding: var(--sp-2) var(--page-gutter) calc(var(--sp-5) + var(--safe-bottom));
 }
 
 .period {
@@ -313,15 +364,32 @@ function onRefresh(done: () => void) {
     }
 }
 
-/* ---------------- 收入主卡 ---------------- */
-.hero {
+/* ---------------- 收入主卡（深墨层次卡） ---------------- */
+.income {
     display: flex;
     flex-direction: column;
     gap: var(--sp-1);
+    padding: var(--sp-4);
+    border-radius: var(--r-lg);
+    background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__label {
         font-size: var(--fs-xs);
-        color: var(--c-ink-3);
+        color: var(--c-on-dark-2);
+    }
+
+    &__value {
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        white-space: nowrap;
+        font-family: var(--font-serif);
+        font-size: var(--fs-number);
+        font-weight: var(--fw-medium);
+        line-height: var(--lh-none);
+        color: var(--c-on-dark);
     }
 
     &__growth {
@@ -331,15 +399,16 @@ function onRefresh(done: () => void) {
         margin-top: var(--sp-1);
 
         &--up {
-            color: var(--c-danger);
+            /* 深墨底上浅色 --c-danger 对比不足，改用提亮的 on-dark 暖色 */
+            color: var(--c-warning-on-dark);
         }
 
         &--down {
-            color: var(--c-success);
+            color: var(--c-success-on-dark);
         }
 
         &--flat {
-            color: var(--c-ink-3);
+            color: var(--c-on-dark-2);
         }
     }
 
@@ -349,40 +418,38 @@ function onRefresh(done: () => void) {
 
     &__growth-text {
         font-size: var(--fs-xs);
-        font-variant-numeric: tabular-nums;
+    }
+
+    &__rows {
+        display: flex;
+        margin-top: var(--sp-4);
+        padding-top: var(--sp-3);
+        border-top: 1rpx solid var(--c-on-dark-fill-2);
     }
 }
 
-.mini {
+.income-stat {
+    flex: 1;
+    min-width: 0;
     display: flex;
-    margin-top: var(--sp-4);
-    padding-top: var(--sp-3);
-    border-top: 1rpx solid var(--c-line);
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-1);
 
-    &__item {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: var(--sp-1);
-
-        & + & {
-            border-left: 1rpx solid var(--c-line);
-        }
+    & + & {
+        border-left: 1rpx solid var(--c-on-dark-fill-2);
     }
 
     &__num {
         font-family: var(--font-serif);
         font-size: var(--fs-md);
         font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-        font-variant-numeric: tabular-nums;
+        color: var(--c-on-dark);
     }
 
     &__label {
         font-size: var(--fs-xs);
-        color: var(--c-ink-3);
+        color: var(--c-on-dark-2);
         white-space: nowrap;
     }
 }
@@ -412,7 +479,6 @@ function onRefresh(done: () => void) {
         font-weight: var(--fw-semibold);
         line-height: var(--lh-tight);
         color: var(--c-brand-text);
-        font-variant-numeric: tabular-nums;
     }
 
     &__label {
@@ -422,7 +488,7 @@ function onRefresh(done: () => void) {
     }
 }
 
-/* ---------------- 档期占用 ---------------- */
+/* ---------------- 档期占用（20 格刻度槽） ---------------- */
 .rate {
     display: flex;
     flex-direction: column;
@@ -445,20 +511,48 @@ function onRefresh(done: () => void) {
         font-size: var(--fs-md);
         font-weight: var(--fw-semibold);
         color: var(--c-brand-text);
-        font-variant-numeric: tabular-nums;
     }
 
     &__track {
-        height: 12rpx;
-        border-radius: var(--r-pill);
+        position: relative;
+        height: 40rpx;
+        border-radius: var(--r-sm);
         background: var(--c-neutral-bg);
         overflow: hidden;
     }
 
+    &__ticks {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        gap: 4rpx;
+        padding: 4rpx;
+        box-sizing: border-box;
+    }
+
+    &__tick {
+        flex: 1;
+        min-width: 0;
+        border-radius: var(--r-2);
+        background: var(--c-surface);
+        opacity: 0.6;
+    }
+
+    /* 填充层：只动 transform，width 恒为 100%；transform-origin 固定左中，缩放不牵引布局 */
     &__fill {
-        height: 100%;
-        border-radius: var(--r-pill);
+        position: absolute;
+        top: 4rpx;
+        bottom: 4rpx;
+        left: 4rpx;
+        right: 4rpx;
+        transform-origin: left center;
+        border-radius: var(--r-2);
         background: var(--c-brand-text);
+        transition: transform 720ms var(--ease-decel);
+        will-change: transform;
     }
 
     &__hint {
@@ -492,7 +586,6 @@ function onRefresh(done: () => void) {
         font-size: var(--fs-md);
         font-weight: var(--fw-semibold);
         color: var(--c-danger);
-        font-variant-numeric: tabular-nums;
     }
 }
 
@@ -550,9 +643,15 @@ function onRefresh(done: () => void) {
     }
 
     &__slots {
+        flex-shrink: 0;
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        font-variant-numeric: tabular-nums;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rate__fill {
+        transition: none;
     }
 }
 </style>

@@ -19,7 +19,7 @@
         <view v-else class="page-wrap dyn">
             <view class="sum">
                 <view v-for="s in summaryRows" :key="s.key" class="sum__item">
-                    <text class="sum__num">{{ s.value }}</text>
+                    <text class="sum__num t-num">{{ s.value }}</text>
                     <text class="sum__label">{{ s.label }}</text>
                 </view>
             </view>
@@ -51,7 +51,7 @@
             </view>
 
             <view v-if="phase === 'loading' || phase === 'idle'" class="page-pad">
-                <base-skeleton :rows="3" />
+                <base-skeleton :rows="3" variant="card" />
             </view>
 
             <base-empty
@@ -75,43 +75,50 @@
             />
 
             <view v-else class="page-pad list">
-                <base-card v-for="item in list" :key="item.id" compact>
-                    <view class="head">
-                        <text class="head__type">{{ item.dynamic_type_desc || '动态' }}</text>
-                        <status-tag
-                            :label="statusLabel(item)"
-                            :tone="statusTone(item.status)"
-                            size="sm"
-                        />
-                    </view>
-                    <text class="content ellipsis-2">{{ item.content || '（无正文）' }}</text>
-                    <view class="foot">
-                        <text class="foot__time">{{ item.create_time || '' }}</text>
-                        <text class="foot__hint">{{ item.status_hint || '' }}</text>
-                    </view>
-                    <text v-if="rejectText(item)" class="reason">{{ rejectText(item) }}</text>
-                    <!-- 卡片操作：待审/已发布可编辑；删除全状态可用（showModal 二次确认）。
-                         灰度关闭时整行隐藏 -->
-                    <view v-if="canWrite" class="ops">
-                        <view
-                            v-if="canEdit(item)"
-                            hover-class="is-pressed"
-                            class="ops__btn"
-                            :aria-label="`编辑动态：${item.title || ''}`"
-                            @tap="goEdit(item)"
-                        >
-                            <text class="ops__text">编辑</text>
+                <view class="list__items" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                    <base-card
+                        v-for="(item, index) in list"
+                        :key="item.id"
+                        compact
+                        :style="{ '--i': index }"
+                    >
+                        <view class="head">
+                            <text class="head__type">{{ item.dynamic_type_desc || '动态' }}</text>
+                            <status-tag
+                                :label="statusLabel(item)"
+                                :tone="statusTone(item.status)"
+                                size="sm"
+                            />
                         </view>
-                        <view
-                            hover-class="is-pressed"
-                            class="ops__btn"
-                            :aria-label="`删除动态：${item.title || ''}`"
-                            @tap="onDelete(item)"
-                        >
-                            <text class="ops__text ops__text--danger">删除</text>
+                        <text class="content ellipsis-2">{{ item.content || '（无正文）' }}</text>
+                        <view class="foot">
+                            <text class="foot__time t-num">{{ item.create_time || '' }}</text>
+                            <text class="foot__hint">{{ item.status_hint || '' }}</text>
                         </view>
-                    </view>
-                </base-card>
+                        <text v-if="rejectText(item)" class="reason">{{ rejectText(item) }}</text>
+                        <!-- 卡片操作：待审/已发布可编辑；删除全状态可用（showModal 二次确认）。
+                             灰度关闭时整行隐藏 -->
+                        <view v-if="canWrite" class="ops">
+                            <view
+                                v-if="canEdit(item)"
+                                hover-class="is-pressed"
+                                class="ops__btn"
+                                :aria-label="`编辑动态：${item.title || ''}`"
+                                @tap="goEdit(item)"
+                            >
+                                <text class="ops__text">编辑</text>
+                            </view>
+                            <view
+                                hover-class="is-pressed"
+                                class="ops__btn"
+                                :aria-label="`删除动态：${item.title || ''}`"
+                                @tap="onDelete(item)"
+                            >
+                                <text class="ops__text ops__text--danger">删除</text>
+                            </view>
+                        </view>
+                    </base-card>
+                </view>
 
                 <load-more :status="loadMoreStatus" @retry="loadMore" />
             </view>
@@ -129,7 +136,7 @@
  * 写入口受 feature_switch.staff_center_write 灰度控制（关闭时隐藏入口与操作行）。
  * 用户端「浏览」动态的页面在 pkg-catalog/case-list；这里管理的是自己发布的。
  */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { DynamicStatus, DYNAMIC_STATUS_NAME_MAP } from '@shared/contracts'
 import { getStaffDynamicList, staffDynamicDelete } from '@/api/staff-center'
@@ -140,6 +147,8 @@ import { useStaffWriteGate } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
+import { schemeColor } from '@/utils/scheme-color'
 
 const TABS = [
     { key: '', label: '全部' },
@@ -228,6 +237,7 @@ function canEdit(item: any) {
 
 function goPublish() {
     if (!guardAllowed.value) return
+    haptic('light', 'dyn-publish')
     navigate({ path: '/packages/pkg-staff/pages/dynamic-publish/dynamic-publish' })
 }
 
@@ -237,6 +247,7 @@ function goEdit(item: any) {
         toast.warning('动态编号缺失，请刷新后重试')
         return
     }
+    haptic('light', 'dyn-edit')
     navigate({
         path: '/packages/pkg-staff/pages/dynamic-publish/dynamic-publish',
         query: { id: item.id }
@@ -249,12 +260,14 @@ function onDelete(item: any) {
         toast.warning('动态编号缺失，请刷新后重试')
         return
     }
+    haptic('heavy', 'dyn-delete')
     uni.showModal({
         title: '删除动态',
         content: '删除后不可恢复，确认删除这条动态？',
         confirmText: '删除',
         cancelText: '取消',
-        confirmColor: '#D8584A',
+        // 删除属不可逆操作，uni.showModal 居中确认弹窗保持原生居中形态
+        confirmColor: schemeColor('danger'),
         success: async (r) => {
             if (!r.confirm) return
             try {
@@ -272,6 +285,7 @@ function onDelete(item: any) {
 
 function switchTab(key: string | number) {
     if (!guardAllowed.value) return
+    // 触觉由 chip-group 内部统一发 light，页面不重复触发（避免双震）
     active.value = key
     reload()
 }
@@ -290,6 +304,29 @@ function onPrimary() {
         uni.navigateTo({ url: '/pages/login/login' })
     }
 }
+
+/* ---- 列表错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
 
 let hasLoaded = false
 
@@ -328,6 +365,12 @@ async function onRefresh(done: () => void) {
 .sum {
     display: flex;
     margin: var(--sp-2) var(--sp-4) 0;
+    /* 汇总条按卡片表面渲染：浅色暖影分层、暗色由 --c-card-border 描边 */
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-card-border);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
 
     &__item {
         flex: 1;
@@ -373,10 +416,17 @@ async function onRefresh(done: () => void) {
     &__btn {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: var(--sp-1);
-        padding: var(--sp-2) var(--sp-3);
+        min-height: 88rpx;
+        padding: 0 var(--sp-3);
         border-radius: var(--r-pill);
         background: var(--c-brand-bg);
+        transition: transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.96);
+        }
     }
 
     &__icon {
@@ -402,6 +452,12 @@ async function onRefresh(done: () => void) {
 }
 
 .list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.list__items {
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
@@ -464,11 +520,18 @@ async function onRefresh(done: () => void) {
     border-top: 1rpx solid var(--c-line);
 
     &__btn {
-        min-height: 56rpx;
-        padding: var(--sp-1) var(--sp-3);
+        /* 相邻小按钮不叠加 .hit-88（伪元素会互相覆盖），直接把盒高做到 88rpx */
+        min-height: 88rpx;
+        padding: 0 var(--sp-3);
         border-radius: var(--r-pill);
         display: flex;
         align-items: center;
+        justify-content: center;
+        transition: transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.96);
+        }
     }
 
     &__text {
@@ -478,6 +541,19 @@ async function onRefresh(done: () => void) {
         &--danger {
             color: var(--c-danger);
         }
+    }
+}
+
+/* v10 §3.13：减弱动效下按压不缩放 */
+@media (prefers-reduced-motion: reduce) {
+    .action__btn,
+    .ops__btn {
+        transition: none;
+    }
+
+    .action__btn.is-pressed,
+    .ops__btn.is-pressed {
+        transform: none;
     }
 }
 </style>

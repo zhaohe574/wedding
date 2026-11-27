@@ -1,6 +1,6 @@
 <template>
     <view v-if="phase === 'checking'" class="staff-guard__pad">
-        <base-skeleton :rows="skeletonRows" />
+        <base-skeleton :rows="skeletonRows" variant="card" />
     </view>
 
     <base-empty

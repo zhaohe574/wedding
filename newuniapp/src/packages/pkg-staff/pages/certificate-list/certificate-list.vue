@@ -20,7 +20,7 @@
             <!-- 汇总：审核口径一眼看清，避免逐条数 -->
             <view class="sum">
                 <view v-for="s in summaryRows" :key="s.key" class="sum__item">
-                    <text class="sum__num">{{ s.value }}</text>
+                    <text class="sum__num t-num">{{ s.value }}</text>
                     <text class="sum__label">{{ s.label }}</text>
                 </view>
             </view>
@@ -52,7 +52,7 @@
             </view>
 
             <view v-if="phase === 'loading' || phase === 'idle'" class="page-pad">
-                <base-skeleton :rows="3" />
+                <base-skeleton :rows="3" variant="card" />
             </view>
 
             <base-empty
@@ -76,45 +76,54 @@
             />
 
             <view v-else class="page-pad list">
-                <base-card v-for="item in list" :key="item.id" compact>
-                    <view class="head">
-                        <text class="head__name ellipsis">{{ item.name || '未命名证书' }}</text>
-                        <status-tag
-                            :label="item.verify_status_desc || verifyLabel(item.verify_status)"
-                            :tone="verifyTone(item.verify_status)"
-                            size="sm"
-                        />
-                    </view>
-                    <text v-if="item.type" class="meta">{{ item.type }}</text>
-                    <view class="foot">
-                        <text class="foot__sn ellipsis">{{ item.sn || '暂无编号' }}</text>
-                        <text v-if="item.is_expired" class="foot__expired">已过期</text>
-                    </view>
-                    <text v-if="rejectText(item)" class="reject">
-                        驳回原因：{{ rejectText(item) }}
-                    </text>
-                    <!-- 卡片操作：编辑重新提交审核；删除全状态可用（showModal 二次确认）。
-                         编辑回填走 query 传参（契约无 certificateDetail 端点，不私造接口）。
-                         灰度关闭时整行隐藏 -->
-                    <view v-if="canWrite" class="ops">
-                        <view
-                            hover-class="is-pressed"
-                            class="ops__btn"
-                            :aria-label="`编辑证书：${item.name || ''}`"
-                            @tap="goEdit(item)"
-                        >
-                            <text class="ops__text">编辑</text>
+                <view class="list__items" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                    <base-card
+                        v-for="(item, index) in list"
+                        :key="item.id"
+                        compact
+                        :style="{ '--i': index }"
+                    >
+                        <view class="head">
+                            <text class="head__name ellipsis">{{ item.name || '未命名证书' }}</text>
+                            <status-tag
+                                :label="item.verify_status_desc || verifyLabel(item.verify_status)"
+                                :tone="verifyTone(item.verify_status)"
+                                size="sm"
+                            />
                         </view>
-                        <view
-                            hover-class="is-pressed"
-                            class="ops__btn"
-                            :aria-label="`删除证书：${item.name || ''}`"
-                            @tap="onDelete(item)"
-                        >
-                            <text class="ops__text ops__text--danger">删除</text>
+                        <text v-if="item.type" class="meta">{{ item.type }}</text>
+                        <view class="foot">
+                            <text class="foot__sn ellipsis t-num">{{
+                                item.sn || '暂无编号'
+                            }}</text>
+                            <text v-if="item.is_expired" class="foot__expired">已过期</text>
                         </view>
-                    </view>
-                </base-card>
+                        <text v-if="rejectText(item)" class="reject">
+                            驳回原因：{{ rejectText(item) }}
+                        </text>
+                        <!-- 卡片操作：编辑重新提交审核；删除全状态可用（showModal 二次确认）。
+                             编辑回填走 query 传参（契约无 certificateDetail 端点，不私造接口）。
+                             灰度关闭时整行隐藏 -->
+                        <view v-if="canWrite" class="ops">
+                            <view
+                                hover-class="is-pressed"
+                                class="ops__btn"
+                                :aria-label="`编辑证书：${item.name || ''}`"
+                                @tap="goEdit(item)"
+                            >
+                                <text class="ops__text">编辑</text>
+                            </view>
+                            <view
+                                hover-class="is-pressed"
+                                class="ops__btn"
+                                :aria-label="`删除证书：${item.name || ''}`"
+                                @tap="onDelete(item)"
+                            >
+                                <text class="ops__text ops__text--danger">删除</text>
+                            </view>
+                        </view>
+                    </base-card>
+                </view>
 
                 <load-more :status="loadMoreStatus" @retry="loadMore" />
             </view>
@@ -132,7 +141,7 @@
  * 写入口受 feature_switch.staff_center_write 灰度控制（关闭时隐藏入口与操作行）。
  * 编辑页回填由本页跳转经 query 传参（契约无 certificateDetail 端点，不私造接口）。
  */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     StaffCertificateVerifyStatus,
@@ -146,6 +155,8 @@ import { useStaffWriteGate } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
+import { schemeColor } from '@/utils/scheme-color'
 
 const TABS = [
     { key: '', label: '全部' },
@@ -222,6 +233,7 @@ function rejectText(item: any) {
 
 function goCreate() {
     if (!guardAllowed.value) return
+    haptic('light', 'cert-create')
     navigate({ path: '/packages/pkg-staff/pages/certificate-edit/certificate-edit' })
 }
 
@@ -237,6 +249,7 @@ function goEdit(item: any) {
         toast.warning('证书编号缺失，请刷新后重试')
         return
     }
+    haptic('light', 'cert-edit')
     navigate({
         path: '/packages/pkg-staff/pages/certificate-edit/certificate-edit',
         query: {
@@ -258,12 +271,14 @@ function onDelete(item: any) {
         toast.warning('证书编号缺失，请刷新后重试')
         return
     }
+    haptic('heavy', 'cert-delete')
     uni.showModal({
         title: '删除证书',
         content: '删除后不可恢复，确认删除这个证书？',
         confirmText: '删除',
         cancelText: '取消',
-        confirmColor: '#D8584A',
+        // 删除属不可逆操作，uni.showModal 居中确认弹窗保持原生居中形态
+        confirmColor: schemeColor('danger'),
         success: async (r) => {
             if (!r.confirm) return
             try {
@@ -281,6 +296,7 @@ function onDelete(item: any) {
 
 function switchTab(key: string | number) {
     if (!guardAllowed.value) return
+    // 触觉由 chip-group 内部统一发 light，页面不重复触发（避免双震）
     active.value = key
     reload()
 }
@@ -299,6 +315,29 @@ function onPrimary() {
         uni.navigateTo({ url: '/pages/login/login' })
     }
 }
+
+/* ---- 列表错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
 
 let hasLoaded = false
 
@@ -337,6 +376,12 @@ async function onRefresh(done: () => void) {
 .sum {
     display: flex;
     margin: var(--sp-2) var(--sp-4) 0;
+    /* 汇总条按卡片表面渲染：浅色暖影分层、暗色由 --c-card-border 描边 */
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-card-border);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
 
     &__item {
         flex: 1;
@@ -382,10 +427,17 @@ async function onRefresh(done: () => void) {
     &__btn {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: var(--sp-1);
-        padding: var(--sp-2) var(--sp-3);
+        min-height: 88rpx;
+        padding: 0 var(--sp-3);
         border-radius: var(--r-pill);
         background: var(--c-brand-bg);
+        transition: transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.96);
+        }
     }
 
     &__icon {
@@ -411,6 +463,12 @@ async function onRefresh(done: () => void) {
 }
 
 .list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.list__items {
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
@@ -475,11 +533,18 @@ async function onRefresh(done: () => void) {
     border-top: 1rpx solid var(--c-line);
 
     &__btn {
-        min-height: 56rpx;
-        padding: var(--sp-1) var(--sp-3);
+        /* 相邻小按钮不叠加 .hit-88（伪元素会互相覆盖），直接把盒高做到 88rpx */
+        min-height: 88rpx;
+        padding: 0 var(--sp-3);
         border-radius: var(--r-pill);
         display: flex;
         align-items: center;
+        justify-content: center;
+        transition: transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.96);
+        }
     }
 
     &__text {
@@ -489,6 +554,19 @@ async function onRefresh(done: () => void) {
         &--danger {
             color: var(--c-danger);
         }
+    }
+}
+
+/* v10 §3.13：减弱动效下按压不缩放 */
+@media (prefers-reduced-motion: reduce) {
+    .action__btn,
+    .ops__btn {
+        transition: none;
+    }
+
+    .action__btn.is-pressed,
+    .ops__btn.is-pressed {
+        transform: none;
     }
 }
 </style>

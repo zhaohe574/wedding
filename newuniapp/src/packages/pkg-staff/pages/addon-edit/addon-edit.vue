@@ -17,7 +17,7 @@
 
         <template v-else>
             <view v-if="loading" class="page-pad">
-                <base-skeleton :rows="5" />
+                <base-skeleton :rows="5" variant="card" />
             </view>
 
             <base-empty
@@ -174,7 +174,7 @@
                                     :dot="false"
                                 />
                             </view>
-                            <text class="pkg__price">¥{{ pkg.price }}</text>
+                            <text class="pkg__price t-num">¥{{ pkg.price }}</text>
                         </view>
                     </view>
                 </base-card>
@@ -187,7 +187,7 @@
                                 class="pill"
                                 :class="{ 'is-on': form.is_show === 1 }"
                                 hover-class="is-pressed"
-                                @tap="form.is_show = 1"
+                                @tap="setShow(1)"
                             >
                                 <text class="pill__text">已上架</text>
                             </view>
@@ -195,7 +195,7 @@
                                 class="pill"
                                 :class="{ 'is-on': form.is_show === 0 }"
                                 hover-class="is-pressed"
-                                @tap="form.is_show = 0"
+                                @tap="setShow(0)"
                             >
                                 <text class="pill__text">已停用</text>
                             </view>
@@ -209,6 +209,7 @@
                         variant="danger"
                         size="md"
                         :loading="deleting"
+                        haptic-level="heavy"
                         @click="onDelete"
                     />
                 </view>
@@ -227,6 +228,7 @@
                         :block="false"
                         :loading="submitting"
                         :disabled="submitting"
+                        haptic-level="medium"
                         @click="submit"
                     />
                 </template>
@@ -253,6 +255,8 @@ import { useStaffWriteGate, STAFF_WRITE_GATE_TIP } from '@/composables/useStaffW
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
+import { schemeColor } from '@/utils/scheme-color'
 
 const editId = ref(0)
 const isEdit = computed(() => editId.value > 0)
@@ -305,6 +309,7 @@ function isPackageSelected(id: number): boolean {
 
 function togglePackage(id: number) {
     if (!canWrite.value) return
+    haptic('light', 'addon-pkg-toggle')
     const numId = Number(id)
     if (isPackageSelected(numId)) {
         form.package_ids = form.package_ids.filter((x) => x !== numId)
@@ -315,15 +320,24 @@ function togglePackage(id: number) {
 
 function selectAllPackages() {
     if (!canWrite.value) return
+    haptic('light', 'addon-pkg-all')
     form.package_ids = packageOptions.value.map((pkg) => pkg.id)
 }
 
 function clearPackages() {
     if (!canWrite.value) return
+    haptic('light', 'addon-pkg-clear')
     form.package_ids = []
 }
 
+function setShow(val: 0 | 1) {
+    if (!canWrite.value || form.is_show === val) return
+    haptic('light', 'addon-show')
+    form.is_show = val
+}
+
 function goCreatePackage() {
+    // 触觉由「去新增套餐」base-button 统一发 light
     navigate({ path: '/packages/pkg-staff/pages/package-edit/package-edit' })
 }
 
@@ -419,6 +433,8 @@ function onDelete() {
         content: '删除后不可恢复，并会解除套餐关联，确认删除？',
         confirmText: '删除',
         cancelText: '取消',
+        // 删除属不可逆操作，uni.showModal 居中确认弹窗保持原生居中形态
+        confirmColor: schemeColor('danger'),
         success: async (r) => {
             if (!r.confirm) return
             deleting.value = true
@@ -543,12 +559,18 @@ onShow(() => {
 }
 
 .mini-btn {
-    min-height: 56rpx;
+    min-height: 88rpx;
     padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
     border: 1rpx solid var(--c-control-border);
     display: flex;
     align-items: center;
+    justify-content: center;
+    transition: transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.96);
+    }
 
     &__text {
         font-size: var(--fs-xs);
@@ -592,10 +614,12 @@ onShow(() => {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
+    /* 可点行：盒高 88rpx + 控件边界色，未选中态也看得清边界 */
+    min-height: 88rpx;
     padding: var(--sp-2) var(--sp-3);
     border-radius: var(--r-md);
     background: var(--c-surface-2);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);
 
     &.is-on {
         border-color: var(--c-brand-text);
@@ -659,10 +683,19 @@ onShow(() => {
 }
 
 .pill {
-    padding: 10rpx 24rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 88rpx;
+    padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
     background: var(--c-bg);
     border: 1rpx solid var(--c-control-border);
+    transition: transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.96);
+    }
 
     &__text {
         font-size: var(--fs-xs);
@@ -687,5 +720,18 @@ onShow(() => {
 .bar__note {
     font-size: var(--fs-xs);
     color: var(--c-ink-3);
+}
+
+/* v10 §3.13：减弱动效下按压不缩放 */
+@media (prefers-reduced-motion: reduce) {
+    .mini-btn,
+    .pill {
+        transition: none;
+    }
+
+    .mini-btn.is-pressed,
+    .pill.is-pressed {
+        transform: none;
+    }
 }
 </style>

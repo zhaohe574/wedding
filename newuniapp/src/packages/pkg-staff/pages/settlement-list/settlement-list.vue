@@ -24,21 +24,29 @@
                     <status-tag :label="activeTabLabel" tone="primary" size="sm" :dot="false" />
                 </view>
                 <view class="hero__main">
-                    <text class="hero__label">已加载实结金额（{{ list.length }} 笔）</text>
-                    <text class="hero__amount">{{ money(totalActualAmount) }}</text>
+                    <text class="hero__label t-num">已加载实结金额（{{ list.length }} 笔）</text>
+                    <view class="hero__amount">
+                        <rolling-number
+                            :value="totalActualAmount"
+                            prefix="¥"
+                            :decimals="2"
+                            :thousands="true"
+                            :min-chars="5"
+                        />
+                    </view>
                 </view>
                 <view class="hero__stats">
                     <view class="hero-stat">
                         <text class="hero-stat__label">待确认收款</text>
-                        <text class="hero-stat__value">{{ waitConfirmCount }} 笔</text>
+                        <text class="hero-stat__value t-num">{{ waitConfirmCount }} 笔</text>
                     </view>
                     <view class="hero-stat">
                         <text class="hero-stat__label">已结算金额</text>
-                        <text class="hero-stat__value">{{ money(settledAmount) }}</text>
+                        <text class="hero-stat__value t-num">{{ money(settledAmount) }}</text>
                     </view>
                     <view class="hero-stat">
                         <text class="hero-stat__label">待补平台</text>
-                        <text class="hero-stat__value">{{ repayCount }} 笔</text>
+                        <text class="hero-stat__value t-num">{{ repayCount }} 笔</text>
                     </view>
                 </view>
             </view>
@@ -54,7 +62,7 @@
             </view>
 
             <view v-if="loading" class="page-pad">
-                <base-skeleton :rows="3" />
+                <base-skeleton :rows="3" variant="card" />
             </view>
 
             <base-empty
@@ -78,14 +86,20 @@
                 fixed
             />
 
-            <view v-else class="page-pad list">
-                <base-card v-for="item in list" :key="item.id" compact class="settle-card">
+            <view v-else class="page-pad list" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                <base-card
+                    v-for="(item, index) in list"
+                    :key="item.id"
+                    compact
+                    class="settle-card"
+                    :style="{ '--i': index }"
+                >
                     <view class="settle-card__head">
                         <view class="settle-card__copy">
                             <text class="settle-card__title ellipsis">{{
                                 item.orderTitle
                             }}</text>
-                            <text class="settle-card__meta">
+                            <text class="settle-card__meta t-num">
                                 {{ item.metaText }}
                             </text>
                         </view>
@@ -162,6 +176,7 @@
                             text="补交平台"
                             variant="danger"
                             size="sm"
+                            haptic-level="medium"
                             :loading="busyId === item.id && busyAction === 'repay'"
                             :disabled="busyId > 0"
                             @click="onRepayPlatform(item)"
@@ -171,6 +186,7 @@
                             text="确认收款"
                             variant="ink"
                             size="sm"
+                            haptic-level="medium"
                             :loading="busyId === item.id && busyAction === 'receive'"
                             :disabled="busyId > 0"
                             @click="onConfirmTransfer(item)"
@@ -201,7 +217,7 @@
  * 支持查看每笔服务结算与抽成明细、确认微信商家转账收款（确认后立即同步状态）、
  * 手动刷新转账状态，以及对平台实收不足的结算单发起线上补交（prepay from=staff_settlement_repay + payStatus 轮询）。
  */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import {
     STAFF_SETTLEMENT_STATUS_NAME_MAP,
@@ -419,6 +435,29 @@ const emptyTitle = computed(() => {
     return FB.EMPTY_DEFAULT
 })
 
+/* ---- 列表错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
+
 async function fetchPage(reset = false) {
     if (reset) {
         page.value = 1
@@ -587,6 +626,7 @@ async function pollRepayStatus(settlementId: number, paymentSn?: string): Promis
 
 function onRepayPlatform(item: DisplaySettlement) {
     if (!guardAllowed.value || busyId.value > 0) return
+    // 确认类二次弹窗保留居中形态：uni.showModal 是系统原生模态，不做可下拉关闭的抽屉
     uni.showModal({
         title: '补交平台抽成',
         content: `确认通过微信支付补交 ${money(item.dueLeft)}？（结算单 ${item.settlementSn}）`,
@@ -707,9 +747,10 @@ onUnload(() => {
 .hero {
     margin: var(--sp-2) var(--page-gutter) 0;
     padding: var(--sp-4);
-    border: 1rpx solid var(--c-brand-text);
+    border: 1rpx solid var(--c-card-border);
     border-radius: var(--r-lg);
     background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
+    box-shadow: var(--shadow-card);
 
     &__top {
         display: flex;

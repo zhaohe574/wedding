@@ -45,7 +45,7 @@
             </view>
 
             <view v-if="loading" class="page-pad">
-                <base-skeleton :rows="4" />
+                <base-skeleton :rows="4" variant="card" />
             </view>
 
             <base-empty
@@ -72,34 +72,41 @@
                             </view>
                         </view>
                         <view class="hero-card__total">
-                            <text class="hero-card__total-num">{{ panel.summary.total_count }}</text>
+                            <rolling-number
+                                class="hero-card__total-num"
+                                :value="statNum(panel.summary.total_count)"
+                            />
                             <text class="hero-card__total-unit">总场次</text>
                         </view>
                     </view>
 
                     <view class="hero-card__stats">
                         <view class="hero-stat">
-                            <text class="hero-stat__num">{{
-                                panel.summary.pending_confirm_count
-                            }}</text>
+                            <rolling-number
+                                class="hero-stat__num"
+                                :value="statNum(panel.summary.pending_confirm_count)"
+                            />
                             <text class="hero-stat__label">待确认</text>
                         </view>
                         <view class="hero-stat">
-                            <text class="hero-stat__num">{{
-                                panel.summary.pending_service_count
-                            }}</text>
+                            <rolling-number
+                                class="hero-stat__num"
+                                :value="statNum(panel.summary.pending_service_count)"
+                            />
                             <text class="hero-stat__label">待服务</text>
                         </view>
                         <view class="hero-stat">
-                            <text class="hero-stat__num">{{
-                                panel.summary.in_service_count
-                            }}</text>
+                            <rolling-number
+                                class="hero-stat__num"
+                                :value="statNum(panel.summary.in_service_count)"
+                            />
                             <text class="hero-stat__label">服务中</text>
                         </view>
                         <view class="hero-stat">
-                            <text class="hero-stat__num">{{
-                                panel.summary.completed_count
-                            }}</text>
+                            <rolling-number
+                                class="hero-stat__num"
+                                :value="statNum(panel.summary.completed_count)"
+                            />
                             <text class="hero-stat__label">已完成</text>
                         </view>
                     </view>
@@ -109,7 +116,7 @@
                 <base-card compact class="checklist-card">
                     <view class="checklist__head">
                         <text class="checklist__title">当日执行自检清单</text>
-                        <text class="checklist__progress"
+                        <text class="checklist__progress t-num"
                             >{{ checkedCount }}/{{ CHECKLIST_ITEMS.length }} 项已完成</text
                         >
                     </view>
@@ -158,215 +165,218 @@
                         :bar="true"
                         flush
                     />
-                    <base-card
-                        v-for="item in panel.orders"
-                        :key="item.order_id"
-                        compact
-                        class="order-card"
-                    >
-                        <view class="order-card__head">
-                            <view class="order-card__title-wrap">
-                                <text class="order-card__pkg">{{
-                                    item.items?.[0]?.package_name || '婚礼服务订单'
-                                }}</text>
-                                <text class="order-card__sn">单号 {{ item.order_sn }}</text>
+                    <view class="order-list" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                        <base-card
+                            v-for="(item, index) in panel.orders"
+                            :key="item.order_id"
+                            compact
+                            class="order-card"
+                            :style="{ '--i': index }"
+                        >
+                            <view class="order-card__head">
+                                <view class="order-card__title-wrap">
+                                    <text class="order-card__pkg">{{
+                                        item.items?.[0]?.package_name || '婚礼服务订单'
+                                    }}</text>
+                                    <text class="order-card__sn">单号 {{ item.order_sn }}</text>
+                                </view>
+                                <view class="order-card__tags">
+                                    <status-tag
+                                        v-if="item.has_pending_change"
+                                        label="变更待确认"
+                                        tone="warning"
+                                        size="sm"
+                                    />
+                                    <status-tag
+                                        :label="orderStatusLabel(item)"
+                                        :tone="orderStatusTone(item)"
+                                        size="sm"
+                                    />
+                                </view>
                             </view>
-                            <view class="order-card__tags">
-                                <status-tag
-                                    v-if="item.has_pending_change"
-                                    label="变更待确认"
-                                    tone="warning"
-                                    size="sm"
-                                />
-                                <status-tag
-                                    :label="orderStatusLabel(item)"
-                                    :tone="orderStatusTone(item)"
-                                    size="sm"
-                                />
-                            </view>
-                        </view>
 
-                        <!-- 套餐与附加项 -->
-                        <view v-if="item.items?.length" class="pkg-box">
-                            <view v-for="sub in item.items" :key="sub.id" class="pkg-box__row">
-                                <text class="pkg-box__name"
-                                    >{{ sub.package_name }} × {{ sub.quantity }}</text
-                                >
-                                <text v-if="sub.addons?.length" class="pkg-box__addons">
-                                    附加：{{
-                                        sub.addons
-                                            .map((a) => `${a.name}×${a.quantity}`)
-                                            .join('、')
-                                    }}
-                                </text>
-                            </view>
-                        </view>
-
-                        <!-- 联系与场地信息 -->
-                        <view class="info-list">
-                            <view class="info-row">
-                                <text class="info-row__label">现场联系人</text>
-                                <view class="info-row__right">
-                                    <text class="info-row__value">
-                                        {{ item.contact_name || '客户' }}
-                                        {{
-                                            item.contact_mobile_masked
-                                                ? `（${item.contact_mobile_masked}）`
-                                                : ''
+                            <!-- 套餐与附加项 -->
+                            <view v-if="item.items?.length" class="pkg-box">
+                                <view v-for="sub in item.items" :key="sub.id" class="pkg-box__row">
+                                    <text class="pkg-box__name"
+                                        >{{ sub.package_name }} × {{ sub.quantity }}</text
+                                    >
+                                    <text v-if="sub.addons?.length" class="pkg-box__addons">
+                                        附加：{{
+                                            sub.addons
+                                                .map((a) => `${a.name}×${a.quantity}`)
+                                                .join('、')
                                         }}
                                     </text>
-                                    <view
-                                        v-if="item.contact_mobile"
-                                        hover-class="is-pressed"
-                                        class="mini-action"
-                                        @tap="dialPhone(item.contact_mobile)"
-                                    >
-                                        <text class="mini-action__text">拨打</text>
-                                    </view>
                                 </view>
                             </view>
 
-                            <view class="info-row">
-                                <text class="info-row__label">服务场地</text>
-                                <view class="info-row__right">
+                            <!-- 联系与场地信息 -->
+                            <view class="info-list">
+                                <view class="info-row">
+                                    <text class="info-row__label">现场联系人</text>
+                                    <view class="info-row__right">
+                                        <text class="info-row__value">
+                                            {{ item.contact_name || '客户' }}
+                                            {{
+                                                item.contact_mobile_masked
+                                                    ? `（${item.contact_mobile_masked}）`
+                                                    : ''
+                                            }}
+                                        </text>
+                                        <view
+                                            v-if="item.contact_mobile"
+                                            hover-class="is-pressed"
+                                            class="mini-action"
+                                            @tap="dialPhone(item.contact_mobile)"
+                                        >
+                                            <text class="mini-action__text">拨打</text>
+                                        </view>
+                                    </view>
+                                </view>
+
+                                <view class="info-row">
+                                    <text class="info-row__label">服务场地</text>
+                                    <view class="info-row__right">
+                                        <text class="info-row__value">{{
+                                            item.service_address || '未填写详细地址'
+                                        }}</text>
+                                        <view
+                                            v-if="item.service_address"
+                                            hover-class="is-pressed"
+                                            class="mini-action"
+                                            @tap="copyText(item.service_address, '已复制服务地址')"
+                                        >
+                                            <text class="mini-action__text">复制</text>
+                                        </view>
+                                    </view>
+                                </view>
+
+                                <view v-if="item.current_pay_stage_desc || item.pay_status_desc" class="info-row">
+                                    <text class="info-row__label">款项阶段</text>
+                                    <text class="info-row__value">
+                                        {{ item.current_pay_stage_desc || item.pay_status_desc }}
+                                    </text>
+                                </view>
+
+                                <view v-if="item.start_service_time_text" class="info-row">
+                                    <text class="info-row__label">开始履约</text>
                                     <text class="info-row__value">{{
-                                        item.service_address || '未填写详细地址'
+                                        item.start_service_time_text
                                     }}</text>
+                                </view>
+
+                                <view v-if="item.remark" class="info-row">
+                                    <text class="info-row__label">订单备注</text>
+                                    <text class="info-row__value">{{ item.remark }}</text>
+                                </view>
+                            </view>
+
+                            <!-- 同场协作人员 -->
+                            <view v-if="item.teammates?.length" class="sub-block">
+                                <text class="sub-block__title">同场协作团队</text>
+                                <view class="teammates">
                                     <view
-                                        v-if="item.service_address"
-                                        hover-class="is-pressed"
-                                        class="mini-action"
-                                        @tap="copyText(item.service_address, '已复制服务地址')"
+                                        v-for="tm in item.teammates"
+                                        :key="`${tm.staff_id}-${tm.category_name}`"
+                                        class="teammate-pill"
                                     >
-                                        <text class="mini-action__text">复制</text>
+                                        <text class="teammate-pill__text">
+                                            {{ tm.category_name || '协作' }} · {{ tm.staff_name }}
+                                        </text>
                                     </view>
                                 </view>
                             </view>
 
-                            <view v-if="item.current_pay_stage_desc || item.pay_status_desc" class="info-row">
-                                <text class="info-row__label">款项阶段</text>
-                                <text class="info-row__value">
-                                    {{ item.current_pay_stage_desc || item.pay_status_desc }}
-                                </text>
-                            </view>
-
-                            <view v-if="item.start_service_time_text" class="info-row">
-                                <text class="info-row__label">开始履约</text>
-                                <text class="info-row__value">{{
-                                    item.start_service_time_text
-                                }}</text>
-                            </view>
-
-                            <view v-if="item.remark" class="info-row">
-                                <text class="info-row__label">订单备注</text>
-                                <text class="info-row__value">{{ item.remark }}</text>
-                            </view>
-                        </view>
-
-                        <!-- 同场协作人员 -->
-                        <view v-if="item.teammates?.length" class="sub-block">
-                            <text class="sub-block__title">同场协作团队</text>
-                            <view class="teammates">
-                                <view
-                                    v-for="tm in item.teammates"
-                                    :key="`${tm.staff_id}-${tm.category_name}`"
-                                    class="teammate-pill"
-                                >
-                                    <text class="teammate-pill__text">
-                                        {{ tm.category_name || '协作' }} · {{ tm.staff_name }}
-                                    </text>
+                            <!-- 新人问卷要点与避讳提醒 -->
+                            <view v-if="item.questionnaire" class="sub-block">
+                                <view class="sub-block__head">
+                                    <text class="sub-block__title">新人问卷要点</text>
+                                    <text class="sub-block__meta">{{
+                                        item.questionnaire.status_desc || '已记录'
+                                    }}</text>
                                 </view>
-                            </view>
-                        </view>
-
-                        <!-- 新人问卷要点与避讳提醒 -->
-                        <view v-if="item.questionnaire" class="sub-block">
-                            <view class="sub-block__head">
-                                <text class="sub-block__title">新人问卷要点</text>
-                                <text class="sub-block__meta">{{
-                                    item.questionnaire.status_desc || '已记录'
-                                }}</text>
-                            </view>
-                            <view v-if="item.questionnaire.highlights?.length" class="q-list">
-                                <view
-                                    v-for="(h, idx) in item.questionnaire.highlights"
-                                    :key="`${item.order_id}-q-${idx}`"
-                                    class="q-item"
-                                    :class="{ 'is-warning': isTabooHighlight(h) }"
-                                >
-                                    <text class="q-item__title">
-                                        {{ h.category ? `[${h.category}] ` : '' }}{{ h.title }}
-                                    </text>
-                                    <text class="q-item__answer">{{ h.answer }}</text>
+                                <view v-if="item.questionnaire.highlights?.length" class="q-list">
+                                    <view
+                                        v-for="(h, idx) in item.questionnaire.highlights"
+                                        :key="`${item.order_id}-q-${idx}`"
+                                        class="q-item"
+                                        :class="{ 'is-warning': isTabooHighlight(h) }"
+                                    >
+                                        <text class="q-item__title">
+                                            {{ h.category ? `[${h.category}] ` : '' }}{{ h.title }}
+                                        </text>
+                                        <text class="q-item__answer">{{ h.answer }}</text>
+                                    </view>
                                 </view>
+                                <text v-else class="sub-block__empty">新人暂未填写补充细节</text>
                             </view>
-                            <text v-else class="sub-block__empty">新人暂未填写补充细节</text>
-                        </view>
 
-                        <!-- 履约操作与工具快捷入口 -->
-                        <view class="card-actions">
-                            <base-button
-                                v-if="item.can_staff_confirm"
-                                text="确认接单"
-                                variant="ink"
-                                size="sm"
-                                :block="false"
-                                :loading="busyKey === `confirm:${item.order_id}`"
-                                :disabled="Boolean(busyKey)"
-                                @click="handleOrderFulfill('confirm', item)"
-                            />
-                            <base-button
-                                v-if="item.can_staff_start"
-                                text="开始履约"
-                                variant="gold"
-                                size="sm"
-                                :block="false"
-                                :loading="busyKey === `start:${item.order_id}`"
-                                :disabled="Boolean(busyKey)"
-                                @click="handleOrderFulfill('start', item)"
-                            />
-                            <base-button
-                                v-if="item.can_staff_complete"
-                                text="完成服务"
-                                variant="ink"
-                                size="sm"
-                                :block="false"
-                                :loading="busyKey === `complete:${item.order_id}`"
-                                :disabled="Boolean(busyKey)"
-                                @click="handleOrderFulfill('complete', item)"
-                            />
-                            <base-button
-                                text="档期海报"
-                                variant="ghost"
-                                size="sm"
-                                :block="false"
-                                :loading="busyKey === `poster-order:${item.order_id}`"
-                                :disabled="Boolean(busyKey)"
-                                @click="handleOrderPoster(item)"
-                            />
-                            <base-button
-                                text="发话术"
-                                variant="ghost"
-                                size="sm"
-                                :block="false"
-                                @click="goCopyTemplates(item.order_id, 0)"
-                            />
-                            <base-button
-                                text="新人档案"
-                                variant="ghost"
-                                size="sm"
-                                :block="false"
-                                @click="goCoupleDetail('order', item.order_id)"
-                            />
-                            <base-button
-                                text="订单详情"
-                                variant="text"
-                                size="sm"
-                                :block="false"
-                                @click="goOrderDetail(item.order_id)"
-                            />
-                        </view>
-                    </base-card>
+                            <!-- 履约操作与工具快捷入口 -->
+                            <view class="card-actions">
+                                <base-button
+                                    v-if="item.can_staff_confirm"
+                                    text="确认接单"
+                                    variant="ink"
+                                    size="sm"
+                                    :block="false"
+                                    :loading="busyKey === `confirm:${item.order_id}`"
+                                    :disabled="Boolean(busyKey)"
+                                    @click="handleOrderFulfill('confirm', item)"
+                                />
+                                <base-button
+                                    v-if="item.can_staff_start"
+                                    text="开始履约"
+                                    variant="gold"
+                                    size="sm"
+                                    :block="false"
+                                    :loading="busyKey === `start:${item.order_id}`"
+                                    :disabled="Boolean(busyKey)"
+                                    @click="handleOrderFulfill('start', item)"
+                                />
+                                <base-button
+                                    v-if="item.can_staff_complete"
+                                    text="完成服务"
+                                    variant="ink"
+                                    size="sm"
+                                    :block="false"
+                                    :loading="busyKey === `complete:${item.order_id}`"
+                                    :disabled="Boolean(busyKey)"
+                                    @click="handleOrderFulfill('complete', item)"
+                                />
+                                <base-button
+                                    text="档期海报"
+                                    variant="ghost"
+                                    size="sm"
+                                    :block="false"
+                                    :loading="busyKey === `poster-order:${item.order_id}`"
+                                    :disabled="Boolean(busyKey)"
+                                    @click="handleOrderPoster(item)"
+                                />
+                                <base-button
+                                    text="发话术"
+                                    variant="ghost"
+                                    size="sm"
+                                    :block="false"
+                                    @click="goCopyTemplates(item.order_id, 0)"
+                                />
+                                <base-button
+                                    text="新人档案"
+                                    variant="ghost"
+                                    size="sm"
+                                    :block="false"
+                                    @click="goCoupleDetail('order', item.order_id)"
+                                />
+                                <base-button
+                                    text="订单详情"
+                                    variant="text"
+                                    size="sm"
+                                    :block="false"
+                                    @click="goOrderDetail(item.order_id)"
+                                />
+                            </view>
+                        </base-card>
+                    </view>
                 </template>
 
                 <!-- 线下自主档期作战卡 -->
@@ -377,108 +387,111 @@
                         :bar="true"
                         flush
                     />
-                    <base-card
-                        v-for="m in panel.manual_schedules"
-                        :key="m.manual_schedule_id || m.id"
-                        compact
-                        class="order-card"
-                    >
-                        <view class="order-card__head">
-                            <view class="order-card__title-wrap">
-                                <text class="order-card__pkg">{{ m.service_name || '线下档期' }}</text>
-                                <text class="order-card__sn">{{
-                                    m.region_name || '个人录入档期'
-                                }}</text>
+                    <view class="order-list" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                        <base-card
+                            v-for="(m, index) in panel.manual_schedules"
+                            :key="m.manual_schedule_id || m.id"
+                            compact
+                            class="order-card"
+                            :style="{ '--i': index }"
+                        >
+                            <view class="order-card__head">
+                                <view class="order-card__title-wrap">
+                                    <text class="order-card__pkg">{{ m.service_name || '线下档期' }}</text>
+                                    <text class="order-card__sn">{{
+                                        m.region_name || '个人录入档期'
+                                    }}</text>
+                                </view>
+                                <status-tag
+                                    :label="m.status_desc || '已记录'"
+                                    :tone="manualStatusTone(m.status)"
+                                    size="sm"
+                                />
                             </view>
-                            <status-tag
-                                :label="m.status_desc || '已记录'"
-                                :tone="manualStatusTone(m.status)"
-                                size="sm"
-                            />
-                        </view>
 
-                        <view class="info-list">
-                            <view class="info-row">
-                                <text class="info-row__label">客户称呼</text>
-                                <view class="info-row__right">
-                                    <text class="info-row__value">
-                                        {{ m.customer_name || '未填写' }}
-                                        {{
-                                            m.customer_mobile_masked
-                                                ? `（${m.customer_mobile_masked}）`
-                                                : ''
-                                        }}
-                                    </text>
-                                    <view
-                                        v-if="m.customer_mobile"
-                                        hover-class="is-pressed"
-                                        class="mini-action"
-                                        @tap="dialPhone(m.customer_mobile)"
-                                    >
-                                        <text class="mini-action__text">拨打</text>
+                            <view class="info-list">
+                                <view class="info-row">
+                                    <text class="info-row__label">客户称呼</text>
+                                    <view class="info-row__right">
+                                        <text class="info-row__value">
+                                            {{ m.customer_name || '未填写' }}
+                                            {{
+                                                m.customer_mobile_masked
+                                                    ? `（${m.customer_mobile_masked}）`
+                                                    : ''
+                                            }}
+                                        </text>
+                                        <view
+                                            v-if="m.customer_mobile"
+                                            hover-class="is-pressed"
+                                            class="mini-action"
+                                            @tap="dialPhone(m.customer_mobile)"
+                                        >
+                                            <text class="mini-action__text">拨打</text>
+                                        </view>
                                     </view>
+                                </view>
+
+                                <view v-if="m.service_address" class="info-row">
+                                    <text class="info-row__label">服务场地</text>
+                                    <view class="info-row__right">
+                                        <text class="info-row__value">{{ m.service_address }}</text>
+                                        <view
+                                            hover-class="is-pressed"
+                                            class="mini-action"
+                                            @tap="copyText(m.service_address, '已复制服务地址')"
+                                        >
+                                            <text class="mini-action__text">复制</text>
+                                        </view>
+                                    </view>
+                                </view>
+
+                                <view v-if="m.remark" class="info-row">
+                                    <text class="info-row__label">备注事项</text>
+                                    <text class="info-row__value">{{ m.remark }}</text>
                                 </view>
                             </view>
 
-                            <view v-if="m.service_address" class="info-row">
-                                <text class="info-row__label">服务场地</text>
-                                <view class="info-row__right">
-                                    <text class="info-row__value">{{ m.service_address }}</text>
-                                    <view
-                                        hover-class="is-pressed"
-                                        class="mini-action"
-                                        @tap="copyText(m.service_address, '已复制服务地址')"
-                                    >
-                                        <text class="mini-action__text">复制</text>
-                                    </view>
-                                </view>
+                            <view class="card-actions">
+                                <base-button
+                                    v-if="m.can_complete"
+                                    text="标记已完成"
+                                    variant="ink"
+                                    size="sm"
+                                    :block="false"
+                                    :loading="busyKey === `manual-done:${m.manual_schedule_id || m.id}`"
+                                    :disabled="Boolean(busyKey)"
+                                    @click="handleManualComplete(m)"
+                                />
+                                <base-button
+                                    v-if="Number(m.status) !== 2"
+                                    text="档期海报"
+                                    variant="ghost"
+                                    size="sm"
+                                    :block="false"
+                                    :loading="
+                                        busyKey === `poster-manual:${m.manual_schedule_id || m.id}`
+                                    "
+                                    :disabled="Boolean(busyKey)"
+                                    @click="handleManualPoster(m)"
+                                />
+                                <base-button
+                                    text="发话术"
+                                    variant="ghost"
+                                    size="sm"
+                                    :block="false"
+                                    @click="goCopyTemplates(0, m.manual_schedule_id || m.id)"
+                                />
+                                <base-button
+                                    text="新人档案"
+                                    variant="ghost"
+                                    size="sm"
+                                    :block="false"
+                                    @click="goCoupleDetail('manual', m.manual_schedule_id || m.id)"
+                                />
                             </view>
-
-                            <view v-if="m.remark" class="info-row">
-                                <text class="info-row__label">备注事项</text>
-                                <text class="info-row__value">{{ m.remark }}</text>
-                            </view>
-                        </view>
-
-                        <view class="card-actions">
-                            <base-button
-                                v-if="m.can_complete"
-                                text="标记已完成"
-                                variant="ink"
-                                size="sm"
-                                :block="false"
-                                :loading="busyKey === `manual-done:${m.manual_schedule_id || m.id}`"
-                                :disabled="Boolean(busyKey)"
-                                @click="handleManualComplete(m)"
-                            />
-                            <base-button
-                                v-if="Number(m.status) !== 2"
-                                text="档期海报"
-                                variant="ghost"
-                                size="sm"
-                                :block="false"
-                                :loading="
-                                    busyKey === `poster-manual:${m.manual_schedule_id || m.id}`
-                                "
-                                :disabled="Boolean(busyKey)"
-                                @click="handleManualPoster(m)"
-                            />
-                            <base-button
-                                text="发话术"
-                                variant="ghost"
-                                size="sm"
-                                :block="false"
-                                @click="goCopyTemplates(0, m.manual_schedule_id || m.id)"
-                            />
-                            <base-button
-                                text="新人档案"
-                                variant="ghost"
-                                size="sm"
-                                :block="false"
-                                @click="goCoupleDetail('manual', m.manual_schedule_id || m.id)"
-                            />
-                        </view>
-                    </base-card>
+                        </base-card>
+                    </view>
                 </template>
             </view>
         </view>
@@ -490,7 +503,7 @@
 /**
  * 服务日作战面板：聚合当日全部平台订单、线下档期、新人问卷避讳、同场团队与履约动作。
  */
-import { computed, reactive, ref } from 'vue'
+import { computed, onUnmounted, reactive, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     ORDER_STATUS_NAME_MAP,
@@ -516,6 +529,7 @@ import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { toast } from '@/composables/useToast'
 import { navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 
 const CHECKLIST_ITEMS = [
@@ -569,6 +583,38 @@ const checkedCount = computed(
     () => CHECKLIST_ITEMS.filter((item) => Boolean(checklistState[item.key])).length
 )
 
+/** 汇总数字：rolling-number 只接受有限数，接口缺字段时落 0 */
+function statNum(value: unknown): number {
+    const n = Number(value ?? 0)
+    return Number.isFinite(n) ? n : 0
+}
+
+/* ---- 场次作战卡错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => {
+        const p = panel.value
+        return p ? p.orders.length + p.manual_schedules.length : 0
+    },
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
+
 function checklistStorageKey(dateStr: string): string {
     return `staff_service_day_checks:${dateStr}`
 }
@@ -591,6 +637,7 @@ function loadChecklist(dateStr: string): void {
 }
 
 function toggleChecklist(key: string): void {
+    haptic('light', 'service-day-check')
     const next = !checklistState[key]
     checklistState[key] = next
     const dateStr = panel.value?.date || activeDate.value
@@ -656,6 +703,7 @@ function reload(): void {
 
 function selectDate(dateStr: string): void {
     if (!dateStr || dateStr === activeDate.value || loading.value) return
+    haptic('light', 'service-day-date')
     activeDate.value = dateStr
     void fetchPanel()
 }
@@ -663,6 +711,7 @@ function selectDate(dateStr: string): void {
 function onPickDate(e: any): void {
     const picked = String(e?.detail?.value || '').trim().slice(0, 10)
     if (!picked || picked === activeDate.value) return
+    haptic('light', 'service-day-date-pick')
     activeDate.value = picked
     void fetchPanel()
 }
@@ -945,15 +994,25 @@ function onRefresh(done: () => void) {
     }
 }
 
+/* 日期胶囊与选日期按钮：视觉仍是小胶囊，热区直接给足 88rpx */
 .date-chip {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-1);
-    height: 60rpx;
+    min-height: 88rpx;
     padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
-    border: 1rpx solid var(--c-line-strong);
+    border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
+    box-sizing: border-box;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.97);
+    }
 
     &.is-active {
         border-color: var(--c-active-border);
@@ -983,13 +1042,19 @@ function onRefresh(done: () => void) {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-1);
-    height: 60rpx;
+    min-height: 88rpx;
     padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
     border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
     color: var(--c-ink);
     flex-shrink: 0;
+    box-sizing: border-box;
+    transition: transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.97);
+    }
 
     &__icon {
         color: inherit;
@@ -1010,8 +1075,10 @@ function onRefresh(done: () => void) {
 
 .hero-card {
     padding: var(--sp-4);
+    border: 1rpx solid var(--c-card-border);
     border-radius: var(--r-lg);
     background: linear-gradient(135deg, var(--c-dark-1), var(--c-dark-2));
+    box-shadow: var(--shadow-card);
     color: var(--c-on-dark);
     display: flex;
     flex-direction: column;
@@ -1180,13 +1247,18 @@ function onRefresh(done: () => void) {
     }
 }
 
+.order-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+
 .order-card {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
 
-    &__head {
-        display: flex;
+    &__head {        display: flex;
         align-items: flex-start;
         justify-content: space-between;
         gap: var(--sp-2);
@@ -1393,5 +1465,16 @@ function onRefresh(done: () => void) {
     flex-wrap: wrap;
     align-items: center;
     gap: var(--sp-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .date-chip,
+    .date-picker-btn {
+        transition: none;
+
+        &.is-pressed {
+            transform: none;
+        }
+    }
 }
 </style>

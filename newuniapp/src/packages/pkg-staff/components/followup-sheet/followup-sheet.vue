@@ -1,149 +1,129 @@
 <template>
-    <tn-popup
-        :model-value="modelValue"
-        open-direction="bottom"
-        bg-color="transparent"
-        radius="0"
-        :safe-area-inset-bottom="true"
-        @update:model-value="onPopupChange"
+    <!-- 跟进提醒：磁吸半屏抽屉。标题 / 关闭 / 拖拽 / 脚部安全区由 snap-sheet 统一承担 -->
+    <snap-sheet
+        v-model="visible"
+        :title="isEdit ? '编辑跟进提醒' : '新建跟进提醒'"
+        :enable-full="true"
+        :has-foot="true"
     >
-        <view class="sheet">
-            <view class="sheet__head">
-                <text class="sheet__title">{{ isEdit ? '编辑跟进提醒' : '新建跟进提醒' }}</text>
+        <!-- 关联新人场次 -->
+        <view v-if="lockedTarget" class="field">
+            <text class="field__label">关联场次</text>
+            <view class="locked-target">
+                <text class="locked-target__text">{{ lockedTarget.label }}</text>
+            </view>
+        </view>
+        <view v-else-if="recentTargets.length" class="field">
+            <text class="field__label">关联新人场次（选填）</text>
+            <scroll-view class="target-scroll" scroll-x :show-scrollbar="false">
+                <view class="target-row">
+                    <view
+                        hover-class="is-pressed"
+                        class="target-chip"
+                        :class="{ 'is-active': form.source_type === 'general' }"
+                        @tap="selectGeneralTarget"
+                    >
+                        <text class="target-chip__text">通用工作提醒</text>
+                    </view>
+                    <view
+                        v-for="t in recentTargets"
+                        :key="t.target_key"
+                        hover-class="is-pressed"
+                        class="target-chip"
+                        :class="{
+                            'is-active':
+                                form.source_type === t.source_type &&
+                                form.target_id === t.target_id
+                        }"
+                        @tap="selectTarget(t)"
+                    >
+                        <text class="target-chip__text">{{ t.title }}</text>
+                    </view>
+                </view>
+            </scroll-view>
+        </view>
+
+        <view class="field">
+            <text class="field__label">提醒类型 *</text>
+            <view class="type-list">
                 <view
+                    v-for="item in remindTypes"
+                    :key="item.value"
                     hover-class="is-pressed"
-                    class="sheet__close"
-                    aria-role="button"
-                    aria-label="关闭"
-                    @tap="close"
+                    class="type-chip"
+                    :class="{ 'is-active': form.remind_type === item.value }"
+                    @tap="pickRemindType(item)"
                 >
-                    <tn-icon name="close" :size="28" class="sheet__close-icon" />
+                    <text class="type-chip__text">{{ item.label }}</text>
+                </view>
+            </view>
+        </view>
+
+        <view class="field">
+            <text class="field__label">提醒事项标题 *</text>
+            <input
+                v-model="form.title"
+                class="field__input"
+                placeholder="如：确认仪式音乐及双方家长致辞名单"
+                placeholder-class="field__ph"
+                maxlength="100"
+            />
+        </view>
+
+        <view class="field">
+            <text class="field__label">提醒日期 *</text>
+            <view v-if="quickDateOptions.length" class="quick-dates">
+                <view
+                    v-for="qd in quickDateOptions"
+                    :key="qd.label"
+                    hover-class="is-pressed"
+                    class="quick-date-chip"
+                    :class="{ 'is-active': form.remind_date === qd.date }"
+                    @tap="pickQuickDate(qd.date)"
+                >
+                    <text class="quick-date-chip__text">{{ qd.label }}</text>
                 </view>
             </view>
 
-            <scroll-view class="sheet__body" scroll-y>
-                <!-- 关联新人场次 -->
-                <view v-if="lockedTarget" class="field">
-                    <text class="field__label">关联场次</text>
-                    <view class="locked-target">
-                        <text class="locked-target__text">{{ lockedTarget.label }}</text>
+            <view class="datetime-row">
+                <picker mode="date" :value="form.remind_date || todayStr" @change="onPickDate">
+                    <view hover-class="is-pressed" class="picker-box">
+                        <tn-icon name="calendar" :size="24" class="picker-box__icon" />
+                        <text class="picker-box__text t-num">{{
+                            form.remind_date || '选择日期'
+                        }}</text>
                     </view>
-                </view>
-                <view v-else-if="recentTargets.length" class="field">
-                    <text class="field__label">关联新人场次（选填）</text>
-                    <scroll-view class="target-scroll" scroll-x :show-scrollbar="false">
-                        <view class="target-row">
-                            <view
-                                hover-class="is-pressed"
-                                class="target-chip"
-                                :class="{ 'is-active': form.source_type === 'general' }"
-                                @tap="selectGeneralTarget"
-                            >
-                                <text class="target-chip__text">通用工作提醒</text>
-                            </view>
-                            <view
-                                v-for="t in recentTargets"
-                                :key="t.target_key"
-                                hover-class="is-pressed"
-                                class="target-chip"
-                                :class="{
-                                    'is-active':
-                                        form.source_type === t.source_type &&
-                                        form.target_id === t.target_id
-                                }"
-                                @tap="selectTarget(t)"
-                            >
-                                <text class="target-chip__text">{{ t.title }}</text>
-                            </view>
-                        </view>
-                    </scroll-view>
-                </view>
+                </picker>
 
-                <view class="field">
-                    <text class="field__label">提醒类型 *</text>
-                    <view class="type-list">
-                        <view
-                            v-for="item in remindTypes"
-                            :key="item.value"
-                            hover-class="is-pressed"
-                            class="type-chip"
-                            :class="{ 'is-active': form.remind_type === item.value }"
-                            @tap="pickRemindType(item)"
-                        >
-                            <text class="type-chip__text">{{ item.label }}</text>
-                        </view>
+                <picker mode="time" :value="form.remind_time" @change="onPickTime">
+                    <view hover-class="is-pressed" class="picker-box">
+                        <tn-icon name="clock" :size="24" class="picker-box__icon" />
+                        <text class="picker-box__text t-num">{{ form.remind_time }}</text>
                     </view>
-                </view>
+                </picker>
+            </view>
+        </view>
 
-                <view class="field">
-                    <text class="field__label">提醒事项标题 *</text>
-                    <input
-                        v-model="form.title"
-                        class="field__input"
-                        placeholder="如：确认仪式音乐及双方家长致辞名单"
-                        placeholder-class="field__ph"
-                        maxlength="100"
-                    />
-                </view>
+        <view class="field">
+            <view class="field__head">
+                <text class="field__label">补充备注（选填）</text>
+                <text class="field__count t-num">{{ form.remark.length }}/500</text>
+            </view>
+            <textarea
+                v-model="form.remark"
+                class="field__textarea"
+                placeholder="可记录需沟通的问题清单、待确认环节等"
+                placeholder-class="field__ph"
+                maxlength="500"
+            />
+        </view>
 
-                <view class="field">
-                    <text class="field__label">提醒日期 *</text>
-                    <view v-if="quickDateOptions.length" class="quick-dates">
-                        <view
-                            v-for="qd in quickDateOptions"
-                            :key="qd.label"
-                            hover-class="is-pressed"
-                            class="quick-date-chip"
-                            :class="{ 'is-active': form.remind_date === qd.date }"
-                            @tap="form.remind_date = qd.date"
-                        >
-                            <text class="quick-date-chip__text">{{ qd.label }}</text>
-                        </view>
-                    </view>
-
-                    <view class="datetime-row">
-                        <picker
-                            mode="date"
-                            :value="form.remind_date || todayStr"
-                            @change="onPickDate"
-                        >
-                            <view hover-class="is-pressed" class="picker-box">
-                                <tn-icon name="calendar" :size="24" class="picker-box__icon" />
-                                <text class="picker-box__text">{{
-                                    form.remind_date || '选择日期'
-                                }}</text>
-                            </view>
-                        </picker>
-
-                        <picker mode="time" :value="form.remind_time" @change="onPickTime">
-                            <view hover-class="is-pressed" class="picker-box">
-                                <tn-icon name="clock" :size="24" class="picker-box__icon" />
-                                <text class="picker-box__text">{{ form.remind_time }}</text>
-                            </view>
-                        </picker>
-                    </view>
-                </view>
-
-                <view class="field">
-                    <view class="field__head">
-                        <text class="field__label">补充备注（选填）</text>
-                        <text class="field__count">{{ form.remark.length }}/500</text>
-                    </view>
-                    <textarea
-                        v-model="form.remark"
-                        class="field__textarea"
-                        placeholder="可记录需沟通的问题清单、待确认环节等"
-                        placeholder-class="field__ph"
-                        maxlength="500"
-                    />
-                </view>
-            </scroll-view>
-
-            <view class="sheet__foot">
-                <view class="sheet__btn">
+        <template #foot>
+            <view class="foot">
+                <view class="foot__btn">
                     <base-button text="取消" variant="ghost" size="md" block @click="close" />
                 </view>
-                <view class="sheet__btn">
+                <view class="foot__btn">
                     <base-button
                         :text="saving ? '保存中…' : '保存提醒'"
                         variant="ink"
@@ -155,17 +135,22 @@
                     />
                 </view>
             </view>
-        </view>
-    </tn-popup>
+        </template>
+    </snap-sheet>
 </template>
 
 <script setup lang="ts">
 /**
- * 客户跟进提醒新建 / 编辑底部弹窗。
+ * 客户跟进提醒新建 / 编辑底部抽屉。
+ *
+ * 抽屉自身的关闭（遮罩 / 关闭键 / 下拉）不按 saving 拦截：snap-sheet 会自行收起并 emit，
+ * 父级吞掉 update:modelValue 会把组件留在「已收起但 modelValue=true」的锁死态。
+ * 防误关只落在脚部「取消」这类显式动作上。
  */
 import { computed, reactive, watch } from 'vue'
 import type { StaffFollowupReminderItem, StaffFollowupTargetOption } from '@/api/staff'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 
 const props = withDefaults(
     defineProps<{
@@ -205,6 +190,11 @@ const emit = defineEmits<{
         }
     ): void
 }>()
+
+const visible = computed({
+    get: () => props.modelValue,
+    set: (value: boolean) => emit('update:modelValue', value)
+})
 
 function offsetDateStr(daysFromToday: number, baseDateStr?: string): string {
     const base = baseDateStr ? new Date(`${baseDateStr}T00:00:00`) : new Date()
@@ -300,32 +290,39 @@ watch(
     { immediate: true }
 )
 
-function onPopupChange(val: boolean): void {
-    if (!val && props.saving) return
-    emit('update:modelValue', val)
-}
-
 function close(): void {
     if (props.saving) return
     emit('update:modelValue', false)
 }
 
 function selectGeneralTarget(): void {
+    if (form.source_type === 'general') return
+    haptic('light', 'followup-target')
     form.source_type = 'general'
     form.target_id = 0
 }
 
 function selectTarget(t: StaffFollowupTargetOption): void {
+    if (form.source_type === t.source_type && form.target_id === Number(t.target_id || 0)) return
+    haptic('light', 'followup-target')
     form.source_type = t.source_type
     form.target_id = Number(t.target_id || 0)
 }
 
 function pickRemindType(item: { value: string; label: string }): void {
+    if (form.remind_type === item.value) return
+    haptic('light', 'followup-type')
     const prevLabel = props.remindTypes.find((r) => r.value === form.remind_type)?.label || ''
     form.remind_type = item.value
     if (!form.title.trim() || form.title.trim() === prevLabel) {
         form.title = item.label
     }
+}
+
+function pickQuickDate(date: string): void {
+    if (form.remind_date === date) return
+    haptic('light', 'followup-date')
+    form.remind_date = date
 }
 
 function onPickDate(e: any): void {
@@ -365,52 +362,14 @@ function submit(): void {
 </script>
 
 <style lang="scss" scoped>
-.sheet {
-    background: var(--c-surface);
-    padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
+.foot {
+    display: flex;
+    gap: var(--sp-2);
+}
 
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--sp-2);
-    }
-
-    &__title {
-        font-size: var(--fs-lg);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__close {
-        width: 56rpx;
-        height: 56rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--c-ink-3);
-    }
-
-    &__close-icon {
-        color: inherit;
-    }
-
-    &__body {
-        max-height: 70vh;
-        margin-top: var(--sp-3);
-    }
-
-    &__foot {
-        display: flex;
-        gap: var(--sp-2);
-        margin-top: var(--sp-4);
-    }
-
-    &__btn {
-        flex: 1;
-        min-width: 0;
-    }
+.foot__btn {
+    flex: 1;
+    min-width: 0;
 }
 
 .field {
@@ -437,12 +396,11 @@ function submit(): void {
     &__count {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        font-variant-numeric: tabular-nums;
     }
 
     &__input {
         width: 100%;
-        height: 84rpx;
+        height: 88rpx;
         padding: 0 var(--sp-3);
         border-radius: var(--r-sm);
         border: 1rpx solid var(--c-control-border);
@@ -485,17 +443,27 @@ function submit(): void {
 
 .target-row {
     display: inline-flex;
+    align-items: center;
     gap: var(--sp-2);
 }
 
+/* 场次 / 类型 / 快捷日期芯片：热区统一 88rpx，视觉仍是胶囊 */
 .target-chip {
     display: inline-flex;
     align-items: center;
-    height: 52rpx;
+    min-height: 88rpx;
     padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
-    border: 1rpx solid var(--c-line-strong);
+    border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.97);
+    }
 
     &.is-active {
         border-color: var(--c-brand-text);
@@ -526,10 +494,21 @@ function submit(): void {
 
 .type-chip,
 .quick-date-chip {
-    padding: var(--sp-1) var(--sp-3);
+    display: inline-flex;
+    align-items: center;
+    min-height: 88rpx;
+    padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
     border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.97);
+    }
 
     &.is-active {
         border-color: var(--c-brand-text);
@@ -555,7 +534,7 @@ function submit(): void {
 }
 
 .picker-box {
-    height: 80rpx;
+    min-height: 88rpx;
     padding: 0 var(--sp-3);
     border-radius: var(--r-sm);
     border: 1rpx solid var(--c-control-border);
@@ -564,6 +543,7 @@ function submit(): void {
     align-items: center;
     gap: var(--sp-2);
     color: var(--c-ink-2);
+    box-sizing: border-box;
 
     &__icon {
         color: inherit;
@@ -572,7 +552,18 @@ function submit(): void {
     &__text {
         font-size: var(--fs-md);
         color: var(--c-ink);
-        font-variant-numeric: tabular-nums;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .target-chip,
+    .type-chip,
+    .quick-date-chip {
+        transition: none;
+
+        &.is-pressed {
+            transform: none;
+        }
     }
 }
 </style>

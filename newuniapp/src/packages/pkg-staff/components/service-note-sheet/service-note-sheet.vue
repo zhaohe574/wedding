@@ -1,131 +1,113 @@
 <template>
-    <tn-popup
-        :model-value="modelValue"
-        open-direction="bottom"
-        bg-color="transparent"
-        radius="0"
-        :safe-area-inset-bottom="true"
-        @update:model-value="onPopupChange"
+    <!-- 服务手记：磁吸半屏抽屉。标题 / 关闭 / 拖拽 / 脚部安全区由 snap-sheet 统一承担 -->
+    <snap-sheet
+        v-model="visible"
+        :title="isEdit ? '编辑服务手记' : '写服务手记'"
+        :enable-full="true"
+        :has-foot="true"
     >
-        <view class="sheet">
-            <view class="sheet__head">
-                <text class="sheet__title">{{ isEdit ? '编辑服务手记' : '写服务手记' }}</text>
+        <view class="field">
+            <text class="field__label">手记分类 *</text>
+            <view class="cat-list">
                 <view
+                    v-for="item in categories"
+                    :key="item.value"
                     hover-class="is-pressed"
-                    class="sheet__close"
-                    aria-role="button"
-                    aria-label="关闭"
-                    @tap="close"
+                    class="cat-chip"
+                    :class="{ 'is-active': form.category === item.value }"
+                    @tap="pickCategory(item.value)"
                 >
-                    <tn-icon name="close" :size="28" class="sheet__close-icon" />
+                    <text class="cat-chip__text">{{ item.label }}</text>
                 </view>
             </view>
+        </view>
 
-            <scroll-view class="sheet__body" scroll-y>
-                <view class="field">
-                    <text class="field__label">手记分类 *</text>
-                    <view class="cat-list">
-                        <view
-                            v-for="item in categories"
-                            :key="item.value"
-                            hover-class="is-pressed"
-                            class="cat-chip"
-                            :class="{ 'is-active': form.category === item.value }"
-                            @tap="form.category = item.value"
-                        >
-                            <text class="cat-chip__text">{{ item.label }}</text>
-                        </view>
-                    </view>
-                </view>
+        <view class="field">
+            <view class="field__head">
+                <text class="field__label">手记内容 *</text>
+                <text class="field__count t-num">{{ form.content.length }}/1000</text>
+            </view>
+            <textarea
+                v-model="form.content"
+                class="field__textarea"
+                placeholder="记录新人特殊忌讳、彩排走位要点、音乐偏好或现场复盘细节"
+                placeholder-class="field__ph"
+                maxlength="1000"
+            />
+        </view>
 
-                <view class="field">
-                    <view class="field__head">
-                        <text class="field__label">手记内容 *</text>
-                        <text class="field__count">{{ form.content.length }}/1000</text>
-                    </view>
-                    <textarea
-                        v-model="form.content"
-                        class="field__textarea"
-                        placeholder="记录新人特殊忌讳、彩排走位要点、音乐偏好或现场复盘细节"
-                        placeholder-class="field__ph"
-                        maxlength="1000"
+        <view class="field">
+            <view class="field__head">
+                <text class="field__label">现场附图（选填，最多 4 张）</text>
+                <text class="field__count t-num">{{ form.imageItems.length }}/4</text>
+            </view>
+            <view class="img-grid">
+                <view
+                    v-for="(img, idx) in form.imageItems"
+                    :key="`${img.uri}-${idx}`"
+                    class="img-slot"
+                >
+                    <image
+                        :src="img.url || img.uri"
+                        class="img-slot__pic"
+                        mode="aspectFill"
+                        @tap="previewImage(idx)"
                     />
-                </view>
-
-                <view class="field">
-                    <view class="field__head">
-                        <text class="field__label">现场附图（选填，最多 4 张）</text>
-                        <text class="field__count">{{ form.imageItems.length }}/4</text>
-                    </view>
-                    <view class="img-grid">
-                        <view
-                            v-for="(img, idx) in form.imageItems"
-                            :key="`${img.uri}-${idx}`"
-                            class="img-slot"
-                        >
-                            <image
-                                :src="img.url || img.uri"
-                                class="img-slot__pic"
-                                mode="aspectFill"
-                                @tap="previewImage(idx)"
-                            />
-                            <view
-                                hover-class="is-pressed"
-                                class="img-slot__del"
-                                @tap="removeImage(idx)"
-                            >
-                                <tn-icon name="close" :size="20" class="img-slot__del-icon" />
-                            </view>
-                        </view>
-
-                        <view
-                            v-if="form.imageItems.length < 4"
-                            hover-class="is-pressed"
-                            class="img-add"
-                            @tap="chooseImages"
-                        >
-                            <view class="img-add__badge">
-                                <tn-icon
-                                    :name="uploading ? 'loading' : 'add'"
-                                    :size="24"
-                                    class="img-add__icon"
-                                />
-                            </view>
-                            <text class="img-add__text">{{
-                                uploading ? '上传中…' : '添加图片'
-                            }}</text>
-                        </view>
+                    <view
+                        hover-class="is-pressed"
+                        class="img-slot__del hit-88"
+                        aria-role="button"
+                        aria-label="移除图片"
+                        @tap="removeImage(idx)"
+                    >
+                        <tn-icon name="close" :size="20" class="img-slot__del-icon" />
                     </view>
                 </view>
 
                 <view
+                    v-if="form.imageItems.length < 4"
                     hover-class="is-pressed"
-                    class="pin-row"
-                    :class="{ 'is-checked': form.is_pinned === 1 }"
-                    @tap="togglePinned"
+                    class="img-add"
+                    @tap="chooseImages"
                 >
-                    <view class="pin-row__box">
+                    <view class="img-add__badge">
                         <tn-icon
-                            v-if="form.is_pinned === 1"
-                            name="success"
-                            :size="22"
-                            class="pin-row__icon"
+                            :name="uploading ? 'loading' : 'add'"
+                            :size="24"
+                            class="img-add__icon"
                         />
                     </view>
-                    <view class="pin-row__texts">
-                        <text class="pin-row__title">置顶此手记到新人档案顶部</text>
-                        <text class="pin-row__desc"
-                            >重要禁忌、关键联系人或现场必看提示建议置顶</text
-                        >
-                    </view>
+                    <text class="img-add__text">{{ uploading ? '上传中…' : '添加图片' }}</text>
                 </view>
-            </scroll-view>
+            </view>
+        </view>
 
-            <view class="sheet__foot">
-                <view class="sheet__btn">
+        <view
+            hover-class="is-pressed"
+            class="pin-row"
+            :class="{ 'is-checked': form.is_pinned === 1 }"
+            @tap="togglePinned"
+        >
+            <view class="pin-row__box">
+                <tn-icon
+                    v-if="form.is_pinned === 1"
+                    name="success"
+                    :size="22"
+                    class="pin-row__icon"
+                />
+            </view>
+            <view class="pin-row__texts">
+                <text class="pin-row__title">置顶此手记到新人档案顶部</text>
+                <text class="pin-row__desc">重要禁忌、关键联系人或现场必看提示建议置顶</text>
+            </view>
+        </view>
+
+        <template #foot>
+            <view class="foot">
+                <view class="foot__btn">
                     <base-button text="取消" variant="ghost" size="md" block @click="close" />
                 </view>
-                <view class="sheet__btn">
+                <view class="foot__btn">
                     <base-button
                         :text="saving ? '保存中…' : '保存手记'"
                         variant="ink"
@@ -137,18 +119,23 @@
                     />
                 </view>
             </view>
-        </view>
-    </tn-popup>
+        </template>
+    </snap-sheet>
 </template>
 
 <script setup lang="ts">
 /**
- * 服务手记新建 / 编辑底部弹窗。
+ * 服务手记新建 / 编辑底部抽屉。
+ *
+ * 抽屉自身的关闭（遮罩 / 关闭键 / 下拉）不按 saving / uploading 拦截：
+ * snap-sheet 会自行收起并 emit，父级吞掉 update:modelValue 会把组件留在
+ * 「已收起但 modelValue=true」的锁死态。防误关只落在脚部「取消」上。
  */
 import { computed, reactive, ref, watch } from 'vue'
 import { uploadImage } from '@/api/app'
 import type { StaffServiceNoteItem } from '@/api/staff'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 
 const props = withDefaults(
     defineProps<{
@@ -176,6 +163,11 @@ const emit = defineEmits<{
         }
     ): void
 }>()
+
+const visible = computed({
+    get: () => props.modelValue,
+    set: (value: boolean) => emit('update:modelValue', value)
+})
 
 const uploading = ref(false)
 const isEdit = computed(() => Number(props.editing?.id || 0) > 0)
@@ -220,21 +212,24 @@ watch(
     { immediate: true }
 )
 
-function onPopupChange(val: boolean): void {
-    if (!val && (props.saving || uploading.value)) return
-    emit('update:modelValue', val)
-}
-
 function close(): void {
     if (props.saving || uploading.value) return
     emit('update:modelValue', false)
 }
 
+function pickCategory(value: string): void {
+    if (form.category === value) return
+    haptic('light', 'service-note-category')
+    form.category = value
+}
+
 function togglePinned(): void {
+    haptic('light', 'service-note-pin')
     form.is_pinned = form.is_pinned === 1 ? 0 : 1
 }
 
 function removeImage(idx: number): void {
+    haptic('light', 'service-note-image')
     form.imageItems.splice(idx, 1)
 }
 
@@ -249,6 +244,7 @@ function chooseImages(): void {
     const remain = Math.max(0, 4 - form.imageItems.length)
     if (remain <= 0) return
 
+    haptic('light', 'service-note-image-add')
     uni.chooseImage({
         count: remain,
         sizeType: ['compressed'],
@@ -298,52 +294,14 @@ function submit(): void {
 </script>
 
 <style lang="scss" scoped>
-.sheet {
-    background: var(--c-surface);
-    padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
+.foot {
+    display: flex;
+    gap: var(--sp-2);
+}
 
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--sp-2);
-    }
-
-    &__title {
-        font-size: var(--fs-lg);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__close {
-        width: 56rpx;
-        height: 56rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--c-ink-3);
-    }
-
-    &__close-icon {
-        color: inherit;
-    }
-
-    &__body {
-        max-height: 70vh;
-        margin-top: var(--sp-3);
-    }
-
-    &__foot {
-        display: flex;
-        gap: var(--sp-2);
-        margin-top: var(--sp-4);
-    }
-
-    &__btn {
-        flex: 1;
-        min-width: 0;
-    }
+.foot__btn {
+    flex: 1;
+    min-width: 0;
 }
 
 .field {
@@ -370,7 +328,6 @@ function submit(): void {
     &__count {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        font-variant-numeric: tabular-nums;
     }
 
     &__textarea {
@@ -394,10 +351,21 @@ function submit(): void {
 }
 
 .cat-chip {
-    padding: var(--sp-1) var(--sp-3);
+    display: inline-flex;
+    align-items: center;
+    min-height: 88rpx;
+    padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
     border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.97);
+    }
 
     &.is-active {
         border-color: var(--c-brand-text);
@@ -467,6 +435,11 @@ function submit(): void {
     justify-content: center;
     gap: 8rpx;
     color: var(--c-ink-2);
+    transition: transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.97);
+    }
 
     &__badge {
         width: 48rpx;
@@ -491,14 +464,17 @@ function submit(): void {
 }
 
 .pin-row {
-    margin-top: var(--sp-3);
-    padding: var(--sp-3);
-    border-radius: var(--r-sm);
-    border: 1rpx solid var(--c-line);
-    background: var(--c-surface-2);
     display: flex;
     align-items: flex-start;
     gap: var(--sp-2);
+    min-height: 88rpx;
+    margin-top: var(--sp-3);
+    padding: var(--sp-3);
+    border-radius: var(--r-sm);
+    border: 1rpx solid var(--c-card-border);
+    background: var(--c-surface-2);
+    box-sizing: border-box;
+    transition: background-color var(--dur-fast) var(--ease-out);
 
     &__box {
         width: 36rpx;
@@ -546,6 +522,17 @@ function submit(): void {
         font-size: var(--fs-xs);
         line-height: var(--lh-body);
         color: var(--c-ink-3);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cat-chip,
+    .img-add {
+        transition: none;
+
+        &.is-pressed {
+            transform: none;
+        }
     }
 }
 </style>

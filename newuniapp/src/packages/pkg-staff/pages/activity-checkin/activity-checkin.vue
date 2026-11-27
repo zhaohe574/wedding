@@ -40,6 +40,7 @@
                             text="查询凭证"
                             variant="ink"
                             size="sm"
+                            haptic-level="none"
                             :loading="querying"
                             @click="onQueryCode"
                         />
@@ -65,7 +66,7 @@
                 <view class="preview-card__rows">
                     <view class="p-row">
                         <text class="p-row__k">核销码</text>
-                        <text class="p-row__v p-row__v--code">{{
+                        <text class="p-row__v p-row__v--code t-num">{{
                             previewReg.checkin_code || normalizedCode
                         }}</text>
                     </view>
@@ -75,18 +76,18 @@
                     </view>
                     <view class="p-row">
                         <text class="p-row__k">手机号</text>
-                        <text class="p-row__v">{{ previewReg.contact_mobile || '—' }}</text>
+                        <text class="p-row__v t-num">{{ previewReg.contact_mobile || '—' }}</text>
                     </view>
                     <view class="p-row">
                         <text class="p-row__k">票种费用</text>
-                        <text class="p-row__v"
+                        <text class="p-row__v t-num"
                             >{{ previewReg.ticket_name || '—' }} ·
                             {{ previewReg.ticket_price_label || '免费' }}</text
                         >
                     </view>
                     <view class="p-row">
                         <text class="p-row__k">活动时间</text>
-                        <text class="p-row__v">{{
+                        <text class="p-row__v t-num">{{
                             formatShortTime(previewReg.activity_start_time)
                         }}</text>
                     </view>
@@ -102,6 +103,7 @@
                         text="确认签到核销"
                         variant="ink"
                         size="lg"
+                        haptic-level="medium"
                         :loading="submitting"
                         @click="onConfirmCheckin"
                     />
@@ -118,16 +120,23 @@
             <!-- 本次会话核销记录 -->
             <view v-if="recentLogs.length" class="logs">
                 <text class="logs__title">本次核销记录（{{ recentLogs.length }}）</text>
-                <view v-for="log in recentLogs" :key="log.id" class="logs__item">
-                    <view class="logs__main">
-                        <text class="logs__name"
-                            >{{ log.contact_name }} · {{ log.ticket_name }}</text
-                        >
-                        <text class="logs__sub ellipsis">{{ log.activity_title }}</text>
-                    </view>
-                    <view class="logs__right">
-                        <text class="logs__code">{{ log.checkin_code }}</text>
-                        <text class="logs__time">{{ log.time_text }}</text>
+                <view class="logs__items" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                    <view
+                        v-for="(log, index) in recentLogs"
+                        :key="log.id"
+                        class="logs__item"
+                        :style="{ '--i': index }"
+                    >
+                        <view class="logs__main">
+                            <text class="logs__name"
+                                >{{ log.contact_name }} · {{ log.ticket_name }}</text
+                            >
+                            <text class="logs__sub ellipsis">{{ log.activity_title }}</text>
+                        </view>
+                        <view class="logs__right">
+                            <text class="logs__code t-num">{{ log.checkin_code }}</text>
+                            <text class="logs__time t-num">{{ log.time_text }}</text>
+                        </view>
                     </view>
                 </view>
             </view>
@@ -137,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
@@ -146,6 +155,7 @@ import {
     previewStaffActivityCheckin
 } from '@/api/staff-center'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 import {
     formatClockTime,
     formatShortTime,
@@ -194,6 +204,7 @@ function resetPreview() {
 }
 
 function onScan() {
+    haptic('light', 'act-checkin-scan')
     uni.scanCode({
         onlyFromCamera: false,
         scanType: ['qrCode'],
@@ -218,6 +229,8 @@ async function onQueryCode() {
         toast.info('请输入或扫描核销码')
         return
     }
+    /* 查询按钮设为 haptic-level="none"，键盘 confirm 与按钮点击统一在这里震一次 */
+    haptic('light', 'act-checkin-query')
     querying.value = true
     try {
         const res = await previewStaffActivityCheckin({ code })
@@ -236,6 +249,22 @@ async function onQueryCode() {
         querying.value = false
     }
 }
+
+/* ---- 核销记录错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
 
 async function onConfirmCheckin() {
     if (!previewReg.value || !canCheckin.value || submitting.value) return
@@ -263,6 +292,7 @@ async function onConfirmCheckin() {
             },
             ...recentLogs.value.filter((item) => item.id !== logId)
         ].slice(0, 20)
+        playStagger()
     } catch (e: any) {
         toast.error(e?.message || '核销失败，请重试')
     } finally {
@@ -283,16 +313,17 @@ onLoad(() => {
 .scan-card {
     padding: var(--sp-4);
     border-radius: var(--r-md);
-    background: linear-gradient(
-        152deg,
-        var(--c-dark-1) 0%,
-        var(--c-dark-2) 58%,
-        var(--c-dark-3) 100%
-    );
-    border: 1rpx solid var(--c-primary-border);
+    background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
     display: flex;
     align-items: center;
     gap: var(--sp-3);
+    transition: transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.99);
+    }
 
     &__icon-wrap {
         width: 88rpx;
@@ -341,7 +372,8 @@ onLoad(() => {
     padding: var(--sp-3);
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__label {
         display: block;
@@ -360,7 +392,7 @@ onLoad(() => {
     &__input {
         flex: 1;
         min-width: 0;
-        height: 76rpx;
+        height: 88rpx;
         padding: 0 var(--sp-3);
         border-radius: var(--r-sm);
         background: var(--c-bg);
@@ -368,6 +400,7 @@ onLoad(() => {
         font-size: var(--fs-md);
         color: var(--c-ink);
         letter-spacing: 0.08em;
+        font-variant-numeric: tabular-nums;
     }
 
     &__ph {
@@ -385,7 +418,8 @@ onLoad(() => {
     padding: var(--sp-4);
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-primary-border);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__head {
         display: flex;
@@ -478,16 +512,22 @@ onLoad(() => {
         color: var(--c-ink-2);
     }
 
+    &__items {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-2);
+    }
+
     &__item {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: var(--sp-2);
         padding: var(--sp-3);
-        margin-bottom: var(--sp-2);
         border-radius: var(--r-md);
         background: var(--c-surface);
-        border: 1rpx solid var(--c-line);
+        border: 1rpx solid var(--c-card-border);
+        box-shadow: var(--shadow-card);
     }
 
     &__main {
@@ -527,6 +567,17 @@ onLoad(() => {
         margin-top: 4rpx;
         font-size: var(--fs-20);
         color: var(--c-ink-3);
+    }
+}
+
+/* v10 §3.13：减弱动效下按压不缩放 */
+@media (prefers-reduced-motion: reduce) {
+    .scan-card {
+        transition: none;
+
+        &.is-pressed {
+            transform: none;
+        }
     }
 }
 </style>

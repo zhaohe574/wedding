@@ -17,7 +17,7 @@
 
         <view v-else class="page-wrap detail-page">
             <view v-if="loading" class="page-pad loading-pad">
-                <base-skeleton :rows="5" />
+                <base-skeleton :rows="5" variant="card" />
             </view>
 
             <base-empty
@@ -44,7 +44,7 @@
                             <text class="hero-card__pkg">{{ detail.profile.package_name }}</text>
                         </view>
                         <view class="hero-card__status-col">
-                            <text class="hero-card__countdown">{{
+                            <text class="hero-card__countdown t-num">{{
                                 detail.profile.countdown_text
                             }}</text>
                             <text class="hero-card__status">{{
@@ -56,13 +56,13 @@
                     <view class="hero-card__meta">
                         <view class="hero-meta-row">
                             <text class="hero-meta-row__label">婚期日期</text>
-                            <text class="hero-meta-row__value">{{
+                            <text class="hero-meta-row__value t-num">{{
                                 detail.profile.service_date || '待定婚期'
                             }}</text>
                         </view>
                         <view v-if="detail.profile.customer_mobile_masked" class="hero-meta-row">
                             <text class="hero-meta-row__label">联系电话</text>
-                            <text class="hero-meta-row__value">{{
+                            <text class="hero-meta-row__value t-num">{{
                                 detail.profile.customer_mobile_masked
                             }}</text>
                         </view>
@@ -118,7 +118,7 @@
                     v-if="pinnedNote"
                     hover-class="is-pressed"
                     class="pinned-callout"
-                    @tap="activeTab = 'notes'"
+                    @tap="openNotesTab"
                 >
                     <view class="pinned-callout__head">
                         <text class="pinned-callout__badge">置顶手记 · {{ pinnedNote.category_label }}</text>
@@ -135,20 +135,24 @@
                         hover-class="is-pressed"
                         class="tab-item"
                         :class="{ 'is-active': activeTab === tab.key }"
-                        @tap="activeTab = tab.key"
+                        @tap="switchDetailTab(tab.key)"
                     >
                         <text class="tab-item__text">{{ tab.label }}</text>
                     </view>
                 </view>
 
                 <!-- Tab 1: 档案与新人问卷 -->
-                <view v-if="activeTab === 'info'" class="tab-panel">
+                <view
+                    v-if="activeTab === 'info'"
+                    class="tab-panel"
+                    :class="{ stagger: staggerIn, 'is-in': staggerIn }"
+                >
                     <base-card compact>
                         <section-header title="服务明细" flush />
                         <view class="kv-list">
                             <view v-if="detail.profile.order_sn" class="kv-row">
                                 <text class="kv-row__label">订单编号</text>
-                                <text class="kv-row__value">{{ detail.profile.order_sn }}</text>
+                                <text class="kv-row__value t-num">{{ detail.profile.order_sn }}</text>
                             </view>
                             <view class="kv-row">
                                 <text class="kv-row__label">主服务项</text>
@@ -235,12 +239,16 @@
                 </view>
 
                 <!-- Tab 2: 婚礼 Checklist -->
-                <view v-else-if="activeTab === 'checklist'" class="tab-panel">
+                <view
+                    v-else-if="activeTab === 'checklist'"
+                    class="tab-panel"
+                    :class="{ stagger: staggerIn, 'is-in': staggerIn }"
+                >
                     <base-card compact>
                         <view class="check-head">
                             <view class="check-head__texts">
                                 <text class="check-head__title">婚礼筹备 Checklist</text>
-                                <text class="check-head__sub">
+                                <text class="check-head__sub t-num">
                                     已完成 {{ detail.checklist.done_count }} /
                                     {{ detail.checklist.total_count }} 项（{{
                                         detail.checklist.progress_percent
@@ -293,7 +301,7 @@
                                             <text class="check-item__stage">{{
                                                 item.stage_label
                                             }}</text>
-                                            <text v-if="item.done_time_text" class="check-item__time"
+                                            <text v-if="item.done_time_text" class="check-item__time t-num"
                                                 >完成于 {{ item.done_time_text }}</text
                                             >
                                         </view>
@@ -327,7 +335,7 @@
                                 hover-class="is-pressed"
                                 class="stage-chip"
                                 :class="{ 'is-active': newCheckStage === st.value }"
-                                @tap="newCheckStage = st.value"
+                                @tap="pickStage(st.value)"
                             >
                                 <text class="stage-chip__text">{{ st.label }}</text>
                             </view>
@@ -354,7 +362,11 @@
                 </view>
 
                 <!-- Tab 3: 服务手记 -->
-                <view v-else-if="activeTab === 'notes'" class="tab-panel">
+                <view
+                    v-else-if="activeTab === 'notes'"
+                    class="tab-panel"
+                    :class="{ stagger: staggerIn, 'is-in': staggerIn }"
+                >
                     <view class="panel-top">
                         <base-button
                             text="写手记"
@@ -369,7 +381,13 @@
                         <text class="empty-block-hint">还没有服务手记</text>
                     </base-card>
 
-                    <base-card v-for="note in detail.notes" :key="note.id" compact class="note-card">
+                    <base-card
+                        v-for="(note, index) in detail.notes"
+                        :key="note.id"
+                        compact
+                        class="note-card"
+                        :style="{ '--i': index }"
+                    >
                         <view class="note-card__head">
                             <view class="note-card__tags">
                                 <status-tag
@@ -386,7 +404,7 @@
                                     :dot="false"
                                 />
                             </view>
-                            <text class="note-card__time">{{ note.update_time_text }}</text>
+                            <text class="note-card__time t-num">{{ note.update_time_text }}</text>
                         </view>
 
                         <text class="note-card__content">{{ note.content }}</text>
@@ -422,6 +440,7 @@
                                 variant="danger"
                                 size="sm"
                                 :block="false"
+                                haptic-level="none"
                                 @click="handleDeleteNote(note.id)"
                             />
                         </view>
@@ -429,7 +448,7 @@
                 </view>
 
                 <!-- Tab 4: 跟进提醒 -->
-                <view v-else class="tab-panel">
+                <view v-else class="tab-panel" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
                     <view class="panel-top">
                         <base-button
                             text="设提醒"
@@ -445,15 +464,16 @@
                     </base-card>
 
                     <base-card
-                        v-for="item in detail.followups"
+                        v-for="(item, index) in detail.followups"
                         :key="item.id"
                         compact
                         class="fup-card"
+                        :style="{ '--i': index }"
                     >
                         <view class="fup-card__head">
                             <view class="fup-card__left">
                                 <text class="fup-card__title">{{ item.title }}</text>
-                                <text class="fup-card__time">
+                                <text class="fup-card__time t-num">
                                     {{ item.remind_date }} {{ item.remind_time }} ·
                                     {{ item.remind_type_label }}
                                 </text>
@@ -497,6 +517,7 @@
                                 variant="danger"
                                 size="sm"
                                 :block="false"
+                                haptic-level="none"
                                 @click="handleDeleteFollowup(item.id)"
                             />
                         </view>
@@ -527,7 +548,7 @@
 /**
  * 服务人员：新人全周期档案详情页（档案问卷 / Checklist / 服务手记 / 跟进提醒）。
  */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     actStaffFollowup,
@@ -554,6 +575,7 @@ import { useStaffGuard } from '@/composables/useStaffGuard'
 import { toast } from '@/composables/useToast'
 import { navigate } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { haptic } from '@/utils/haptics'
 
 const {
     guardPhase,
@@ -638,6 +660,7 @@ async function fetchDetail(): Promise<void> {
             source_type: sourceType.value,
             target_id: targetId.value
         })
+        playStagger()
     } catch (e) {
         rawError.value = e
         error.value = true
@@ -650,13 +673,48 @@ function reload(): void {
     void fetchDetail()
 }
 
+/* ---- 卡片错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
+
+function switchDetailTab(key: 'info' | 'checklist' | 'notes' | 'followups'): void {
+    if (key === activeTab.value) return
+    haptic('light', 'couple-tab')
+    activeTab.value = key
+}
+
+function openNotesTab(): void {
+    haptic('light', 'couple-pinned-note')
+    activeTab.value = 'notes'
+}
+
+function pickStage(value: string): void {
+    if (value === newCheckStage.value) return
+    haptic('light', 'couple-checklist-stage')
+    newCheckStage.value = value
+}
+
 function dialPhone(mobile: string): void {
     if (!mobile) return
+    haptic('light', 'couple-dial')
     uni.makePhoneCall({ phoneNumber: mobile, fail: () => {} })
 }
 
 function copyText(text: string, msg: string): void {
     if (!text) return
+    haptic('light', 'couple-copy')
     uni.setClipboardData({
         data: text,
         success: () => toast.success(msg)
@@ -666,6 +724,7 @@ function copyText(text: string, msg: string): void {
 function goCopyTemplates(): void {
     const p = detail.value?.profile
     if (!p) return
+    haptic('light', 'couple-nav')
     const query =
         p.source_type === 'order' ? { order_id: p.order_id } : { manual_schedule_id: p.target_id }
     navigate({ path: '/packages/pkg-staff/pages/copy-templates/copy-templates', query })
@@ -674,6 +733,7 @@ function goCopyTemplates(): void {
 function goOrderDetail(): void {
     const p = detail.value?.profile
     if (!p?.order_id) return
+    haptic('light', 'couple-nav')
     navigate({
         path: '/packages/pkg-staff/pages/order-detail/order-detail',
         query: { id: p.order_id }
@@ -682,6 +742,7 @@ function goOrderDetail(): void {
 
 function goServiceDay(): void {
     const sDate = detail.value?.profile?.service_date
+    haptic('light', 'couple-nav')
     navigate({
         path: '/packages/pkg-staff/pages/service-day/service-day',
         query: sDate ? { date: sDate } : undefined
@@ -747,6 +808,7 @@ async function handleAddChecklist(): Promise<void> {
 
 async function handleToggleChecklist(id: number): Promise<void> {
     if (!detail.value || !id) return
+    haptic('light', 'couple-checklist-toggle')
     try {
         detail.value.checklist = await toggleStaffChecklistItem({ id })
     } catch (e: any) {
@@ -756,6 +818,7 @@ async function handleToggleChecklist(id: number): Promise<void> {
 
 function handleDeleteChecklist(id: number): void {
     if (!id) return
+    // 确认类二次弹窗保留居中形态：uni.showModal 是系统原生模态，不做可下拉关闭的抽屉
     uni.showModal({
         title: '删除待办项',
         content: '确认删除这条 Checklist 事项？',
@@ -763,6 +826,7 @@ function handleDeleteChecklist(id: number): void {
         cancelText: '取消',
         success: async (r) => {
             if (!r.confirm) return
+            haptic('heavy', 'couple-checklist-delete')
             try {
                 await deleteStaffChecklistItem({ id })
                 toast.success('已删除')
@@ -828,6 +892,7 @@ async function handleToggleNotePin(id: number): Promise<void> {
 
 function handleDeleteNote(id: number): void {
     if (!id) return
+    // 确认类二次弹窗保留居中形态：uni.showModal 是系统原生模态，不做可下拉关闭的抽屉
     uni.showModal({
         title: '删除服务手记',
         content: '确认删除这条服务手记？',
@@ -835,6 +900,7 @@ function handleDeleteNote(id: number): void {
         cancelText: '取消',
         success: async (r) => {
             if (!r.confirm) return
+            haptic('heavy', 'couple-note-delete')
             try {
                 await deleteStaffServiceNote({ id })
                 toast.success('手记已删除')
@@ -888,6 +954,7 @@ async function handleFollowupAct(
 }
 
 function handleDeleteFollowup(id: number): void {
+    // 确认类二次弹窗保留居中形态：uni.showModal 是系统原生模态，不做可下拉关闭的抽屉
     uni.showModal({
         title: '删除提醒',
         content: '确认删除这条跟进提醒？',
@@ -895,6 +962,7 @@ function handleDeleteFollowup(id: number): void {
         cancelText: '取消',
         success: async (r) => {
             if (!r.confirm) return
+            haptic('heavy', 'couple-followup-delete')
             try {
                 await deleteStaffFollowup({ id })
                 toast.success('已删除提醒')
@@ -984,8 +1052,9 @@ function onRefresh(done: () => void) {
 .hero-card {
     padding: var(--sp-4);
     border-radius: var(--r-lg);
-    background: linear-gradient(155deg, var(--c-dark-1), var(--c-dark-2));
-    border: 1rpx solid var(--c-primary-border);
+    background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
     color: var(--c-on-dark);
     display: flex;
     flex-direction: column;
@@ -1081,10 +1150,16 @@ function onRefresh(done: () => void) {
 }
 
 .hero-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 88rpx;
     padding: 8rpx var(--sp-3);
     border-radius: var(--r-pill);
     background: var(--c-dark-3);
     border: 1rpx solid var(--c-brand-soft);
+    box-sizing: border-box;
+    transition: background-color var(--dur-fast) var(--ease-out);
 
     &__text {
         font-size: var(--fs-xs);
@@ -1133,15 +1208,17 @@ function onRefresh(done: () => void) {
     padding: 6rpx;
     border-radius: var(--r-pill);
     background: var(--c-surface-2);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);
 }
 
 .tab-item {
-    height: 64rpx;
+    min-height: 88rpx;
     border-radius: var(--r-pill);
     display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
+    transition: background-color var(--dur-fast) var(--ease-out);
 
     &.is-active {
         background: var(--c-active-bg);
@@ -1390,7 +1467,13 @@ function onRefresh(done: () => void) {
     }
 
     &__del {
+        width: 88rpx;
+        min-height: 88rpx;
         padding: var(--sp-1);
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         color: var(--c-ink-3);
         flex-shrink: 0;
     }
@@ -1420,10 +1503,18 @@ function onRefresh(done: () => void) {
 }
 
 .stage-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 88rpx;
     padding: 6rpx var(--sp-2);
     border-radius: var(--r-pill);
     border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
+    box-sizing: border-box;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out);
 
     &.is-active {
         border-color: var(--c-brand-text);
@@ -1450,7 +1541,7 @@ function onRefresh(done: () => void) {
     &__input {
         flex: 1;
         min-width: 0;
-        height: 76rpx;
+        height: 88rpx;
         padding: 0 var(--sp-3);
         border-radius: var(--r-sm);
         border: 1rpx solid var(--c-control-border);
@@ -1528,6 +1619,15 @@ function onRefresh(done: () => void) {
         height: 144rpx;
         border-radius: var(--r-xs);
         background: var(--c-surface-2);
+    }
+}
+
+/* v10 §3.13：减弱动效下不做颜色过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .hero-btn,
+    .tab-item,
+    .stage-chip {
+        transition: none;
     }
 }
 </style>

@@ -17,7 +17,7 @@
 
         <view v-else class="page-wrap team-page">
             <view v-if="loading" class="page-pad loading-pad">
-                <base-skeleton :rows="4" />
+                <base-skeleton :rows="4" variant="card" />
             </view>
 
             <base-empty
@@ -41,7 +41,11 @@
                 fixed
             />
 
-            <view v-else class="page-pad team-body">
+            <view
+                v-else
+                class="page-pad team-body"
+                :class="{ stagger: staggerIn, 'is-in': staggerIn }"
+            >
                 <!-- 深墨团队总览卡 -->
                 <view class="team-hero">
                     <view class="team-hero__head">
@@ -95,23 +99,23 @@
 
                     <view v-if="data.summary" class="team-hero__stats">
                         <view class="t-stat">
-                            <text class="t-stat__num">
+                            <text class="t-stat__num t-num">
                                 {{ data.summary.enabled_members }}/{{ data.summary.total_members }}
                             </text>
                             <text class="t-stat__label">启用/总人数</text>
                         </view>
                         <view class="t-stat">
-                            <text class="t-stat__num">{{ data.summary.month_order_count }}</text>
+                            <text class="t-stat__num t-num">{{ data.summary.month_order_count }}</text>
                             <text class="t-stat__label">本月团队单</text>
                         </view>
                         <view class="t-stat">
-                            <text class="t-stat__num">{{
+                            <text class="t-stat__num t-num">{{
                                 data.summary.upcoming_7d_schedules
                             }}</text>
                             <text class="t-stat__label">近7日场次</text>
                         </view>
                         <view class="t-stat">
-                            <text class="t-stat__num">{{
+                            <text class="t-stat__num t-num">{{
                                 data.summary.pending_confirm_orders
                             }}</text>
                             <text class="t-stat__label">待确认单</text>
@@ -139,10 +143,11 @@
 
                 <!-- 成员卡片列表 -->
                 <base-card
-                    v-for="m in data.members"
+                    v-for="(m, index) in data.members"
                     :key="`${m.staff_id}-${m.member_id}`"
                     compact
                     class="member-card"
+                    :style="{ '--i': index }"
                 >
                     <view class="member-card__head">
                         <image
@@ -170,11 +175,11 @@
                                     size="sm"
                                 />
                             </view>
-                            <text class="member-card__meta">
+                            <text class="member-card__meta t-num">
                                 {{ m.category_name }} · {{ m.experience_years }}年 ·
                                 {{ Number(m.rating || 5).toFixed(1) }}分
                             </text>
-                            <text v-if="m.mobile_masked" class="member-card__sub">
+                            <text v-if="m.mobile_masked" class="member-card__sub t-num">
                                 {{ m.mobile_masked }}
                             </text>
                         </view>
@@ -182,15 +187,15 @@
 
                     <view class="member-card__kpis">
                         <view class="kpi-pill">
-                            <text class="kpi-pill__val">{{ m.month_booked_days }} 天</text>
+                            <text class="kpi-pill__val t-num">{{ m.month_booked_days }} 天</text>
                             <text class="kpi-pill__label">本月已约</text>
                         </view>
                         <view class="kpi-pill">
-                            <text class="kpi-pill__val">{{ m.pending_confirm_count }} 笔</text>
+                            <text class="kpi-pill__val t-num">{{ m.pending_confirm_count }} 笔</text>
                             <text class="kpi-pill__label">待确认单</text>
                         </view>
                         <view class="kpi-pill">
-                            <text class="kpi-pill__val">{{ m.available_days_14d }}/14 天</text>
+                            <text class="kpi-pill__val t-num">{{ m.available_days_14d }}/14 天</text>
                             <text class="kpi-pill__label">近两周可约</text>
                         </view>
                     </view>
@@ -218,7 +223,7 @@
                             class="heat-cell"
                             :class="day.available ? 'is-free' : 'is-busy'"
                         >
-                            <text class="heat-cell__date">{{ day.md_label }}</text>
+                            <text class="heat-cell__date t-num">{{ day.md_label }}</text>
                             <text class="heat-cell__state">{{
                                 day.available ? '可约' : '已满'
                             }}</text>
@@ -236,6 +241,7 @@
                             variant="ghost"
                             size="sm"
                             :block="false"
+                            haptic-level="none"
                             @click="dialPhone(m.mobile)"
                         />
                         <base-button
@@ -244,6 +250,7 @@
                             variant="ghost"
                             size="sm"
                             :block="false"
+                            haptic-level="none"
                             :disabled="actingMemberId === m.member_id"
                             @click="handleToggleStatus(m)"
                         />
@@ -253,6 +260,7 @@
                             variant="danger"
                             size="sm"
                             :block="false"
+                            haptic-level="none"
                             :disabled="actingMemberId === m.member_id"
                             @click="handleRemoveMember(m)"
                         />
@@ -270,7 +278,7 @@
 /**
  * 服务人员：我的团队成员协作与排班管理页。
  */
-import { computed, reactive, ref } from 'vue'
+import { computed, onUnmounted, reactive, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     getStaffTeamOverview,
@@ -285,6 +293,7 @@ import TeamMemberAddSheet from '../../components/team-member-add-sheet/team-memb
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { haptic } from '@/utils/haptics'
 
 const {
     guardPhase,
@@ -315,6 +324,22 @@ let firstShow = true
 const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 
+/* ---- 成员卡片错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
+
 async function fetchOverview(): Promise<void> {
     if (!guardAllowed.value) return
     loading.value = true
@@ -327,6 +352,7 @@ async function fetchOverview(): Promise<void> {
             teamFormName.value = res.team.name || ''
             teamFormRemark.value = res.team.remark || ''
         }
+        playStagger()
     } catch (e) {
         rawError.value = e
         error.value = true
@@ -340,6 +366,7 @@ function reload(): void {
 }
 
 function toggleEditTeam(): void {
+    haptic('light', 'team-edit-toggle')
     editingTeam.value = !editingTeam.value
     if (editingTeam.value && data.value?.team) {
         teamFormName.value = data.value.team.name || ''
@@ -368,11 +395,13 @@ async function handleSaveTeamInfo(): Promise<void> {
 }
 
 function toggleScheduleExpand(staffId: number): void {
+    haptic('light', 'team-heat-toggle')
     expandedIds[staffId] = !expandedIds[staffId]
 }
 
 function dialPhone(mobile: string): void {
     if (!mobile) return
+    haptic('light', 'team-dial')
     uni.makePhoneCall({ phoneNumber: mobile, fail: () => {} })
 }
 
@@ -380,6 +409,7 @@ function handleToggleStatus(m: StaffTeamMemberItem): void {
     if (actingMemberId.value > 0 || !m.member_id) return
     const nextStatus = m.status === 1 ? 0 : 1
     const label = nextStatus === 1 ? '恢复启用' : '暂设为停用'
+    // 确认类二次弹窗保留居中形态：uni.showModal 是系统原生模态，不做可下拉关闭的抽屉
     uni.showModal({
         title: label,
         content: `确认将「${m.name}」${label}？`,
@@ -387,6 +417,7 @@ function handleToggleStatus(m: StaffTeamMemberItem): void {
         cancelText: '取消',
         success: async (r) => {
             if (!r.confirm) return
+            haptic('medium', 'team-member-toggle')
             actingMemberId.value = m.member_id
             try {
                 await toggleStaffTeamMemberStatus({ member_id: m.member_id, status: nextStatus })
@@ -403,6 +434,7 @@ function handleToggleStatus(m: StaffTeamMemberItem): void {
 
 function handleRemoveMember(m: StaffTeamMemberItem): void {
     if (actingMemberId.value > 0 || !m.member_id) return
+    // 确认类二次弹窗保留居中形态：uni.showModal 是系统原生模态，不做可下拉关闭的抽屉
     uni.showModal({
         title: '移出团队',
         content: `确认将「${m.name}」移出当前团队？`,
@@ -410,6 +442,7 @@ function handleRemoveMember(m: StaffTeamMemberItem): void {
         cancelText: '取消',
         success: async (r) => {
             if (!r.confirm) return
+            haptic('heavy', 'team-member-remove')
             actingMemberId.value = m.member_id
             try {
                 await removeStaffTeamMember({ member_id: m.member_id })
@@ -482,8 +515,9 @@ function onRefresh(done: () => void) {
 .team-hero {
     padding: var(--sp-4);
     border-radius: var(--r-lg);
-    background: linear-gradient(155deg, var(--c-dark-1), var(--c-dark-2));
-    border: 1rpx solid var(--c-primary-border);
+    background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
     color: var(--c-on-dark);
     display: flex;
     flex-direction: column;
@@ -533,10 +567,16 @@ function onRefresh(done: () => void) {
 }
 
 .team-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 88rpx;
     padding: 6rpx var(--sp-3);
     border-radius: var(--r-pill);
     background: var(--c-dark-3);
     border: 1rpx solid var(--c-brand-soft);
+    box-sizing: border-box;
+    transition: background-color var(--dur-fast) var(--ease-out);
 
     &__text {
         font-size: var(--fs-xs);
@@ -551,9 +591,10 @@ function onRefresh(done: () => void) {
 
     &__input {
         width: 100%;
-        height: 76rpx;
+        height: 88rpx;
         padding: 0 var(--sp-3);
         border-radius: var(--r-sm);
+        border: 1rpx solid var(--c-control-border);
         background: var(--c-surface);
         font-size: var(--fs-md);
         color: var(--c-ink);
@@ -688,6 +729,7 @@ function onRefresh(done: () => void) {
 }
 
 .heat-toggle {
+    min-height: 88rpx;
     padding: var(--sp-1) var(--sp-2);
     border-radius: var(--r-sm);
     background: var(--c-brand-bg);
@@ -695,6 +737,7 @@ function onRefresh(done: () => void) {
     align-items: center;
     justify-content: space-between;
     color: var(--c-brand-text);
+    box-sizing: border-box;
 
     &__text {
         font-size: var(--fs-xs);
@@ -749,6 +792,13 @@ function onRefresh(done: () => void) {
 
     &__state {
         font-size: var(--fs-16);
+    }
+}
+
+/* v10 §3.13：减弱动效下不做颜色过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .team-pill-btn {
+        transition: none;
     }
 }
 </style>

@@ -1,115 +1,96 @@
 <template>
-    <tn-popup
-        :model-value="modelValue"
-        open-direction="bottom"
-        bg-color="transparent"
-        radius="0"
-        :safe-area-inset-bottom="true"
-        @update:model-value="onPopupChange"
+    <!-- 线下档期：磁吸半屏抽屉。标题 / 关闭 / 拖拽 / 脚部安全区由 snap-sheet 统一承担 -->
+    <snap-sheet
+        v-model="visible"
+        :title="isEdit ? '编辑线下档期' : '添加线下档期'"
+        :enable-full="true"
+        :has-foot="true"
     >
-        <view class="sheet">
-            <view class="sheet__head">
-                <text class="sheet__title">{{ isEdit ? '编辑线下档期' : '添加线下档期' }}</text>
-                <view
-                    hover-class="is-pressed"
-                    class="sheet__close"
-                    aria-role="button"
-                    aria-label="关闭"
-                    @tap="close"
-                >
-                    <tn-icon name="close" :size="28" class="sheet__close-icon" />
+        <view class="field">
+            <text class="field__label">服务日期 *</text>
+            <picker mode="date" :value="form.date || todayStr" :start="todayStr" @change="onPickDate">
+                <view hover-class="is-pressed" class="field__picker">
+                    <text class="field__picker-text t-num">{{
+                        form.date || '请选择服务日期'
+                    }}</text>
+                    <tn-icon name="right" :size="24" class="field__picker-icon" />
                 </view>
-            </view>
+            </picker>
+        </view>
 
-            <scroll-view class="sheet__body" scroll-y>
-                <view class="field">
-                    <text class="field__label">服务日期 *</text>
-                    <picker
-                        mode="date"
-                        :value="form.date || todayStr"
-                        :start="todayStr"
-                        @change="onPickDate"
-                    >
-                        <view hover-class="is-pressed" class="field__picker">
-                            <text class="field__picker-text">{{ form.date || '请选择服务日期' }}</text>
-                            <tn-icon name="right" :size="24" class="field__picker-icon" />
-                        </view>
-                    </picker>
-                </view>
+        <view class="field">
+            <text class="field__label">服务名称 *</text>
+            <input
+                v-model="form.service_name"
+                class="field__input"
+                placeholder="如：户外草坪婚礼主持"
+                placeholder-class="field__ph"
+                maxlength="100"
+            />
+        </view>
 
-                <view class="field">
-                    <text class="field__label">服务名称 *</text>
-                    <input
-                        v-model="form.service_name"
-                        class="field__input"
-                        placeholder="如：户外草坪婚礼主持"
-                        placeholder-class="field__ph"
-                        maxlength="100"
-                    />
-                </view>
+        <view class="field">
+            <text class="field__label">客户姓名</text>
+            <input
+                v-model="form.customer_name"
+                class="field__input"
+                placeholder="选填"
+                placeholder-class="field__ph"
+                maxlength="50"
+            />
+        </view>
 
-                <view class="field">
-                    <text class="field__label">客户姓名</text>
-                    <input
-                        v-model="form.customer_name"
-                        class="field__input"
-                        placeholder="选填"
-                        placeholder-class="field__ph"
-                        maxlength="50"
-                    />
-                </view>
+        <view class="field">
+            <text class="field__label">客户手机号</text>
+            <input
+                v-model="form.customer_mobile"
+                class="field__input"
+                type="number"
+                placeholder="选填，11 位手机号"
+                placeholder-class="field__ph"
+                maxlength="11"
+            />
+        </view>
 
-                <view class="field">
-                    <text class="field__label">客户手机号</text>
-                    <input
-                        v-model="form.customer_mobile"
-                        class="field__input"
-                        type="number"
-                        placeholder="选填，11 位手机号"
-                        placeholder-class="field__ph"
-                        maxlength="11"
-                    />
-                </view>
+        <view class="field">
+            <text class="field__label">服务地区</text>
+            <input
+                v-model="form.region_name"
+                class="field__input"
+                placeholder="选填，如：成都市高新区"
+                placeholder-class="field__ph"
+                maxlength="100"
+            />
+        </view>
 
-                <view class="field">
-                    <text class="field__label">服务地区</text>
-                    <input
-                        v-model="form.region_name"
-                        class="field__input"
-                        placeholder="选填，如：成都市高新区"
-                        placeholder-class="field__ph"
-                        maxlength="100"
-                    />
-                </view>
+        <view class="field">
+            <text class="field__label">服务地址</text>
+            <input
+                v-model="form.service_address"
+                class="field__input"
+                placeholder="选填，详细酒店或场地名称"
+                placeholder-class="field__ph"
+                maxlength="255"
+            />
+        </view>
 
-                <view class="field">
-                    <text class="field__label">服务地址</text>
-                    <input
-                        v-model="form.service_address"
-                        class="field__input"
-                        placeholder="选填，详细酒店或场地名称"
-                        placeholder-class="field__ph"
-                        maxlength="255"
-                    />
-                </view>
+        <view class="field">
+            <text class="field__label">备注</text>
+            <input
+                v-model="form.remark"
+                class="field__input"
+                placeholder="选填，流程或注意事项"
+                placeholder-class="field__ph"
+                maxlength="255"
+            />
+        </view>
 
-                <view class="field">
-                    <text class="field__label">备注</text>
-                    <input
-                        v-model="form.remark"
-                        class="field__input"
-                        placeholder="选填，流程或注意事项"
-                        placeholder-class="field__ph"
-                        maxlength="255"
-                    />
-                </view>
-            </scroll-view>
-
-            <view class="sheet__foot">
-                <view class="sheet__btn">
+        <template #foot>
+            <view class="foot">
+                <view class="foot__btn">
                     <base-button text="取消" variant="ghost" size="md" block @click="close" />
                 </view>
-                <view class="sheet__btn">
+                <view class="foot__btn">
                     <base-button
                         :text="submitting ? '保存中…' : '保存'"
                         variant="ink"
@@ -121,15 +102,21 @@
                     />
                 </view>
             </view>
-        </view>
-    </tn-popup>
+        </template>
+    </snap-sheet>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { staffManualScheduleAdd, staffManualScheduleEdit } from '@/api/staff'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 
+/**
+ * 抽屉自身的关闭（遮罩 / 关闭键 / 下拉）不按 submitting 拦截：
+ * snap-sheet 会自行收起并 emit，父级吞掉 update:modelValue 会把组件留在
+ * 「已收起但 modelValue=true」的锁死态。防误关只落在脚部「取消」上。
+ */
 const props = withDefaults(
     defineProps<{
         modelValue: boolean
@@ -146,6 +133,11 @@ const emit = defineEmits<{
     (e: 'update:modelValue', value: boolean): void
     (e: 'saved', date: string): void
 }>()
+
+const visible = computed({
+    get: () => props.modelValue,
+    set: (value: boolean) => emit('update:modelValue', value)
+})
 
 function formatToday(): string {
     const d = new Date()
@@ -209,11 +201,6 @@ watch(
     { immediate: true }
 )
 
-function onPopupChange(v: boolean): void {
-    if (!v && submitting.value) return
-    emit('update:modelValue', v)
-}
-
 function close(): void {
     if (submitting.value) return
     emit('update:modelValue', false)
@@ -258,6 +245,7 @@ async function submit(): Promise<void> {
         remark: remark || undefined
     }
 
+    haptic('medium', 'manual-schedule-submit')
     submitting.value = true
     try {
         if (isEdit.value) {
@@ -288,52 +276,14 @@ async function submit(): Promise<void> {
 </script>
 
 <style lang="scss" scoped>
-.sheet {
-    background: var(--c-surface);
-    padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
+.foot {
+    display: flex;
+    gap: var(--sp-2);
+}
 
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--sp-2);
-    }
-
-    &__title {
-        font-size: var(--fs-lg);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__close {
-        width: 56rpx;
-        height: 56rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--c-ink-3);
-    }
-
-    &__close-icon {
-        color: inherit;
-    }
-
-    &__body {
-        max-height: 70vh;
-        margin-top: var(--sp-3);
-    }
-
-    &__foot {
-        display: flex;
-        gap: var(--sp-2);
-        margin-top: var(--sp-4);
-    }
-
-    &__btn {
-        flex: 1;
-        min-width: 0;
-    }
+.foot__btn {
+    flex: 1;
+    min-width: 0;
 }
 
 .field {
@@ -349,16 +299,22 @@ async function submit(): Promise<void> {
         color: var(--c-ink-2);
     }
 
+    /* 日期选择器整行 88rpx 热区 */
     &__picker {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        height: 84rpx;
+        min-height: 88rpx;
         padding: 0 var(--sp-3);
         border-radius: var(--r-sm);
         border: 1rpx solid var(--c-control-border);
         background: var(--c-surface);
         box-sizing: border-box;
+        transition: transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.99);
+        }
     }
 
     &__picker-text {
@@ -372,7 +328,7 @@ async function submit(): Promise<void> {
 
     &__input {
         width: 100%;
-        height: 84rpx;
+        height: 88rpx;
         padding: 0 var(--sp-3);
         border-radius: var(--r-sm);
         border: 1rpx solid var(--c-control-border);
@@ -384,6 +340,16 @@ async function submit(): Promise<void> {
 
     &__ph {
         color: var(--c-ink-3);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .field__picker {
+        transition: none;
+
+        &.is-pressed {
+            transform: none;
+        }
     }
 }
 </style>

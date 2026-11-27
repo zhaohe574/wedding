@@ -17,7 +17,7 @@
 
         <template v-else>
             <view v-if="loading" class="page-pad">
-                <base-skeleton :rows="5" />
+                <base-skeleton :rows="5" variant="card" />
             </view>
 
             <base-empty
@@ -124,7 +124,7 @@
                         <view
                             v-if="canWrite"
                             hover-class="is-pressed"
-                            class="rp-add-btn"
+                            class="rp-add-btn hit-88"
                             aria-label="添加地区定价"
                             @tap="openCreateRegionPrice"
                         >
@@ -152,7 +152,7 @@
 
                     <template v-else>
                         <view class="rp-summary">
-                            <text class="rp-summary__text">
+                            <text class="rp-summary__text t-num">
                                 已配置 {{ regionSummary.total }} 条地区规则（省级
                                 {{ regionSummary.provinceCount }} · 城市
                                 {{ regionSummary.cityCount }} · 区县
@@ -167,7 +167,7 @@
                                 hover-class="is-pressed"
                                 class="rp-filter__pill"
                                 :class="{ 'is-on': regionLevelFilter === tab.key }"
-                                @tap="regionLevelFilter = tab.key"
+                                @tap="setRegionFilter(tab.key)"
                             >
                                 <text class="rp-filter__text">{{ tab.label }}</text>
                             </view>
@@ -202,19 +202,19 @@
 
                                 <view class="rp-item__right">
                                     <view class="rp-item__price-col">
-                                        <text class="rp-item__price"
+                                        <text class="rp-item__price t-num"
                                             >¥{{ formatMoneyNum(group.price) }}</text
                                         >
                                         <text
                                             v-if="groupDiffText(group.price)"
-                                            class="rp-item__diff"
+                                            class="rp-item__diff t-num"
                                             >{{ groupDiffText(group.price) }}</text
                                         >
                                     </view>
                                     <view
                                         v-if="canWrite"
                                         hover-class="is-pressed"
-                                        class="rp-item__del"
+                                        class="rp-item__del hit-88"
                                         aria-label="移除该地区价格"
                                         @tap.stop="confirmDeleteGroup(group)"
                                     >
@@ -298,7 +298,7 @@
                                     :dot="false"
                                 />
                             </view>
-                            <text class="addon__price"
+                            <text class="addon__price t-num"
                                 >+¥{{ formatMoneyNum(Number(ad.price)) }}</text
                             >
                         </view>
@@ -313,7 +313,7 @@
                                 class="pill"
                                 :class="{ 'is-on': form.is_show === 1 }"
                                 hover-class="is-pressed"
-                                @tap="form.is_show = 1"
+                                @tap="setShow(1)"
                             >
                                 <text class="pill__text">已上架</text>
                             </view>
@@ -321,7 +321,7 @@
                                 class="pill"
                                 :class="{ 'is-on': form.is_show === 0 }"
                                 hover-class="is-pressed"
-                                @tap="form.is_show = 0"
+                                @tap="setShow(0)"
                             >
                                 <text class="pill__text">已停用</text>
                             </view>
@@ -334,7 +334,7 @@
                                 class="pill"
                                 :class="{ 'is-on': form.is_recommend === 1 }"
                                 hover-class="is-pressed"
-                                @tap="form.is_recommend = 1"
+                                @tap="setRecommend(1)"
                             >
                                 <text class="pill__text">推荐展示</text>
                             </view>
@@ -342,7 +342,7 @@
                                 class="pill"
                                 :class="{ 'is-on': form.is_recommend === 0 }"
                                 hover-class="is-pressed"
-                                @tap="form.is_recommend = 0"
+                                @tap="setRecommend(0)"
                             >
                                 <text class="pill__text">普通展示</text>
                             </view>
@@ -356,6 +356,7 @@
                         variant="danger"
                         size="md"
                         :loading="deleting"
+                        haptic-level="heavy"
                         @click="onDelete"
                     />
                 </view>
@@ -374,6 +375,7 @@
                         :block="false"
                         :loading="submitting"
                         :disabled="submitting"
+                        haptic-level="medium"
                         @click="submit"
                     />
                 </template>
@@ -417,6 +419,8 @@ import { useStaffWriteGate, STAFF_WRITE_GATE_TIP } from '@/composables/useStaffW
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
+import { schemeColor } from '@/utils/scheme-color'
 import {
     buildGroupSubtitle,
     buildGroupTitle,
@@ -506,6 +510,7 @@ async function loadRegionTree() {
 
 function openCreateRegionPrice() {
     if (!canWrite.value) return
+    haptic('light', 'pkg-region-add')
     editingRegionGroup.value = null
     regionSheetVisible.value = true
     if (!regionTree.value.length && !treeLoading.value) {
@@ -515,6 +520,7 @@ function openCreateRegionPrice() {
 
 function openEditRegionPrice(group: RegionPriceGroup) {
     if (!canWrite.value) return
+    haptic('light', 'pkg-region-edit')
     editingRegionGroup.value = group
     regionSheetVisible.value = true
     if (!regionTree.value.length && !treeLoading.value) {
@@ -526,6 +532,7 @@ function onSaveRegionPrice(payload: {
     replaceGroupKey: string | null
     items: StaffPackageRegionPriceItem[]
 }) {
+    // 触觉由 region-price-sheet 的保存按钮统一发 medium，这里不重复触发
     const base = payload.replaceGroupKey
         ? removeGroupFromFlat(regionPrices.value, payload.replaceGroupKey)
         : regionPrices.value
@@ -535,17 +542,21 @@ function onSaveRegionPrice(payload: {
 }
 
 function onDeleteRegionPrice(groupKey: string) {
+    // 触觉同样由 sheet 内删除按钮发 heavy
     regionPrices.value = removeGroupFromFlat(regionPrices.value, groupKey)
     regionSheetVisible.value = false
     toast.success('已移除地区价格')
 }
 
 function confirmDeleteGroup(group: RegionPriceGroup) {
+    haptic('heavy', 'pkg-region-group-delete')
     uni.showModal({
         title: '移除地区价格',
         content: `确认移除「${buildGroupTitle(group)}」地区价格？`,
         confirmText: '移除',
         cancelText: '取消',
+        // 移除属不可逆操作，uni.showModal 居中确认弹窗保持原生居中形态
+        confirmColor: schemeColor('danger'),
         success: (res) => {
             if (!res.confirm) return
             regionPrices.value = removeGroupFromFlat(regionPrices.value, group.key)
@@ -560,6 +571,7 @@ function isAddonSelected(id: number): boolean {
 
 function toggleAddon(id: number) {
     if (!canWrite.value) return
+    haptic('light', 'pkg-addon-toggle')
     const numId = Number(id)
     if (isAddonSelected(numId)) {
         form.addon_ids = form.addon_ids.filter((x) => x !== numId)
@@ -570,15 +582,36 @@ function toggleAddon(id: number) {
 
 function selectAllAddons() {
     if (!canWrite.value) return
+    haptic('light', 'pkg-addon-all')
     form.addon_ids = addonOptions.value.map((ad) => ad.id)
 }
 
 function clearAddons() {
     if (!canWrite.value) return
+    haptic('light', 'pkg-addon-clear')
     form.addon_ids = []
 }
 
+function setShow(val: 0 | 1) {
+    if (!canWrite.value || form.is_show === val) return
+    haptic('light', 'pkg-show')
+    form.is_show = val
+}
+
+function setRecommend(val: 0 | 1) {
+    if (!canWrite.value || form.is_recommend === val) return
+    haptic('light', 'pkg-recommend')
+    form.is_recommend = val
+}
+
+function setRegionFilter(val: 0 | 1 | 2 | 3) {
+    if (regionLevelFilter.value === val) return
+    haptic('light', 'pkg-region-filter')
+    regionLevelFilter.value = val
+}
+
 function goCreateAddon() {
+    // 触觉由「新增附加项」base-button 统一发 light
     navigate({ path: '/packages/pkg-staff/pages/addon-edit/addon-edit' })
 }
 
@@ -685,6 +718,8 @@ function onDelete() {
         content: '删除后不可恢复，确认删除这个套餐？',
         confirmText: '删除',
         cancelText: '取消',
+        // 删除属不可逆操作，uni.showModal 居中确认弹窗保持原生居中形态
+        confirmColor: schemeColor('danger'),
         success: async (r) => {
             if (!r.confirm) return
             deleting.value = true
@@ -823,12 +858,18 @@ onShow(() => {
 }
 
 .mini-btn {
-    min-height: 56rpx;
+    min-height: 88rpx;
     padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
     border: 1rpx solid var(--c-control-border);
     display: flex;
     align-items: center;
+    justify-content: center;
+    transition: transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.96);
+    }
 
     &__text {
         font-size: var(--fs-xs);
@@ -840,12 +881,19 @@ onShow(() => {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6rpx;
-    padding: 8rpx var(--sp-3);
+    min-height: 56rpx;
+    padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
     background: var(--c-brand-bg);
     border: 1rpx solid var(--c-primary-border);
     color: var(--c-brand-text);
+    transition: transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.94);
+    }
 
     &__icon {
         color: inherit;
@@ -919,10 +967,21 @@ onShow(() => {
     margin-top: var(--sp-2);
 
     &__pill {
-        padding: 6rpx var(--sp-3);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        /* 筛选胶囊可能换行：不用 .hit-88（上下伪元素会跨行叠），直接把盒高做到 88rpx */
+        min-height: 88rpx;
+        padding: 0 var(--sp-3);
         border-radius: var(--r-pill);
-        border: 1rpx solid var(--c-line-strong);
+        /* 可点胶囊：控件边界色，未选中态在白/黑底上都能看清 */
+        border: 1rpx solid var(--c-control-border);
         background: var(--c-bg);
+        transition: transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.96);
+        }
 
         &.is-on {
             border-color: var(--c-active-border);
@@ -953,10 +1012,12 @@ onShow(() => {
     align-items: center;
     justify-content: space-between;
     gap: var(--sp-2);
+    /* 可点行：盒高 88rpx + 控件边界色，未选中态也看得清边界 */
+    min-height: 88rpx;
     padding: var(--sp-2) var(--sp-3);
     border-radius: var(--r-md);
     background: var(--c-surface-2);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);
 
     &__main {
         flex: 1;
@@ -1018,11 +1079,16 @@ onShow(() => {
         height: 56rpx;
         border-radius: var(--r-pill);
         background: var(--c-surface);
-        border: 1rpx solid var(--c-line);
+        border: 1rpx solid var(--c-control-border);
         color: var(--c-ink-3);
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.92);
+        }
     }
 
     &__del-icon {
@@ -1106,10 +1172,11 @@ onShow(() => {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
+    min-height: 88rpx;
     padding: var(--sp-2) var(--sp-3);
     border-radius: var(--r-md);
     background: var(--c-surface-2);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);
 
     &.is-on {
         border-color: var(--c-brand-text);
@@ -1173,10 +1240,19 @@ onShow(() => {
 }
 
 .pill {
-    padding: 10rpx 24rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 88rpx;
+    padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
     background: var(--c-bg);
     border: 1rpx solid var(--c-control-border);
+    transition: transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.96);
+    }
 
     &__text {
         font-size: var(--fs-xs);
@@ -1201,5 +1277,24 @@ onShow(() => {
 .bar__note {
     font-size: var(--fs-xs);
     color: var(--c-ink-3);
+}
+
+/* v10 §3.13：减弱动效下按压不缩放 */
+@media (prefers-reduced-motion: reduce) {
+    .mini-btn,
+    .rp-add-btn,
+    .rp-filter__pill,
+    .rp-item__del,
+    .pill {
+        transition: none;
+    }
+
+    .mini-btn.is-pressed,
+    .rp-add-btn.is-pressed,
+    .rp-filter__pill.is-pressed,
+    .rp-item__del.is-pressed,
+    .pill.is-pressed {
+        transform: none;
+    }
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
     <view class="poster-editor">
         <view v-if="loading" class="poster-editor__loading">
-            <base-skeleton :rows="4" />
+            <base-skeleton :rows="4" variant="card" />
         </view>
 
         <base-empty
@@ -104,7 +104,7 @@
                 <view v-if="canEditField('content_template')" class="field">
                     <view class="field__head">
                         <text class="field__label">正文模板</text>
-                        <text class="field__count">{{ form.content_template.length }}/300</text>
+                        <text class="field__count t-num">{{ form.content_template.length }}/300</text>
                     </view>
                     <textarea
                         v-model="form.content_template"
@@ -240,6 +240,7 @@
                         block
                         :loading="saving"
                         :disabled="saving || previewLoading || uploading"
+                        haptic-level="medium"
                         @click="handleSave"
                     />
                 </view>
@@ -267,6 +268,7 @@ import {
 import { uploadImage } from '@/api/app'
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { haptic } from '@/utils/haptics'
 
 /** 与后端 StaffScheduleConfirmLetterService::sanitizeTemplateText() 白名单保持一致，避免插入无效变量 */
 const DYNAMIC_VARIABLES = [
@@ -450,14 +452,17 @@ async function loadConfig(configId?: number): Promise<void> {
 
 function switchVersion(configId: number): void {
     if (!configId || configId === form.config_id || saving.value) return
+    haptic('light', 'poster-version')
     void loadConfig(configId)
 }
 
 function appendVariable(variableKey: string): void {
+    haptic('light', 'poster-variable')
     form.content_template = `${form.content_template}${variableKey}`.slice(0, 300)
 }
 
 function setBackgroundType(type: 'color' | 'image'): void {
+    haptic('light', 'poster-bg-type')
     form.background_type = type
 }
 
@@ -466,12 +471,14 @@ function isColorActive(value: string): boolean {
 }
 
 function pickColor(value: string): void {
+    haptic('light', 'poster-bg-color')
     form.background_color = value
     void refreshPreview(true)
 }
 
 function chooseBackgroundImage(): void {
     if (uploading.value) return
+    haptic('light', 'poster-bg-upload')
     uni.chooseImage({
         count: 1,
         sizeType: ['compressed'],
@@ -498,6 +505,7 @@ function chooseBackgroundImage(): void {
 
 function openPreviewImage(): void {
     if (!previewImageSrc.value) return
+    haptic('light', 'poster-preview-open')
     uni.previewImage({
         urls: [previewImageSrc.value],
         current: previewImageSrc.value
@@ -583,11 +591,17 @@ defineExpose({ reload: loadConfig })
 .version-chip {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: var(--sp-1);
+    min-height: 88rpx;
     padding: var(--sp-1) var(--sp-3);
     border-radius: var(--r-pill);
     border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
+    box-sizing: border-box;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out);
 
     &.is-active {
         border-color: var(--c-brand-text);
@@ -686,7 +700,7 @@ defineExpose({ reload: loadConfig })
 
     &__input {
         width: 100%;
-        height: 84rpx;
+        height: 88rpx;
         padding: 0 var(--sp-3);
         border-radius: var(--r-sm);
         border: 1rpx solid var(--c-control-border);
@@ -718,10 +732,16 @@ defineExpose({ reload: loadConfig })
 }
 
 .var-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 88rpx;
     padding: var(--sp-1) var(--sp-2);
     border-radius: var(--r-pill);
     background: var(--c-brand-bg);
     border: 1rpx solid var(--c-primary-border);
+    box-sizing: border-box;
+    transition: background-color var(--dur-fast) var(--ease-out);
 
     &__text {
         font-size: var(--fs-20);
@@ -737,13 +757,17 @@ defineExpose({ reload: loadConfig })
 
 .mode-pill {
     flex: 1;
-    height: 76rpx;
+    height: 88rpx;
     border-radius: var(--r-sm);
     border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
     display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out);
 
     &.is-active {
         border-color: var(--c-brand-text);
@@ -767,10 +791,15 @@ defineExpose({ reload: loadConfig })
     display: flex;
     align-items: center;
     gap: var(--sp-2);
+    min-height: 88rpx;
     padding: var(--sp-2) var(--sp-3);
     border-radius: var(--r-sm);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
+    box-sizing: border-box;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out);
 
     &.is-active {
         border-color: var(--c-brand-text);
@@ -859,6 +888,16 @@ defineExpose({ reload: loadConfig })
     &__btn {
         flex: 1;
         min-width: 0;
+    }
+}
+
+/* v10 §3.13：减弱动效下不做颜色过渡，直接呈现终态 */
+@media (prefers-reduced-motion: reduce) {
+    .version-chip,
+    .var-chip,
+    .mode-pill,
+    .color-item {
+        transition: none;
     }
 }
 </style>

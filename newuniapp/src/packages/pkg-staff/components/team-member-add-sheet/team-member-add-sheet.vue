@@ -1,115 +1,88 @@
 <template>
-    <tn-popup
-        :model-value="modelValue"
-        open-direction="bottom"
-        bg-color="transparent"
-        radius="0"
-        :safe-area-inset-bottom="true"
-        @update:model-value="onPopupChange"
-    >
-        <view class="sheet">
-            <view class="sheet__head">
-                <text class="sheet__title">添加团队成员</text>
-                <view
-                    hover-class="is-pressed"
-                    class="sheet__close"
-                    aria-role="button"
-                    aria-label="关闭"
-                    @tap="close"
-                >
-                    <tn-icon name="close" :size="28" class="sheet__close-icon" />
-                </view>
+    <!-- 添加团队成员：磁吸半屏抽屉。标题 / 关闭 / 拖拽由 snap-sheet 统一承担；
+         本抽屉没有吸底按钮，因此不传 has-foot（mp-weixin 下 $slots 恒为空，必须显式声明） -->
+    <snap-sheet v-model="visible" title="添加团队成员" :enable-full="true">
+        <view class="search-row">
+            <view class="search-input-wrap">
+                <tn-icon name="search" :size="26" class="search-input-wrap__icon" />
+                <input
+                    v-model="keyword"
+                    class="search-input-wrap__input"
+                    placeholder="搜索姓名、工号或手机号"
+                    placeholder-class="field__ph"
+                    confirm-type="search"
+                    @confirm="onSearch"
+                />
             </view>
+            <base-button
+                text="搜索"
+                variant="ink"
+                size="sm"
+                :block="false"
+                :loading="loading"
+                @click="onSearch"
+            />
+        </view>
 
-            <view class="search-row">
-                <view class="search-input-wrap">
-                    <tn-icon name="search" :size="26" class="search-input-wrap__icon" />
-                    <input
-                        v-model="keyword"
-                        class="search-input-wrap__input"
-                        placeholder="搜索姓名、工号或手机号"
-                        placeholder-class="field__ph"
-                        confirm-type="search"
-                        @confirm="fetchCandidates"
-                    />
+        <view v-if="loading" class="loading-box">
+            <base-skeleton :rows="3" variant="card" />
+        </view>
+
+        <view v-else-if="!candidates.length" class="empty-box">
+            <text class="empty-box__text">
+                暂无符合条件的可添加成员（需已启用且审核通过，且未加入其他有效团队）
+            </text>
+        </view>
+
+        <view v-else class="cand-list">
+            <view v-for="item in candidates" :key="item.staff_id" class="cand-row">
+                <image
+                    v-if="item.avatar"
+                    :src="item.avatar"
+                    class="cand-row__avatar"
+                    mode="aspectFill"
+                />
+                <view v-else class="cand-row__avatar cand-row__avatar--text">
+                    <text class="cand-row__initial">{{ item.name.slice(0, 1) || '师' }}</text>
                 </view>
+
+                <view class="cand-row__info">
+                    <text class="cand-row__name">{{ item.name }}</text>
+                    <text class="cand-row__meta t-num">
+                        {{ item.category_name }} · {{ item.experience_years }}年 ·
+                        {{ Number(item.rating || 5).toFixed(1) }}分
+                    </text>
+                    <text v-if="item.mobile_masked" class="cand-row__sub t-num">{{
+                        item.mobile_masked
+                    }}</text>
+                </view>
+
                 <base-button
-                    text="搜索"
+                    :text="addingId === item.staff_id ? '加入中…' : '加入本队'"
                     variant="ink"
                     size="sm"
                     :block="false"
-                    :loading="loading"
-                    @click="fetchCandidates"
+                    :loading="addingId === item.staff_id"
+                    :disabled="addingId > 0"
+                    @click="onAddMember(item)"
                 />
             </view>
-
-            <scroll-view class="sheet__body" scroll-y>
-                <view v-if="loading" class="loading-box">
-                    <base-skeleton :rows="3" />
-                </view>
-
-                <view v-else-if="!candidates.length" class="empty-box">
-                    <text class="empty-box__text">
-                        暂无符合条件的可添加成员（需已启用且审核通过，且未加入其他有效团队）
-                    </text>
-                </view>
-
-                <view v-else class="cand-list">
-                    <view
-                        v-for="item in candidates"
-                        :key="item.staff_id"
-                        class="cand-row"
-                    >
-                        <image
-                            v-if="item.avatar"
-                            :src="item.avatar"
-                            class="cand-row__avatar"
-                            mode="aspectFill"
-                        />
-                        <view v-else class="cand-row__avatar cand-row__avatar--text">
-                            <text class="cand-row__initial">{{
-                                item.name.slice(0, 1) || '师'
-                            }}</text>
-                        </view>
-
-                        <view class="cand-row__info">
-                            <text class="cand-row__name">{{ item.name }}</text>
-                            <text class="cand-row__meta">
-                                {{ item.category_name }} · {{ item.experience_years }}年 ·
-                                {{ Number(item.rating || 5).toFixed(1) }}分
-                            </text>
-                            <text v-if="item.mobile_masked" class="cand-row__sub">{{
-                                item.mobile_masked
-                            }}</text>
-                        </view>
-
-                        <base-button
-                            :text="addingId === item.staff_id ? '加入中…' : '加入本队'"
-                            variant="ink"
-                            size="sm"
-                            :block="false"
-                            :loading="addingId === item.staff_id"
-                            :disabled="addingId > 0"
-                            @click="onAddMember(item)"
-                        />
-                    </view>
-                </view>
-            </scroll-view>
         </view>
-    </tn-popup>
+    </snap-sheet>
 </template>
 
 <script setup lang="ts">
 /**
- * 队长添加团队成员搜索与加入弹窗。
+ * 队长添加团队成员搜索与加入抽屉（无吸底按钮：整块内容由 snap-sheet 承载）。
  */
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
     addStaffTeamMember,
     getStaffTeamMemberCandidates,
     type StaffTeamCandidateItem
 } from '@/api/staff'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 
 const props = defineProps<{
     modelValue: boolean
@@ -119,6 +92,11 @@ const emit = defineEmits<{
     (e: 'update:modelValue', value: boolean): void
     (e: 'added'): void
 }>()
+
+const visible = computed({
+    get: () => props.modelValue,
+    set: (value: boolean) => emit('update:modelValue', value)
+})
 
 const keyword = ref('')
 const loading = ref(false)
@@ -152,18 +130,14 @@ watch(
     { immediate: true }
 )
 
-function onPopupChange(val: boolean): void {
-    if (!val && addingId.value > 0) return
-    emit('update:modelValue', val)
-}
-
-function close(): void {
-    if (addingId.value > 0) return
-    emit('update:modelValue', false)
+function onSearch(): void {
+    haptic('light', 'team-member-search')
+    void fetchCandidates()
 }
 
 async function onAddMember(item: StaffTeamCandidateItem): Promise<void> {
     if (addingId.value > 0) return
+    haptic('medium', 'team-member-add')
     addingId.value = item.staff_id
     try {
         await addStaffTeamMember({ target_staff_id: item.staff_id })
@@ -179,45 +153,7 @@ async function onAddMember(item: StaffTeamCandidateItem): Promise<void> {
 </script>
 
 <style lang="scss" scoped>
-.sheet {
-    background: var(--c-surface);
-    padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
-
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--sp-2);
-    }
-
-    &__title {
-        font-size: var(--fs-lg);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__close {
-        width: 56rpx;
-        height: 56rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--c-ink-3);
-    }
-
-    &__close-icon {
-        color: inherit;
-    }
-
-    &__body {
-        max-height: 62vh;
-        margin-top: var(--sp-3);
-    }
-}
-
 .search-row {
-    margin-top: var(--sp-3);
     display: flex;
     align-items: center;
     gap: var(--sp-2);
@@ -226,7 +162,7 @@ async function onAddMember(item: StaffTeamCandidateItem): Promise<void> {
 .search-input-wrap {
     flex: 1;
     min-width: 0;
-    height: 76rpx;
+    height: 88rpx;
     padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
     border: 1rpx solid var(--c-control-border);
@@ -235,6 +171,7 @@ async function onAddMember(item: StaffTeamCandidateItem): Promise<void> {
     align-items: center;
     gap: var(--sp-2);
     color: var(--c-ink-3);
+    box-sizing: border-box;
 
     &__icon {
         color: inherit;
@@ -250,7 +187,7 @@ async function onAddMember(item: StaffTeamCandidateItem): Promise<void> {
 }
 
 .loading-box {
-    padding: var(--sp-2) 0;
+    padding: var(--sp-3) 0 0;
 }
 
 .empty-box {
@@ -268,13 +205,15 @@ async function onAddMember(item: StaffTeamCandidateItem): Promise<void> {
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
+    padding-top: var(--sp-3);
 }
 
 .cand-row {
     padding: var(--sp-3);
     border-radius: var(--r-md);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
     background: var(--c-surface);
+    box-shadow: var(--shadow-card);
     display: flex;
     align-items: center;
     gap: var(--sp-3);
@@ -319,7 +258,6 @@ async function onAddMember(item: StaffTeamCandidateItem): Promise<void> {
     &__sub {
         font-size: var(--fs-20);
         color: var(--c-ink-3);
-        font-variant-numeric: tabular-nums;
     }
 }
 </style>

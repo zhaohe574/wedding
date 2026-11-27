@@ -27,7 +27,7 @@
             </view>
 
             <view v-if="loading" class="page-pad">
-                <base-skeleton :rows="3" />
+                <base-skeleton :rows="3" variant="card" />
             </view>
 
             <base-empty
@@ -51,11 +51,19 @@
                 fixed
             />
 
-            <view v-else class="page-pad list">
-                <base-card v-for="item in list" :key="item.id" compact class="wait-card">
+            <view v-else class="page-pad list" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                <base-card
+                    v-for="(item, index) in list"
+                    :key="item.id"
+                    compact
+                    class="wait-card"
+                    :style="{ '--i': index }"
+                >
                     <view class="wait-card__head">
                         <view class="wait-card__title-wrap">
-                            <text class="wait-card__date">{{ item.schedule_date || '待定日期' }}</text>
+                            <text class="wait-card__date t-num">{{
+                                item.schedule_date || '待定日期'
+                            }}</text>
                             <text class="wait-card__pkg ellipsis">{{
                                 item.package_name || '意向服务预约'
                             }}</text>
@@ -72,20 +80,22 @@
                             <text class="meta-row__label">客户称呼</text>
                             <text class="meta-row__value">
                                 {{ item.customer_name || '客户' }}
-                                {{ item.customer_mobile ? `(${item.customer_mobile})` : '' }}
+                                <text v-if="item.customer_mobile" class="t-num"
+                                    >({{ item.customer_mobile }})</text
+                                >
                             </text>
                         </view>
                         <view v-if="item.create_time_text" class="meta-row">
                             <text class="meta-row__label">提交时间</text>
-                            <text class="meta-row__value">{{ item.create_time_text }}</text>
+                            <text class="meta-row__value t-num">{{ item.create_time_text }}</text>
                         </view>
                         <view v-if="item.notify_time_text" class="meta-row">
                             <text class="meta-row__label">通知时间</text>
-                            <text class="meta-row__value">{{ item.notify_time_text }}</text>
+                            <text class="meta-row__value t-num">{{ item.notify_time_text }}</text>
                         </view>
                         <view v-if="item.expire_time_text" class="meta-row">
                             <text class="meta-row__label">有效截止</text>
-                            <text class="meta-row__value">{{ item.expire_time_text }}</text>
+                            <text class="meta-row__value t-num">{{ item.expire_time_text }}</text>
                         </view>
                         <view v-if="item.remark" class="meta-row">
                             <text class="meta-row__label">客户备注</text>
@@ -98,6 +108,7 @@
                             text="通知客户预约"
                             variant="ink"
                             size="sm"
+                            haptic-level="medium"
                             :loading="notifyingId === item.id"
                             :disabled="notifyingId > 0"
                             @click="onNotify(item)"
@@ -125,7 +136,7 @@
  * 展示预约日期已满时提交候补的客户列表，在档期释放且满足 FIFO 顺位时
  * 可一键通知顺位首位客户发起预约。
  */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     WAITLIST_NOTIFY_STATUS_NAME_MAP,
@@ -139,6 +150,7 @@ import { useStaffGuard } from '@/composables/useStaffGuard'
 import { normalizePage } from '@/request'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 
 const {
     guardPhase,
@@ -183,6 +195,29 @@ const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
 })
 
 const activeStatus = () => TABS.find((t) => t.key === active.value)?.status
+
+/* ---- 列表错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
 
 function waitlistTone(status: unknown): Tone {
     const n = Number(status)
@@ -261,6 +296,7 @@ function onPrimary() {
 function onNotify(item: any) {
     const id = Number(item?.id || 0)
     if (!guardAllowed.value || notifyingId.value > 0 || !id) return
+    // 确认类二次弹窗保留居中形态：uni.showModal 是系统原生模态，不做可下拉关闭的抽屉
     uni.showModal({
         title: '通知客户预约',
         content: `确认通知客户「${item.customer_name || '客户'}」预约 ${item.schedule_date || ''} 的已释放档期？`,

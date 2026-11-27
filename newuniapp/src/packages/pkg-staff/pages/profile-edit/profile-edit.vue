@@ -12,7 +12,7 @@
 
         <template v-else>
             <view v-if="loading && !hasLoaded" class="pad">
-                <base-skeleton :rows="5" />
+                <base-skeleton :rows="5" variant="card" />
             </view>
 
             <base-empty
@@ -72,10 +72,12 @@
                     <view class="mobile-row__line">
                         <text class="mobile-row__label">手机号</text>
                         <view class="mobile-row__right">
-                            <text class="mobile-row__value">{{
+                            <text class="mobile-row__value t-num">{{
                                 form.mobile || '未绑定'
                             }}</text>
-                            <text class="mobile-row__link" @tap="openMobilePopup">更换</text>
+                            <text class="mobile-row__link hit-88" @tap="openMobilePopup"
+                                >更换</text
+                            >
                         </view>
                     </view>
                     <text v-if="errors.mobile" class="field-err">{{ errors.mobile }}</text>
@@ -202,7 +204,9 @@
                 </template>
             </bottom-bar>
 
-            <!-- 服务分类选择（单层：后台分类选择器 checkStrictly 允许绑父级，取一级分类即可） -->
+            <!-- 服务分类选择（单层：后台分类选择器 checkStrictly 允许绑父级，取一级分类即可）。
+                 刻意保留 tn-popup 不改 snap-sheet：本页三个弹层互斥打开，且手机号弹层含原生 input，
+                 可下拉关闭的抽屉会在键盘弹起时把弹层一起拖走；底抽屉形态只做浮层表面统一升级。 -->
             <tn-popup
                 v-model="categoryPopup"
                 open-direction="bottom"
@@ -213,7 +217,12 @@
                 <view class="sheet">
                     <view class="sheet__head">
                         <text class="sheet__title">选择服务分类</text>
-                        <view class="sheet__close" @tap="categoryPopup = false">
+                        <view
+                            class="sheet__close hit-88"
+                            aria-role="button"
+                            aria-label="关闭"
+                            @tap="closeCategoryPopup"
+                        >
                             <tn-icon name="close" :size="28" />
                         </view>
                     </view>
@@ -222,7 +231,7 @@
                             v-for="c in categories"
                             :key="c.id"
                             hover-class="is-pressed"
-                            class="opt"
+                            class="opt hit-88"
                             :class="{ 'opt--on': form.category_id === c.id }"
                             @tap="pickCategory(c)"
                         >
@@ -237,7 +246,8 @@
                 </view>
             </tn-popup>
 
-            <!-- 更换手机号：新号码 + 短信验证码，确定后随表单一起提交（不在弹层里单独提交） -->
+            <!-- 更换手机号：新号码 + 短信验证码，确定后随表单一起提交（不在弹层里单独提交）。
+                 同样保留 tn-popup：原生 input 聚焦时键盘会顶起视口，抽屉跟手下拉会和输入焦点互斥。 -->
             <tn-popup
                 v-model="mobilePopup"
                 open-direction="bottom"
@@ -248,7 +258,12 @@
                 <view class="sheet">
                     <view class="sheet__head">
                         <text class="sheet__title">更换手机号</text>
-                        <view class="sheet__close" @tap="mobilePopup = false">
+                        <view
+                            class="sheet__close hit-88"
+                            aria-role="button"
+                            aria-label="关闭"
+                            @tap="closeMobilePopup"
+                        >
                             <tn-icon name="close" :size="28" />
                         </view>
                     </view>
@@ -271,13 +286,13 @@
                             placeholder-class="sheet__ph"
                         />
                         <view
-                            class="sms-row__btn"
+                            class="sms-row__btn hit-88"
                             :class="{ 'is-off': smsCountdown > 0 }"
                             hover-class="is-pressed"
                             :aria-label="smsCountdown > 0 ? `${smsCountdown} 秒后可重新发送` : '发送验证码'"
                             @tap="sendCode"
                         >
-                            <text class="sms-row__btn-text">{{
+                            <text class="sms-row__btn-text t-num">{{
                                 smsCountdown > 0 ? `${smsCountdown}s 后重发` : '发送验证码'
                             }}</text>
                         </view>
@@ -291,7 +306,9 @@
                 </view>
             </tn-popup>
 
-            <!-- 分类变更确认：联动套餐/附加项分类，提交前最后确认一次（tn-popup，与其他弹层互斥） -->
+            <!-- 分类变更确认：联动套餐/附加项分类，提交前最后确认一次。
+                 居中确认卡不做成抽屉：确认/不可逆语义必须停在原地等用户明确回答，
+                 与底抽屉的「滑走即取消」互斥。弹层之间仍保持互斥打开。 -->
             <tn-popup
                 v-model="categoryConfirm"
                 open-direction="center"
@@ -360,6 +377,7 @@ import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { useStaffWriteGate, STAFF_WRITE_GATE_TIP } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { haptic } from '@/utils/haptics'
 import { toast } from '@/composables/useToast'
 
 /* ---------------- 加载 ---------------- */
@@ -464,13 +482,19 @@ async function loadCategories() {
 
 function openCategoryPopup() {
     // tn-popup 互斥：打开前先关掉其他弹层
+    haptic('light', 'profile-edit-category')
     mobilePopup.value = false
     categoryConfirm.value = false
     errors.category = ''
     categoryPopup.value = true
 }
 
+function closeCategoryPopup() {
+    categoryPopup.value = false
+}
+
 function pickCategory(c: { id: number; name: string }) {
+    if (form.category_id !== c.id) haptic('light', 'profile-edit-category-pick')
     form.category_id = c.id
     errors.category = ''
     categoryPopup.value = false
@@ -499,6 +523,7 @@ async function loadTags() {
 }
 
 function toggleTag(id: number) {
+    haptic('light', 'profile-edit-tag')
     const i = selectedTagIds.value.indexOf(id)
     if (i >= 0) selectedTagIds.value.splice(i, 1)
     else selectedTagIds.value.push(id)
@@ -507,6 +532,7 @@ function toggleTag(id: number) {
 /* ---------------- 头像 ---------------- */
 
 async function chooseAvatar() {
+    haptic('light', 'profile-edit-avatar')
     const paths = await chooseImages({ count: 1 })
     const path = paths[0]
     if (!path) return
@@ -531,12 +557,17 @@ let smsTimer: ReturnType<typeof setInterval> | null = null
 const mobilePending = ref(false)
 
 function openMobilePopup() {
+    haptic('light', 'profile-edit-mobile')
     categoryPopup.value = false
     categoryConfirm.value = false
     mobilePopupErr.value = ''
     // 已收集过新号码时回显，便于改错重填；验证码不清空（重开弹层不代表放弃已收集的验证码）
     mobileDraft.value = mobilePending.value ? form.mobile : ''
     mobilePopup.value = true
+}
+
+function closeMobilePopup() {
+    mobilePopup.value = false
 }
 
 function startCountdown() {
@@ -558,6 +589,7 @@ async function sendCode() {
         mobilePopupErr.value = '请输入 11 位手机号'
         return
     }
+    haptic('light', 'profile-edit-sms')
     mobilePopupErr.value = ''
     try {
         await sendSmsCode({ mobile })
@@ -581,6 +613,7 @@ function confirmMobile() {
         return
     }
     // 弹层只收集，不提交：mobile/code 随表单一起走 updateProfile
+    haptic('medium', 'profile-edit-mobile-confirm')
     form.mobile = mobile
     mobilePending.value = true
     mobilePopupErr.value = ''
@@ -651,6 +684,7 @@ function submit() {
 
 async function doSubmit() {
     if (!guardAllowed.value || submitting.value) return
+    haptic('medium', 'profile-edit-save')
     submitting.value = true
     try {
         const years = Number(form.experience_years.trim())
@@ -982,10 +1016,12 @@ onLoad(() => void load())
 }
 
 /* ---------------- 弹层 ---------------- */
+/* 底抽屉浮层表面：第三层最高亮（surface-float）+ 顶部 48rpx 大圆角 + 上投影 */
 .sheet {
-    background: var(--c-surface);
+    background: var(--c-surface-float);
     padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    border-radius: var(--r-48) var(--r-48) 0 0;
+    box-shadow: var(--shadow-sheet);
 
     &__head {
         display: flex;
@@ -1135,9 +1171,12 @@ onLoad(() => void load())
     }
 }
 
-/* 分类变更确认弹层 */
+/* 分类变更确认弹层（居中确认卡：最高亮表面 + 浮起投影，不使用抽屉表面） */
 .confirm {
     padding: var(--sp-5) var(--sp-5) calc(var(--sp-4) + var(--safe-bottom));
+    background: var(--c-surface-float);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-float);
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);

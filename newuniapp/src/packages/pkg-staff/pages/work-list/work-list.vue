@@ -19,7 +19,7 @@
         <view v-else class="page-wrap work">
             <view class="sum">
                 <view v-for="s in summaryRows" :key="s.key" class="sum__item">
-                    <text class="sum__num">{{ s.value }}</text>
+                    <text class="sum__num t-num">{{ s.value }}</text>
                     <text class="sum__label">{{ s.label }}</text>
                 </view>
             </view>
@@ -51,7 +51,7 @@
             </view>
 
             <view v-if="phase === 'loading' || phase === 'idle'" class="page-pad">
-                <base-skeleton :rows="3" />
+                <base-skeleton :rows="3" variant="card" />
             </view>
 
             <base-empty
@@ -75,57 +75,64 @@
             />
 
             <view v-else class="page-pad list">
-                <base-card v-for="item in list" :key="item.id" compact>
-                    <view class="item">
-                        <image
-                            v-if="item.cover"
-                            class="item__cover"
-                            :src="item.cover"
-                            mode="aspectFill"
-                            aria-label="作品封面"
-                        />
-                        <view v-else class="item__cover item__cover--empty">
-                            <!-- tn-icon 的 color prop 不认 var()（静默丢弃），颜色写父级 CSS 靠继承（R13） -->
-                            <tn-icon name="image" :size="36" />
-                        </view>
-                        <view class="item__body">
-                            <text class="item__title ellipsis">{{
-                                item.title || '未命名作品'
-                            }}</text>
-                            <text class="item__meta">
-                                {{ item.type_desc || '图片' }} ·
-                                {{ item.is_show_desc || (item.is_show ? '已展示' : '未展示') }}
-                            </text>
-                            <status-tag
-                                class="item__tag"
-                                :label="auditLabel(item)"
-                                :tone="auditTone(item.audit_status)"
-                                size="sm"
+                <view class="list__items" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                    <base-card
+                        v-for="(item, index) in list"
+                        :key="item.id"
+                        compact
+                        :style="{ '--i': index }"
+                    >
+                        <view class="item">
+                            <image
+                                v-if="item.cover"
+                                class="item__cover"
+                                :src="item.cover"
+                                mode="aspectFill"
+                                aria-label="作品封面"
                             />
+                            <view v-else class="item__cover item__cover--empty">
+                                <!-- tn-icon 的 color prop 不认 var()（静默丢弃），颜色写父级 CSS 靠继承（R13） -->
+                                <tn-icon name="image" :size="36" />
+                            </view>
+                            <view class="item__body">
+                                <text class="item__title ellipsis">{{
+                                    item.title || '未命名作品'
+                                }}</text>
+                                <text class="item__meta">
+                                    {{ item.type_desc || '图片' }} ·
+                                    {{ item.is_show_desc || (item.is_show ? '已展示' : '未展示') }}
+                                </text>
+                                <status-tag
+                                    class="item__tag"
+                                    :label="auditLabel(item)"
+                                    :tone="auditTone(item.audit_status)"
+                                    size="sm"
+                                />
+                            </view>
                         </view>
-                    </view>
-                    <text v-if="rejectText(item)" class="reject">{{ rejectText(item) }}</text>
-                    <!-- 卡片操作：编辑重新提交审核；删除全状态可用（showModal 二次确认）。
-                         灰度关闭时整行隐藏 -->
-                    <view v-if="canWrite" class="ops">
-                        <view
-                            hover-class="is-pressed"
-                            class="ops__btn"
-                            :aria-label="`编辑作品：${item.title || ''}`"
-                            @tap="goEdit(item)"
-                        >
-                            <text class="ops__text">编辑</text>
+                        <text v-if="rejectText(item)" class="reject">{{ rejectText(item) }}</text>
+                        <!-- 卡片操作：编辑重新提交审核；删除全状态可用（showModal 二次确认）。
+                             灰度关闭时整行隐藏 -->
+                        <view v-if="canWrite" class="ops">
+                            <view
+                                hover-class="is-pressed"
+                                class="ops__btn"
+                                :aria-label="`编辑作品：${item.title || ''}`"
+                                @tap="goEdit(item)"
+                            >
+                                <text class="ops__text">编辑</text>
+                            </view>
+                            <view
+                                hover-class="is-pressed"
+                                class="ops__btn"
+                                :aria-label="`删除作品：${item.title || ''}`"
+                                @tap="onDelete(item)"
+                            >
+                                <text class="ops__text ops__text--danger">删除</text>
+                            </view>
                         </view>
-                        <view
-                            hover-class="is-pressed"
-                            class="ops__btn"
-                            :aria-label="`删除作品：${item.title || ''}`"
-                            @tap="onDelete(item)"
-                        >
-                            <text class="ops__text ops__text--danger">删除</text>
-                        </view>
-                    </view>
-                </base-card>
+                    </base-card>
+                </view>
 
                 <load-more :status="loadMoreStatus" @retry="loadMore" />
             </view>
@@ -142,7 +149,7 @@
  * 提交后 audit_status=0 待审；被拒绝的作品可编辑后重新提交。
  * 写入口受 feature_switch.staff_center_write 灰度控制（关闭时隐藏入口与操作行）。
  */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { StaffWorkAuditStatus, STAFF_WORK_AUDIT_STATUS_NAME_MAP } from '@shared/contracts'
 import { getStaffWorkList, staffWorkDelete } from '@/api/staff-center'
@@ -153,6 +160,8 @@ import { useStaffWriteGate } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
+import { schemeColor } from '@/utils/scheme-color'
 
 const TABS = [
     { key: '', label: '全部' },
@@ -226,6 +235,7 @@ function rejectText(item: any) {
 
 function goCreate() {
     if (!guardAllowed.value) return
+    haptic('light', 'work-create')
     navigate({ path: '/packages/pkg-staff/pages/work-edit/work-edit' })
 }
 
@@ -235,6 +245,7 @@ function goEdit(item: any) {
         toast.warning('作品编号缺失，请刷新后重试')
         return
     }
+    haptic('light', 'work-edit')
     navigate({
         path: '/packages/pkg-staff/pages/work-edit/work-edit',
         query: { id: item.id }
@@ -247,12 +258,14 @@ function onDelete(item: any) {
         toast.warning('作品编号缺失，请刷新后重试')
         return
     }
+    haptic('heavy', 'work-delete')
     uni.showModal({
         title: '删除作品',
         content: '删除后不可恢复，确认删除这个作品？',
         confirmText: '删除',
         cancelText: '取消',
-        confirmColor: '#D8584A',
+        // 删除属不可逆操作，uni.showModal 居中确认弹窗保持原生居中形态
+        confirmColor: schemeColor('danger'),
         success: async (r) => {
             if (!r.confirm) return
             try {
@@ -270,6 +283,7 @@ function onDelete(item: any) {
 
 function switchTab(key: string | number) {
     if (!guardAllowed.value) return
+    // 触觉由 chip-group 内部统一发 light，页面不重复触发（避免双震）
     active.value = key
     reload()
 }
@@ -288,6 +302,29 @@ function onPrimary() {
         uni.navigateTo({ url: '/pages/login/login' })
     }
 }
+
+/* ---- 列表错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
 
 let hasLoaded = false
 
@@ -326,6 +363,12 @@ async function onRefresh(done: () => void) {
 .sum {
     display: flex;
     margin: var(--sp-2) var(--sp-4) 0;
+    /* 汇总条按卡片表面渲染：浅色暖影分层、暗色由 --c-card-border 描边 */
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-card-border);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
 
     &__item {
         flex: 1;
@@ -371,10 +414,17 @@ async function onRefresh(done: () => void) {
     &__btn {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: var(--sp-1);
-        padding: var(--sp-2) var(--sp-3);
+        min-height: 88rpx;
+        padding: 0 var(--sp-3);
         border-radius: var(--r-pill);
         background: var(--c-brand-bg);
+        transition: transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.96);
+        }
     }
 
     &__icon {
@@ -400,6 +450,12 @@ async function onRefresh(done: () => void) {
 }
 
 .list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.list__items {
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
@@ -470,11 +526,18 @@ async function onRefresh(done: () => void) {
     border-top: 1rpx solid var(--c-line);
 
     &__btn {
-        min-height: 56rpx;
-        padding: var(--sp-1) var(--sp-3);
+        /* 相邻小按钮不叠加 .hit-88（伪元素会互相覆盖），直接把盒高做到 88rpx */
+        min-height: 88rpx;
+        padding: 0 var(--sp-3);
         border-radius: var(--r-pill);
         display: flex;
         align-items: center;
+        justify-content: center;
+        transition: transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.96);
+        }
     }
 
     &__text {
@@ -484,6 +547,19 @@ async function onRefresh(done: () => void) {
         &--danger {
             color: var(--c-danger);
         }
+    }
+}
+
+/* v10 §3.13：减弱动效下按压不缩放 */
+@media (prefers-reduced-motion: reduce) {
+    .action__btn,
+    .ops__btn {
+        transition: none;
+    }
+
+    .action__btn.is-pressed,
+    .ops__btn.is-pressed {
+        transform: none;
     }
 }
 </style>

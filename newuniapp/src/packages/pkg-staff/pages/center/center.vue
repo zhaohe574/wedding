@@ -1,11 +1,5 @@
 <template>
-    <page-shell
-        title="服务人员工作台"
-        bg="page"
-        :show-back="true"
-        :pull-refresh="true"
-        @refresh="onRefresh"
-    >
+    <page-shell title="服务人员工作台" bg="page" :show-back="true" :pull-refresh="true" @refresh="onRefresh">
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -17,7 +11,7 @@
 
         <view v-else class="page-wrap center">
             <view v-if="phase === 'loading' || phase === 'idle'" class="center__loading">
-                <base-skeleton :rows="4" />
+                <base-skeleton :rows="4" variant="card" />
             </view>
 
             <base-empty
@@ -33,7 +27,7 @@
             />
 
             <template v-else>
-                <!-- 工作名片：状态、个人资料与最高频的三项工作指标 -->
+                <!-- 工作名片：全页唯一深墨大卡，状态、资料与三项真实工作指标 -->
                 <view class="hero">
                     <view class="hero__top">
                         <view class="hero__badges">
@@ -54,7 +48,7 @@
                             hover-class="is-pressed"
                             aria-role="button"
                             aria-label="查看我的资料"
-                            @tap="go('/packages/pkg-staff/pages/profile/profile')"
+                            @tap="goProfile"
                         >
                             <text>我的资料</text>
                             <tn-icon name="right" :size="22" class="hero__profile-icon" />
@@ -80,16 +74,17 @@
                                 }}</text>
                                 <view v-if="ratingText" class="hero__rating">
                                     <text class="hero__rating-star">★</text>
-                                    <text>{{ ratingText }}</text>
+                                    <text class="t-num">{{ ratingText }}</text>
                                 </view>
                             </view>
                             <text class="hero__meta ellipsis">{{ profileMeta }}</text>
-                            <text class="hero__price ellipsis">
+                            <text class="hero__price ellipsis t-num">
                                 {{ profile.price_text || '展示价格待完善' }}
                             </text>
                         </view>
                     </view>
 
+                    <!-- 三项指标只读 todo 下发的真实字段，不虚构产能 / 目标值 -->
                     <view class="hero__pulse">
                         <view
                             v-for="item in focusMetrics"
@@ -103,7 +98,7 @@
                         >
                             <text class="pulse__label">{{ item.label }}</text>
                             <view class="pulse__value-row">
-                                <text class="pulse__value">{{ item.value }}</text>
+                                <rolling-number class="pulse__value" :value="item.value" />
                                 <text class="pulse__unit">{{ item.unit }}</text>
                             </view>
                         </view>
@@ -117,14 +112,14 @@
                     hover-class="is-pressed"
                     aria-role="button"
                     :aria-label="`资料审核${profile.audit_status_desc}，查看我的资料`"
-                    @tap="go('/packages/pkg-staff/pages/profile/profile')"
+                    @tap="goProfile"
                 >
                     <tn-icon name="tips" :size="26" class="audit__icon" />
                     <text class="audit__text">资料审核：{{ profile.audit_status_desc }}</text>
                     <text class="audit__link">查看</text>
                 </view>
 
-                <!-- 行动条：优先待确认，其次今日服务；均只读跳转，不在本页执行写操作 -->
+                <!-- 优先行动条：琥珀/品牌暖底 + 左侧金色竖线；只读跳转，不在本页执行写操作 -->
                 <view
                     v-if="primaryTask"
                     class="task"
@@ -148,47 +143,47 @@
                 </view>
 
                 <section-header title="常用功能" />
-                <base-card compact>
-                    <view class="quick">
-                        <view
-                            v-for="item in quickActions"
-                            :key="item.key"
-                            class="quick__item"
-                            hover-class="is-pressed"
-                            aria-role="button"
-                            :aria-label="item.label"
-                            @tap="go(item.path)"
-                        >
-                            <view class="quick__icon-wrap">
-                                <tn-icon :name="item.icon" :size="32" class="quick__icon" />
-                                <view v-if="item.badge" class="quick__badge">
-                                    <text class="quick__badge-text">{{ item.badge }}</text>
-                                </view>
-                            </view>
-                            <text class="quick__label">{{ item.label }}</text>
-                        </view>
-                    </view>
-                </base-card>
-
-                <section-header title="客户经营与团队" />
-                <view class="ops-grid">
+                <view class="group">
                     <view
-                        v-for="item in crmEntries"
+                        v-for="item in quickActions"
                         :key="item.key"
-                        class="ops-card"
+                        class="row"
                         hover-class="is-pressed"
                         aria-role="button"
                         :aria-label="item.label"
                         @tap="go(item.path)"
                     >
-                        <view class="ops-card__top">
-                            <view class="ops-card__icon-wrap">
-                                <tn-icon :name="item.icon" :size="28" class="ops-card__icon" />
-                            </view>
-                            <text v-if="item.badge" class="ops-card__badge">{{ item.badge }}</text>
+                        <view class="row__ic">
+                            <tn-icon :name="item.icon" :size="30" class="row__icon" />
                         </view>
-                        <text class="ops-card__title">{{ item.label }}</text>
-                        <text class="ops-card__desc ellipsis">{{ item.desc }}</text>
+                        <view class="row__main">
+                            <text class="row__label">{{ item.label }}</text>
+                        </view>
+                        <text v-if="item.badge" class="row__badge t-num">{{ item.badge }}</text>
+                        <tn-icon name="right" :size="22" class="row__arrow" />
+                    </view>
+                </view>
+
+                <section-header title="客户经营与团队" />
+                <view class="group">
+                    <view
+                        v-for="item in crmEntries"
+                        :key="item.key"
+                        class="row"
+                        hover-class="is-pressed"
+                        aria-role="button"
+                        :aria-label="item.label"
+                        @tap="go(item.path)"
+                    >
+                        <view class="row__ic">
+                            <tn-icon :name="item.icon" :size="30" class="row__icon" />
+                        </view>
+                        <view class="row__main">
+                            <text class="row__label">{{ item.label }}</text>
+                            <text class="row__desc ellipsis">{{ item.desc }}</text>
+                        </view>
+                        <text v-if="item.badge" class="row__badge t-num">{{ item.badge }}</text>
+                        <tn-icon name="right" :size="22" class="row__arrow" />
                     </view>
                 </view>
 
@@ -198,12 +193,17 @@
                     more="全部订单"
                     @more="goOrderList()"
                 />
-                <view v-if="orderCards.length" class="orders">
+                <view
+                    v-if="orderCards.length"
+                    class="orders"
+                    :class="{ stagger: staggerIn, 'is-in': staggerIn }"
+                >
                     <base-card
-                        v-for="order in orderCards"
+                        v-for="(order, index) in orderCards"
                         :key="order.id"
                         compact
                         clickable
+                        :style="{ '--i': index }"
                         :aria-label="`${order.title}，${order.statusLabel}，查看订单详情`"
                         @tap="goOrderDetail(order)"
                     >
@@ -218,7 +218,7 @@
                         <view class="order__meta">
                             <view class="order__date">
                                 <tn-icon name="calendar" :size="24" class="order__meta-icon" />
-                                <text>{{ order.dateText }}</text>
+                                <text class="t-num">{{ order.dateText }}</text>
                             </view>
                             <status-tag
                                 v-if="order.orderStatus === 0 && order.pendingConfirmCount > 0"
@@ -229,8 +229,8 @@
                             />
                         </view>
                         <view class="order__foot">
-                            <text class="order__sn ellipsis">单号 {{ order.orderSn }}</text>
-                            <text v-if="order.amountText" class="order__amount">{{
+                            <text class="order__sn ellipsis t-num">单号 {{ order.orderSn }}</text>
+                            <text v-if="order.amountText" class="order__amount t-num">{{
                                 order.amountText
                             }}</text>
                             <tn-icon name="right" :size="22" class="order__arrow" />
@@ -246,35 +246,29 @@
                 />
 
                 <section-header title="品牌资产" />
-                <base-card compact>
-                    <view class="assets">
-                        <view
-                            v-for="(item, index) in assetEntries"
-                            :key="item.key"
-                            class="asset"
-                            :class="{
-                                'asset--wide':
-                                    assetEntries.length % 2 === 1 && index === assetEntries.length - 1
-                            }"
-                            hover-class="is-pressed"
-                            aria-role="button"
-                            :aria-label="`${item.label}，${item.desc}`"
-                            @tap="go(item.path)"
-                        >
-                            <view class="asset__top">
-                                <view class="asset__icon-wrap">
-                                    <tn-icon :name="item.icon" :size="30" class="asset__icon" />
-                                </view>
-                                <text v-if="item.count !== null" class="asset__count">{{
-                                    item.count
-                                }}</text>
-                                <tn-icon v-else name="right" :size="22" class="asset__arrow" />
-                            </view>
-                            <text class="asset__label">{{ item.label }}</text>
-                            <text class="asset__desc">{{ item.desc }}</text>
+                <view class="group">
+                    <view
+                        v-for="item in assetEntries"
+                        :key="item.key"
+                        class="row"
+                        hover-class="is-pressed"
+                        aria-role="button"
+                        :aria-label="`${item.label}，${item.desc}`"
+                        @tap="go(item.path)"
+                    >
+                        <view class="row__ic">
+                            <tn-icon :name="item.icon" :size="30" class="row__icon" />
                         </view>
+                        <view class="row__main">
+                            <text class="row__label">{{ item.label }}</text>
+                            <text class="row__desc ellipsis">{{ item.desc }}</text>
+                        </view>
+                        <text v-if="item.count !== null" class="row__count t-num">{{
+                            item.count
+                        }}</text>
+                        <tn-icon v-else name="right" :size="22" class="row__arrow" />
                     </view>
-                </base-card>
+                </view>
             </template>
         </view>
         <app-toast />
@@ -286,10 +280,12 @@
  * 服务人员工作台。
  *
  * 数据来自 /staff_center/dashboard：profile / overview / todo / recent_orders。
+ * 三项指标严格取 todo.today_service_count / pending_confirm_orders / upcoming_7d_schedule_count，
+ * 不新增需求里没有的 capacity 字段。
  * 资料、动态、作品、证书编辑入口受 feature_switch.staff_center_write 灰度控制；
  * 订单履约、档期管理、结算收款/补交、候补通知已按 P1 能力陆续接入。
  */
-import { computed, reactive, ref } from 'vue'
+import { computed, onUnmounted, reactive, ref, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import {
     ORDER_STATUS_NAME_MAP,
@@ -305,6 +301,7 @@ import { useStaffWriteGate } from '@/composables/useStaffWriteGate'
 import { useBadgeStore } from '@/stores/badge'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { toast } from '@/composables/useToast'
 import type { LoadPhase } from '@/api/types'
 
@@ -350,10 +347,9 @@ const ratingText = computed(() => {
 })
 const profileMeta = computed(() => {
     const years = toNumber(profile.experience_years)
-    return [
-        profile.category_name || '未分类',
-        years > 0 ? `${years} 年经验` : '经验待完善'
-    ].join(' · ')
+    return [profile.category_name || '未分类', years > 0 ? `${years} 年经验` : '经验待完善'].join(
+        ' · '
+    )
 })
 const auditTone = computed(() => {
     const status = Number(profile.audit_status)
@@ -403,7 +399,7 @@ const primaryTask = computed(() => {
             desc: '进入服务日作战面板，查看场地联系与流程安排',
             action: '进入面板',
             icon: 'calendar',
-            tone: 'info'
+            tone: 'brand'
         }
     }
     return null
@@ -502,9 +498,7 @@ const crmEntries = computed(() => {
         {
             key: 'team',
             label: '团队成员',
-            desc: teamName
-                ? `${isLeader ? '队长' : '队员'} · ${teamName}`
-                : '团队排班协同',
+            desc: teamName ? `${isLeader ? '队长' : '队员'} · ${teamName}` : '团队排班协同',
             icon: 'team',
             badge: teamMemberCount > 0 ? `${teamMemberCount}人` : '',
             path: '/packages/pkg-staff/pages/team-members/team-members'
@@ -563,15 +557,12 @@ const assetEntries = computed(() => {
             path: '/packages/pkg-staff/pages/dynamic-publish/dynamic-publish'
         }
     ]
-    // 灰度关闭（feature_switch.staff_center_write=0）时不出现写入口；
-    // 剩 5 项时最后一项自动独占整行（asset--wide 逻辑不变）
+    // 灰度关闭（feature_switch.staff_center_write=0）时不出现写入口
     return canWrite.value ? entries : entries.filter((e) => e.key !== 'dynamicPublish')
 })
 
 function packageName(order: any) {
-    const names = Array.isArray(order?.package_names)
-        ? order.package_names.filter(Boolean)
-        : []
+    const names = Array.isArray(order?.package_names) ? order.package_names.filter(Boolean) : []
     if (names.length > 1) return `${names[0]} 等 ${names.length} 项`
     if (names.length === 1) return String(names[0])
 
@@ -633,11 +624,42 @@ const orderCards = computed(() =>
     })
 )
 
+/* ---- 最近订单错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value) return
+    if (staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => orderCards.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
+
 function go(path: string) {
+    haptic('light', 'staff-center-nav')
     navigate({ path })
 }
 
+function goProfile() {
+    haptic('light', 'staff-center-profile')
+    navigate({ path: '/packages/pkg-staff/pages/profile/profile' })
+}
+
 function goOrderList(status?: number) {
+    haptic('light', 'staff-center-orders')
     navigate({
         path: '/packages/pkg-staff/pages/order-list/order-list',
         query: status === undefined ? {} : { status }
@@ -649,6 +671,7 @@ function goOrderDetail(order: { id: number }) {
         toast.warning('订单编号缺失，请刷新后重试')
         return
     }
+    haptic('light', 'staff-center-order-detail')
     navigate({
         path: '/packages/pkg-staff/pages/order-detail/order-detail',
         query: { id: order.id }
@@ -746,13 +769,15 @@ function onRefresh(done: () => void) {
     }
 }
 
-/* 工作名片 */
+/* 工作名片：全页唯一深墨大卡（首屏 320ms 淡入上浮） */
 .hero {
     padding: var(--sp-4);
-    border: 1rpx solid var(--c-brand-text);
+    border: 1rpx solid var(--c-card-border);
     border-radius: var(--r-lg);
     background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
+    box-shadow: var(--shadow-card);
     overflow: hidden;
+    animation: hero-in 320ms var(--ease-out) both;
 
     &__top,
     &__badges,
@@ -875,7 +900,7 @@ function onRefresh(done: () => void) {
         gap: var(--sp-1);
         padding: var(--sp-1) var(--sp-2);
         border-radius: var(--r-pill);
-        background: var(--c-dark-3);
+        background: var(--c-on-dark-fill-2);
         font-size: var(--fs-xs);
         color: var(--c-on-dark);
     }
@@ -903,6 +928,17 @@ function onRefresh(done: () => void) {
     }
 }
 
+@keyframes hero-in {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 12rpx, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
 .pulse {
     min-width: 0;
     min-height: 128rpx;
@@ -912,9 +948,14 @@ function onRefresh(done: () => void) {
     justify-content: center;
     gap: var(--sp-2);
     padding: var(--sp-3) var(--sp-2);
-    border: 1rpx solid var(--c-dark-3);
+    border: 1rpx solid var(--c-on-dark-fill-1);
     border-radius: var(--r-md);
-    background: var(--c-dark-3);
+    background: var(--c-on-dark-fill-1);
+    transition: transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.97);
+    }
 
     &--active {
         border-color: var(--c-brand-soft);
@@ -930,6 +971,7 @@ function onRefresh(done: () => void) {
         display: flex;
         align-items: baseline;
         gap: var(--sp-1);
+        min-width: 0;
     }
 
     &__value {
@@ -937,8 +979,7 @@ function onRefresh(done: () => void) {
         font-size: var(--fs-xl);
         font-weight: var(--fw-semibold);
         line-height: var(--lh-none);
-        color: var(--c-on-dark);
-        font-variant-numeric: tabular-nums;
+        color: var(--c-brand-soft);
     }
 
     &__unit {
@@ -990,23 +1031,36 @@ function onRefresh(done: () => void) {
 
     &__link {
         flex-shrink: 0;
-        padding: var(--sp-2) 0 var(--sp-2) var(--sp-2);
+        display: inline-flex;
+        align-items: center;
+        min-height: 88rpx;
+        padding: 0 0 0 var(--sp-2);
         font-size: var(--fs-xs);
         color: var(--c-brand-text);
     }
 }
 
+/* 优先行动条：暖底 + 左侧金色竖线，整条 88rpx 热区；有 primaryTask 才挂载，动效随之只在需要时出现 */
 .task {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--sp-3);
+    min-height: 88rpx;
     margin-top: var(--sp-2);
-    padding: var(--sp-3);
-    border: 1rpx solid;
+    padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
+    border: 1rpx solid var(--c-card-border);
+    border-left: 4rpx solid var(--c-brand);
     border-radius: var(--r-md);
+    box-sizing: border-box;
+    animation: task-breathe 2.4s ease-in-out infinite;
+    transition: transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.99);
+    }
 
     &--warning {
-        border-color: var(--c-warning-border);
         background: var(--c-warning-bg);
 
         .task__icon {
@@ -1014,12 +1068,11 @@ function onRefresh(done: () => void) {
         }
     }
 
-    &--info {
-        border-color: var(--c-info-border);
-        background: var(--c-info-bg);
+    &--brand {
+        background: var(--c-brand-bg);
 
         .task__icon {
-            color: var(--c-info);
+            color: var(--c-brand-text);
         }
     }
 
@@ -1060,7 +1113,8 @@ function onRefresh(done: () => void) {
         display: flex;
         align-items: center;
         gap: var(--sp-1);
-        padding: var(--sp-2) var(--sp-3);
+        min-height: 64rpx;
+        padding: 0 var(--sp-3);
         border-radius: var(--r-pill);
         background: var(--c-action-bg);
         font-size: var(--fs-xs);
@@ -1072,64 +1126,101 @@ function onRefresh(done: () => void) {
     }
 }
 
-/* 四格快捷入口 */
-.quick {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--sp-2);
+@keyframes task-breathe {
+    0%,
+    100% {
+        box-shadow: var(--shadow-card);
+    }
+    50% {
+        box-shadow: var(--shadow-card-hover);
+    }
+}
 
-    &__item {
-        min-width: 0;
-        min-height: 128rpx;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: var(--sp-2);
+/* 纵向功能行：分组卡片 + 行内图标/标签/角标，替掉四宫格与三宫格的图标墙 */
+.group {
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-card-border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    min-height: 96rpx;
+    padding: var(--sp-2) var(--sp-3);
+    transition: background-color var(--dur-fast) var(--ease-out);
+
+    & + & {
+        border-top: 1rpx solid var(--c-line);
     }
 
-    &__icon-wrap {
-        position: relative;
+    &.is-pressed {
+        background: var(--c-surface-2);
+    }
+
+    &__ic {
+        flex-shrink: 0;
         width: 64rpx;
         height: 64rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-brand-bg);
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: var(--r-pill);
-        background: var(--c-brand-bg);
     }
 
     &__icon {
         color: var(--c-brand-text);
     }
 
-    &__badge {
-        position: absolute;
-        top: -12rpx;
-        right: -20rpx;
-        min-width: 32rpx;
-        height: 32rpx;
-        box-sizing: border-box;
+    &__main {
+        flex: 1;
+        min-width: 0;
         display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 var(--sp-1);
-        border-radius: var(--r-pill);
-        background: var(--c-danger);
-    }
-
-    &__badge-text {
-        font-size: var(--fs-18);
-        line-height: var(--lh-none);
-        color: var(--c-ink-inverse);
-        font-variant-numeric: tabular-nums;
+        flex-direction: column;
+        gap: 2rpx;
     }
 
     &__label {
-        font-size: var(--fs-xs);
-        line-height: var(--lh-body);
+        display: block;
+        min-width: 0;
+        font-size: var(--fs-md);
+        font-weight: var(--fw-medium);
         color: var(--c-ink);
-        white-space: nowrap;
+    }
+
+    &__desc {
+        font-size: var(--fs-xs);
+        line-height: var(--lh-tight);
+        color: var(--c-ink-3);
+    }
+
+    &__badge {
+        flex-shrink: 0;
+        min-width: 40rpx;
+        padding: 2rpx var(--sp-2);
+        border-radius: var(--r-pill);
+        background: var(--c-danger-bg);
+        text-align: center;
+        font-size: var(--fs-20);
+        font-weight: var(--fw-semibold);
+        color: var(--c-danger);
+    }
+
+    &__count {
+        flex-shrink: 0;
+        font-family: var(--font-serif);
+        font-size: var(--fs-lg);
+        font-weight: var(--fw-semibold);
+        color: var(--c-brand-text);
+    }
+
+    &__arrow {
+        flex-shrink: 0;
+        color: var(--c-ink-3);
     }
 }
 
@@ -1200,139 +1291,29 @@ function onRefresh(done: () => void) {
         font-size: var(--fs-md);
         font-weight: var(--fw-semibold);
         color: var(--c-brand-text);
-        font-variant-numeric: tabular-nums;
     }
 }
 
-/* 品牌资产 */
-.assets {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--sp-2);
-}
-
-.asset {
-    min-width: 0;
-    padding: var(--sp-3);
-    border-radius: var(--r-20);
-    background: var(--c-neutral-bg);
-
-    &--wide {
-        grid-column: 1 / -1;
+@media (prefers-reduced-motion: reduce) {
+    .hero {
+        animation: none;
     }
 
-    &__top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--sp-2);
+    .task {
+        animation: none;
+        box-shadow: var(--shadow-card);
+
+        &.is-pressed {
+            transform: none;
+        }
     }
 
-    &__icon-wrap {
-        width: 56rpx;
-        height: 56rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--r-pill);
-        background: var(--c-brand-bg);
-    }
+    .pulse {
+        transition: none;
 
-    &__icon {
-        color: var(--c-brand-text);
-    }
-
-    &__count {
-        font-family: var(--font-serif);
-        font-size: var(--fs-lg);
-        font-weight: var(--fw-semibold);
-        color: var(--c-brand-text);
-        font-variant-numeric: tabular-nums;
-    }
-
-    &__arrow {
-        color: var(--c-ink-3);
-    }
-
-    &__label,
-    &__desc {
-        display: block;
-    }
-
-    &__label {
-        margin-top: var(--sp-2);
-        font-size: var(--fs-md);
-        font-weight: var(--fw-semibold);
-        line-height: var(--lh-tight);
-        color: var(--c-ink);
-    }
-
-    &__desc {
-        margin-top: var(--sp-1);
-        font-size: var(--fs-xs);
-        line-height: var(--lh-body);
-        color: var(--c-ink-3);
-    }
-}
-
-/* 客户经营与团队 */
-.ops-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--sp-2);
-}
-
-.ops-card {
-    min-width: 0;
-    padding: var(--sp-3);
-    border-radius: var(--r-md);
-    background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-1);
-
-    &__top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--sp-1);
-    }
-
-    &__icon-wrap {
-        width: 52rpx;
-        height: 52rpx;
-        border-radius: var(--r-pill);
-        background: var(--c-brand-bg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    &__icon {
-        color: var(--c-brand-text);
-    }
-
-    &__badge {
-        padding: 2rpx var(--sp-1);
-        border-radius: var(--r-pill);
-        background: var(--c-brand-bg);
-        font-size: var(--fs-18);
-        font-weight: var(--fw-semibold);
-        color: var(--c-brand-text);
-        font-variant-numeric: tabular-nums;
-    }
-
-    &__title {
-        margin-top: var(--sp-1);
-        font-size: var(--fs-md);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__desc {
-        font-size: var(--fs-20);
-        color: var(--c-ink-3);
+        &.is-pressed {
+            transform: none;
+        }
     }
 }
 </style>

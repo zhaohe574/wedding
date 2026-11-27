@@ -33,7 +33,7 @@
             </view>
 
             <view v-if="loading" class="page-pad">
-                <base-skeleton :rows="3" />
+                <base-skeleton :rows="3" variant="card" />
             </view>
 
             <base-empty
@@ -58,46 +58,57 @@
             />
 
             <view v-else class="page-pad list">
-                <base-card
-                    v-for="item in list"
-                    :key="item.id"
-                    compact
-                    clickable
-                    @tap="goDetail(item)"
-                >
-                    <view class="head">
-                        <text class="head__sn">{{ item.order_sn }}</text>
-                        <status-tag :label="statusLabel(item)" :tone="statusTone(item)" size="sm" />
-                    </view>
-                    <view class="body">
-                        <view class="body__main">
-                            <text class="body__title ellipsis">{{
-                                item.package_name || item.item_type_desc || '服务订单'
-                            }}</text>
-                            <text v-if="item.service_date" class="body__meta"
-                                >服务日期 {{ item.service_date }}</text
-                            >
-                            <text v-if="item.contact_name" class="body__meta body__contact">
-                                {{ item.contact_name }} {{ maskMobile(item.contact_mobile) }}
-                            </text>
+                <view class="list__items" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                    <base-card
+                        v-for="(item, index) in list"
+                        :key="item.id"
+                        compact
+                        clickable
+                        :style="{ '--i': index }"
+                        @tap="goDetail(item)"
+                    >
+                        <view class="head">
+                            <text class="head__sn t-num">{{ item.order_sn }}</text>
+                            <status-tag
+                                :label="statusLabel(item)"
+                                :tone="statusTone(item)"
+                                size="sm"
+                            />
                         </view>
-                        <price
-                            size="md"
-                            v-if="
-                                item.total_amount !== undefined || item.order_amount !== undefined
-                            "
-                            class="body__price"
-                            :content="item.total_amount ?? item.order_amount ?? 0"
-                        />
-                    </view>
-                    <view v-if="item.service_address" class="addr ellipsis-2">{{
-                        item.service_address
-                    }}</view>
-                    <view class="foot">
-                        <text class="foot__time">{{ item.create_time || '服务订单' }}</text>
-                        <text class="foot__link">查看详情</text>
-                    </view>
-                </base-card>
+                        <view class="body">
+                            <view class="body__main">
+                                <text class="body__title ellipsis">{{
+                                    item.package_name || item.item_type_desc || '服务订单'
+                                }}</text>
+                                <text v-if="item.service_date" class="body__meta t-num"
+                                    >服务日期 {{ item.service_date }}</text
+                                >
+                                <text v-if="item.contact_name" class="body__meta body__contact">
+                                    {{ item.contact_name }}
+                                    <text class="t-num">{{ maskMobile(item.contact_mobile) }}</text>
+                                </text>
+                            </view>
+                            <price
+                                size="md"
+                                v-if="
+                                    item.total_amount !== undefined ||
+                                    item.order_amount !== undefined
+                                "
+                                class="body__price t-num"
+                                :content="item.total_amount ?? item.order_amount ?? 0"
+                            />
+                        </view>
+                        <view v-if="item.service_address" class="addr ellipsis-2">{{
+                            item.service_address
+                        }}</view>
+                        <view class="foot">
+                            <text class="foot__time t-num">{{
+                                item.create_time || '服务订单'
+                            }}</text>
+                            <text class="foot__link">查看详情</text>
+                        </view>
+                    </base-card>
+                </view>
 
                 <load-more :status="loadMoreStatus" @retry="fetchPage(false)" />
             </view>
@@ -108,7 +119,7 @@
 
 <script setup lang="ts">
 /** 服务人员：指派给我的订单 */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
@@ -122,6 +133,7 @@ import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { normalizePage } from '@/request'
 import { navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 
 const {
     guardPhase,
@@ -236,6 +248,7 @@ function reload() {
 
 function switchTab(key: string) {
     if (!guardAllowed.value || key === active.value) return
+    haptic('light', 'staff-order-tab')
     active.value = key
     list.value = []
     reload()
@@ -243,11 +256,35 @@ function switchTab(key: string) {
 
 function goDetail(item: any) {
     if (!guardAllowed.value) return
+    haptic('light', 'staff-order-detail')
     navigate({
         path: '/packages/pkg-staff/pages/order-detail/order-detail',
         query: { id: item.order_id || item.id }
     })
 }
+
+/* ---- 列表错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
 
 async function init(forceGuard = false) {
     if (!(await verify(forceGuard))) return
@@ -302,6 +339,12 @@ function onReachBottomLoad() {
     flex-direction: column;
     gap: var(--sp-3);
     padding-top: var(--sp-3);
+}
+
+.list__items {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
 }
 
 .head {

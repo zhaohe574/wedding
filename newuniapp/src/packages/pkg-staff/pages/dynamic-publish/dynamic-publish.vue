@@ -12,7 +12,7 @@
 
         <template v-else>
             <view v-if="loading && isEdit" class="pad">
-                <base-skeleton :rows="4" />
+                <base-skeleton :rows="4" variant="card" />
             </view>
 
             <base-empty
@@ -99,7 +99,7 @@
                 <view class="video-block">
                     <view class="video-block__head">
                         <text class="video-block__label">视频文件</text>
-                        <text class="video-block__status">{{
+                        <text class="video-block__status t-num">{{
                             videoUploading
                                 ? `上传中 ${videoProgress}%`
                                 : videoUrl
@@ -126,7 +126,7 @@
                         <view class="video-block__badge">
                             <tn-icon :name="videoUploading ? 'loading' : 'upload'" :size="36" />
                         </view>
-                        <text class="video-block__pick-title">{{
+                        <text class="video-block__pick-title t-num">{{
                             videoUploading
                                 ? `视频上传中 ${videoProgress}%`
                                 : '点击上传视频'
@@ -195,10 +195,11 @@
                     <view class="switch-row__body">
                         <text class="switch-row__label">允许评论</text>
                     </view>
-                    <!-- switch 组件不支持 var() 色值，取品牌金定值（全站既有口径） -->
-                    <switch
-                        :checked="form.allow_comment"
-                        color="#C6A15B"
+                    <!-- 弹性开关：轨道消费 --c-action-*，明暗两态无需字面色值；
+                         change 直接给 boolean，组件内部已发 light 触觉，页面只回写状态 -->
+                    <elastic-switch
+                        :model-value="form.allow_comment"
+                        aria-label="允许评论"
                         @change="onAllowCommentChange"
                     />
                 </view>
@@ -211,6 +212,7 @@
                     variant="danger"
                     size="md"
                     :loading="deleting"
+                    haptic-level="heavy"
                     @click="onDelete"
                 />
             </view>
@@ -229,6 +231,7 @@
                         :block="false"
                         :loading="submitting"
                         :disabled="submitting"
+                        haptic-level="medium"
                         @click="submit"
                     />
                 </template>
@@ -264,6 +267,8 @@ import { useStaffGuard } from '@/composables/useStaffGuard'
 import { useStaffWriteGate, STAFF_WRITE_GATE_TIP } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
+import { schemeColor } from '@/utils/scheme-color'
 
 const editId = ref(0)
 const isEdit = computed(() => editId.value > 0)
@@ -319,6 +324,7 @@ const videoProgress = ref(0)
 
 async function pickVideo() {
     if (videoUploading.value) return
+    haptic('light', 'dp-video-pick')
     // 与页面提示文案一致：100MB / 60s
     const picked = await chooseVideo({ maxDuration: 60, maxSizeMB: 100 })
     if (!picked) return
@@ -336,12 +342,13 @@ async function pickVideo() {
 }
 
 function removeVideo() {
+    haptic('light', 'dp-video-remove')
     videoUrl.value = ''
     videoProgress.value = 0
 }
 
-function onAllowCommentChange(e: any) {
-    form.allow_comment = !!e?.detail?.value
+function onAllowCommentChange(val: boolean) {
+    form.allow_comment = !!val
 }
 
 /* ---------------- 校验与提交 ---------------- */
@@ -425,7 +432,8 @@ function onDelete() {
         content: '删除后不可恢复，确认删除这条动态？',
         confirmText: '删除',
         cancelText: '取消',
-        confirmColor: '#D8584A',
+        // 删除属不可逆操作，uni.showModal 居中确认弹窗保持原生居中形态
+        confirmColor: schemeColor('danger'),
         success: async (r) => {
             if (!r.confirm) return
             deleting.value = true
@@ -672,12 +680,20 @@ onLoad((options: any) => {
     &__action {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: var(--sp-1);
-        padding: 8rpx var(--sp-3);
+        /* 相邻小按钮不叠加 .hit-88（伪元素会互相覆盖），直接把盒高做到 88rpx */
+        min-height: 88rpx;
+        padding: 0 var(--sp-3);
         border-radius: var(--r-pill);
-        border: 1rpx solid var(--c-line);
+        border: 1rpx solid var(--c-control-border);
         background: var(--c-surface);
         color: var(--c-ink-2);
+        transition: transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.96);
+        }
 
         &--danger {
             border-color: var(--c-danger-bg);
@@ -704,6 +720,8 @@ onLoad((options: any) => {
     display: flex;
     align-items: center;
     gap: var(--sp-3);
+    /* 整行 88rpx：与 elastic-switch 自身热区对齐，视觉基线不塌 */
+    min-height: 88rpx;
     margin-top: var(--sp-3);
     padding-top: var(--sp-3);
     border-top: 1rpx solid var(--c-control-border);
@@ -730,5 +748,16 @@ onLoad((options: any) => {
 .bar__note {
     font-size: var(--fs-xs);
     color: var(--c-ink-3);
+}
+
+/* v10 §3.13：减弱动效下按压不缩放 */
+@media (prefers-reduced-motion: reduce) {
+    .video-block__action {
+        transition: none;
+    }
+
+    .video-block__action.is-pressed {
+        transform: none;
+    }
 }
 </style>

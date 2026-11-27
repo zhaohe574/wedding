@@ -34,25 +34,18 @@
                     </view>
 
                     <view class="summary-card__grid">
-                        <view class="sum-cell" @tap="switchScope('overdue')">
-                            <text
+                        <view
+                            v-for="card in sumCards"
+                            :key="card.key"
+                            class="sum-cell"
+                            @tap="onSumTap(card.key)"
+                        >
+                            <rolling-number
                                 class="sum-cell__num"
-                                :class="{ 'is-danger': summary.overdue_count > 0 }"
-                                >{{ summary.overdue_count }}</text
-                            >
-                            <text class="sum-cell__label">已逾期</text>
-                        </view>
-                        <view class="sum-cell" @tap="switchScope('today')">
-                            <text class="sum-cell__num">{{ summary.today_count }}</text>
-                            <text class="sum-cell__label">今日待办</text>
-                        </view>
-                        <view class="sum-cell" @tap="switchScope('week')">
-                            <text class="sum-cell__num">{{ summary.week_count }}</text>
-                            <text class="sum-cell__label">近 7 日</text>
-                        </view>
-                        <view class="sum-cell" @tap="switchScope('done')">
-                            <text class="sum-cell__num">{{ summary.done_count }}</text>
-                            <text class="sum-cell__label">已完成</text>
+                                :class="{ 'is-danger': card.danger }"
+                                :value="card.value"
+                            />
+                            <text class="sum-cell__label">{{ card.label }}</text>
                         </view>
                     </view>
                 </view>
@@ -69,7 +62,7 @@
             </view>
 
             <view v-if="loading" class="page-pad">
-                <base-skeleton :rows="4" />
+                <base-skeleton :rows="4" variant="card" />
             </view>
 
             <base-empty
@@ -93,92 +86,101 @@
             />
 
             <view v-else class="page-pad list">
-                <base-card v-for="item in list" :key="item.id" compact class="item-card">
-                    <view class="item-card__head">
-                        <view class="item-card__title-wrap">
-                            <text class="item-card__title">{{ item.title }}</text>
-                            <text class="item-card__time">
-                                {{ item.remind_date }} {{ item.remind_time }} ·
-                                {{ item.remind_type_label }}
+                <view class="list__items" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                    <base-card
+                        v-for="(item, index) in list"
+                        :key="item.id"
+                        compact
+                        class="item-card"
+                        :style="{ '--i': index }"
+                    >
+                        <view class="item-card__head">
+                            <view class="item-card__title-wrap">
+                                <text class="item-card__title">{{ item.title }}</text>
+                                <text class="item-card__time t-num">
+                                    {{ item.remind_date }} {{ item.remind_time }} ·
+                                    {{ item.remind_type_label }}
+                                </text>
+                            </view>
+                            <status-tag
+                                :label="item.status_desc"
+                                :tone="statusTone(item)"
+                                size="sm"
+                            />
+                        </view>
+
+                        <view v-if="item.source_type !== 'general'" class="target-box">
+                            <text class="target-box__name">{{ item.customer_name }}</text>
+                            <text class="target-box__meta t-num">
+                                {{ item.service_date ? `${item.service_date} · ` : ''
+                                }}{{ item.package_name || item.service_address || '服务档期' }}
                             </text>
                         </view>
-                        <status-tag
-                            :label="item.status_desc"
-                            :tone="statusTone(item)"
-                            size="sm"
-                        />
-                    </view>
 
-                    <view v-if="item.source_type !== 'general'" class="target-box">
-                        <text class="target-box__name">{{ item.customer_name }}</text>
-                        <text class="target-box__meta">
-                            {{ item.service_date ? `${item.service_date} · ` : ''
-                            }}{{ item.package_name || item.service_address || '服务档期' }}
-                        </text>
-                    </view>
+                        <text v-if="item.remark" class="item-card__remark">{{ item.remark }}</text>
 
-                    <text v-if="item.remark" class="item-card__remark">{{ item.remark }}</text>
-
-                    <view class="item-card__actions">
-                        <base-button
-                            v-if="item.status === 0"
-                            text="完成"
-                            variant="ink"
-                            size="sm"
-                            :block="false"
-                            :disabled="actingId === item.id"
-                            @click="handleAction(item.id, 'done')"
-                        />
-                        <base-button
-                            v-else
-                            text="恢复"
-                            variant="ghost"
-                            size="sm"
-                            :block="false"
-                            :disabled="actingId === item.id"
-                            @click="handleAction(item.id, 'reopen')"
-                        />
-                        <base-button
-                            v-if="item.status === 0"
-                            text="顺延1天"
-                            variant="ghost"
-                            size="sm"
-                            :block="false"
-                            :disabled="actingId === item.id"
-                            @click="handleAction(item.id, 'snooze')"
-                        />
-                        <base-button
-                            v-if="item.source_type !== 'general'"
-                            text="看档案"
-                            variant="ghost"
-                            size="sm"
-                            :block="false"
-                            @click="openCoupleDetail(item)"
-                        />
-                        <base-button
-                            v-if="item.customer_mobile"
-                            text="拨打"
-                            variant="ghost"
-                            size="sm"
-                            :block="false"
-                            @click="dialPhone(item.customer_mobile)"
-                        />
-                        <base-button
-                            text="编辑"
-                            variant="ghost"
-                            size="sm"
-                            :block="false"
-                            @click="openEditSheet(item)"
-                        />
-                        <base-button
-                            text="删除"
-                            variant="danger"
-                            size="sm"
-                            :block="false"
-                            @click="handleDelete(item.id)"
-                        />
-                    </view>
-                </base-card>
+                        <view class="item-card__actions">
+                            <base-button
+                                v-if="item.status === 0"
+                                text="完成"
+                                variant="ink"
+                                size="sm"
+                                :block="false"
+                                :disabled="actingId === item.id"
+                                @click="handleAction(item.id, 'done')"
+                            />
+                            <base-button
+                                v-else
+                                text="恢复"
+                                variant="ghost"
+                                size="sm"
+                                :block="false"
+                                :disabled="actingId === item.id"
+                                @click="handleAction(item.id, 'reopen')"
+                            />
+                            <base-button
+                                v-if="item.status === 0"
+                                text="顺延1天"
+                                variant="ghost"
+                                size="sm"
+                                :block="false"
+                                :disabled="actingId === item.id"
+                                @click="handleAction(item.id, 'snooze')"
+                            />
+                            <base-button
+                                v-if="item.source_type !== 'general'"
+                                text="看档案"
+                                variant="ghost"
+                                size="sm"
+                                :block="false"
+                                @click="openCoupleDetail(item)"
+                            />
+                            <base-button
+                                v-if="item.customer_mobile"
+                                text="拨打"
+                                variant="ghost"
+                                size="sm"
+                                :block="false"
+                                @click="dialPhone(item.customer_mobile)"
+                            />
+                            <base-button
+                                text="编辑"
+                                variant="ghost"
+                                size="sm"
+                                :block="false"
+                                @click="openEditSheet(item)"
+                            />
+                            <base-button
+                                text="删除"
+                                variant="danger"
+                                size="sm"
+                                :block="false"
+                                haptic-level="none"
+                                @click="handleDelete(item.id)"
+                            />
+                        </view>
+                    </base-card>
+                </view>
             </view>
         </view>
 
@@ -198,7 +200,7 @@
 /**
  * 服务人员：客户跟进提醒队列页。
  */
-import { computed, reactive, ref } from 'vue'
+import { computed, onUnmounted, reactive, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     actStaffFollowup,
@@ -215,6 +217,7 @@ import { useStaffGuard } from '@/composables/useStaffGuard'
 import { toast } from '@/composables/useToast'
 import { navigate } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { haptic } from '@/utils/haptics'
 
 const SCOPE_ITEMS = [
     { label: '待跟进', value: 'pending' },
@@ -260,6 +263,52 @@ let firstShow = true
 const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 
+/** 汇总计数必须是有限数：接口可能回字符串 / null，rolling-number 收到 NaN 会渲染异常 */
+function toCount(v: unknown): number {
+    const n = Number(v ?? 0)
+    return Number.isFinite(n) ? n : 0
+}
+
+const sumCards = computed(() => [
+    {
+        key: 'overdue',
+        label: '已逾期',
+        value: toCount(summary.overdue_count),
+        danger: toCount(summary.overdue_count) > 0
+    },
+    { key: 'today', label: '今日待办', value: toCount(summary.today_count), danger: false },
+    { key: 'week', label: '近 7 日', value: toCount(summary.week_count), danger: false },
+    { key: 'done', label: '已完成', value: toCount(summary.done_count), danger: false }
+])
+
+function onSumTap(scope: string): void {
+    haptic('light', 'followup-sum')
+    switchScope(scope)
+}
+
+/* ---- 列表错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
+
 function statusTone(item: StaffFollowupReminderItem): Tone {
     if (item.status === 1) return 'success'
     if (item.status === 2) return 'neutral'
@@ -298,6 +347,7 @@ function switchScope(scope: string): void {
 }
 
 function onScopeChange(val: string | number): void {
+    /* chip-group 内部已发 light 触觉，这里不再补，避免双震 */
     switchScope(String(val || 'pending'))
 }
 
@@ -354,6 +404,7 @@ async function handleAction(
 }
 
 function handleDelete(id: number): void {
+    // 确认类二次弹窗保留居中形态：uni.showModal 是系统原生模态，不做可下拉关闭的抽屉
     uni.showModal({
         title: '删除跟进提醒',
         content: '确认删除这条提醒？',
@@ -361,6 +412,7 @@ function handleDelete(id: number): void {
         cancelText: '取消',
         success: async (r) => {
             if (!r.confirm) return
+            haptic('heavy', 'followup-delete')
             actingId.value = id
             try {
                 await deleteStaffFollowup({ id })
@@ -446,7 +498,9 @@ function onRefresh(done: () => void) {
 .summary-card {
     padding: var(--sp-4);
     border-radius: var(--r-lg);
-    background: linear-gradient(155deg, var(--c-dark-1), var(--c-dark-2));
+    background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
     color: var(--c-on-dark);
     display: flex;
     flex-direction: column;
@@ -490,7 +544,9 @@ function onRefresh(done: () => void) {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 4rpx;
+    min-height: 88rpx;
 
     &__num {
         font-family: var(--font-serif);
@@ -516,6 +572,12 @@ function onRefresh(done: () => void) {
 }
 
 .list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.list__items {
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);

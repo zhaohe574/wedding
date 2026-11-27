@@ -17,7 +17,7 @@
 
         <view v-else class="page-wrap prof">
             <view v-if="phase === 'loading' || phase === 'idle'" class="prof__loading">
-                <base-skeleton :rows="4" />
+                <base-skeleton :rows="4" variant="card" />
             </view>
 
             <base-empty
@@ -65,22 +65,24 @@
                                 }}</text>
                                 <view v-if="ratingText" class="hero__rating">
                                     <text class="hero__rating-star">★</text>
-                                    <text>{{ ratingText }}</text>
+                                    <text class="t-num">{{ ratingText }}</text>
                                 </view>
                                 <view v-else class="hero__rating hero__rating--muted">
                                     <text>暂无评分</text>
                                 </view>
                             </view>
                             <text class="hero__meta ellipsis">{{ profileMeta }}</text>
-                            <text class="hero__price ellipsis">
+                            <text class="hero__price ellipsis t-num">
                                 {{ info.price_text || '展示价格待完善' }}
                             </text>
                         </view>
                     </view>
 
                     <view class="hero__foot">
-                        <text class="hero__foot-item">工号 {{ info.sn || '—' }}</text>
-                        <text v-if="joinedText" class="hero__foot-item">入驻 {{ joinedText }}</text>
+                        <text class="hero__foot-item t-num">工号 {{ info.sn || '—' }}</text>
+                        <text v-if="joinedText" class="hero__foot-item t-num"
+                            >入驻 {{ joinedText }}</text
+                        >
                     </view>
                 </view>
 
@@ -107,7 +109,7 @@
                             :aria-label="`${item.label} ${item.value}，查看${item.label}`"
                             @tap="go(item.path)"
                         >
-                            <text class="metric__value">{{ item.value }}</text>
+                            <text class="metric__value t-num">{{ item.value }}</text>
                             <text class="metric__label">{{ item.label }}</text>
                         </view>
                     </view>
@@ -126,7 +128,7 @@
                         :class="{ 'row--divided': index > 0 }"
                     >
                         <text class="row__label">{{ row.label }}</text>
-                        <text class="row__value" :class="{ 'row__value--muted': row.muted }">{{
+                        <text class="row__value t-num" :class="{ 'row__value--muted': row.muted }">{{
                             row.value || '未填写'
                         }}</text>
                     </view>
@@ -225,6 +227,7 @@ import { useStaffWriteGate } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 import type { LoadPhase } from '@/api/types'
 
 const certificatePath = '/packages/pkg-staff/pages/certificate-list/certificate-list'
@@ -242,11 +245,13 @@ const {
 } = useStaffGuard(() => load(true))
 
 function go(path: string) {
+    haptic('light', 'staff-profile-nav')
     navigate({ path })
 }
 
 /** 编辑资料入口（P0 写能力） */
 function goEditProfile() {
+    haptic('light', 'staff-profile-edit')
     navigate({ path: '/packages/pkg-staff/pages/profile-edit/profile-edit' })
 }
 
@@ -696,6 +701,11 @@ function onRefresh(done: () => void) {
     justify-content: center;
     gap: var(--sp-1);
     padding: var(--sp-2) 0;
+    transition: transform var(--dur-press) var(--ease-out);
+
+    &.is-pressed {
+        transform: scale(0.96);
+    }
 
     & + & {
         border-left: 1rpx solid var(--c-line);
@@ -895,6 +905,17 @@ function onRefresh(done: () => void) {
     &__arrow {
         flex-shrink: 0;
         color: var(--c-ink-3);
+    }
+}
+
+/* v10 §3.13：减弱动效下按压不缩放 */
+@media (prefers-reduced-motion: reduce) {
+    .metric {
+        transition: none;
+    }
+
+    .metric.is-pressed {
+        transform: none;
     }
 }
 </style>

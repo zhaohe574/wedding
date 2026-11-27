@@ -57,7 +57,7 @@
                     />
                     <text
                         v-if="keyword"
-                        class="search-box__clear"
+                        class="search-box__clear hit-88"
                         @tap="clearKeyword"
                     >
                         清空
@@ -73,7 +73,7 @@
             </view>
 
             <view v-if="loading" class="page-pad">
-                <base-skeleton :rows="4" />
+                <base-skeleton :rows="4" variant="card" />
             </view>
 
             <base-empty
@@ -97,85 +97,92 @@
             />
 
             <view v-else class="page-pad list">
-                <base-card
-                    v-for="item in list"
-                    :key="item.target_key"
-                    compact
-                    clickable
-                    class="couple-card"
-                    @tap="openDetail(item)"
-                >
-                    <view class="couple-card__head">
-                        <view class="couple-card__title-wrap">
-                            <view class="couple-card__name-row">
-                                <text class="couple-card__name">{{ item.customer_name }}</text>
-                                <status-tag
-                                    :label="item.source_label"
-                                    :tone="item.source_type === 'order' ? 'primary' : 'neutral'"
-                                    size="sm"
-                                    :dot="false"
-                                />
+                <view class="list__items" :class="{ stagger: staggerIn, 'is-in': staggerIn }">
+                    <base-card
+                        v-for="(item, index) in list"
+                        :key="item.target_key"
+                        compact
+                        clickable
+                        class="couple-card"
+                        :style="{ '--i': index }"
+                        @tap="openDetail(item)"
+                    >
+                        <view class="couple-card__head">
+                            <view class="couple-card__title-wrap">
+                                <view class="couple-card__name-row">
+                                    <text class="couple-card__name">{{ item.customer_name }}</text>
+                                    <status-tag
+                                        :label="item.source_label"
+                                        :tone="item.source_type === 'order' ? 'primary' : 'neutral'"
+                                        size="sm"
+                                        :dot="false"
+                                    />
+                                </view>
+                                <text class="couple-card__sub t-num">
+                                    {{ item.service_date || '待定婚期' }} ·
+                                    {{ item.package_name || '婚礼服务' }}
+                                </text>
                             </view>
-                            <text class="couple-card__sub">
-                                {{ item.service_date || '待定婚期' }} ·
-                                {{ item.package_name || '婚礼服务' }}
-                            </text>
-                        </view>
-                        <view
-                            class="countdown-pill"
-                            :class="{
-                                'is-soon':
-                                    item.countdown_days !== null &&
-                                    item.countdown_days >= 0 &&
-                                    item.countdown_days <= 7 &&
-                                    !item.is_completed,
-                                'is-done': item.is_completed
-                            }"
-                        >
-                            <text class="countdown-pill__text">{{ item.countdown_text }}</text>
-                        </view>
-                    </view>
-
-                    <view v-if="item.service_address" class="couple-card__addr">
-                        <tn-icon name="pin" :size="22" class="couple-card__addr-icon" />
-                        <text class="couple-card__addr-text ellipsis">{{
-                            item.service_address
-                        }}</text>
-                    </view>
-
-                    <view v-if="item.pinned_note_preview" class="pinned-preview">
-                        <text class="pinned-preview__tag">置顶手记</text>
-                        <text class="pinned-preview__text ellipsis">{{
-                            item.pinned_note_preview
-                        }}</text>
-                    </view>
-
-                    <view class="couple-card__foot">
-                        <view class="badge-row">
-                            <text class="mini-badge">{{ item.questionnaire_status_desc }}</text>
-                            <text class="mini-badge">
-                                {{
-                                    item.checklist_total > 0
-                                        ? `清单 ${item.checklist_done}/${item.checklist_total}`
-                                        : '清单待建'
-                                }}
-                            </text>
-                            <text class="mini-badge">{{ item.note_count }} 篇手记</text>
-                            <text
-                                v-if="item.pending_followup_count > 0"
-                                class="mini-badge"
-                                :class="item.overdue_followup_count > 0 ? 'is-danger' : 'is-warn'"
+                            <view
+                                class="countdown-pill"
+                                :class="{
+                                    'is-soon':
+                                        item.countdown_days !== null &&
+                                        item.countdown_days >= 0 &&
+                                        item.countdown_days <= 7 &&
+                                        !item.is_completed,
+                                    'is-done': item.is_completed
+                                }"
                             >
-                                {{
-                                    item.overdue_followup_count > 0
-                                        ? `逾期 ${item.overdue_followup_count}`
-                                        : `待跟进 ${item.pending_followup_count}`
-                                }}
-                            </text>
+                                <text class="countdown-pill__text t-num">{{
+                                    item.countdown_text
+                                }}</text>
+                            </view>
                         </view>
-                        <tn-icon name="right" :size="22" class="couple-card__arrow" />
-                    </view>
-                </base-card>
+
+                        <view v-if="item.service_address" class="couple-card__addr">
+                            <tn-icon name="pin" :size="22" class="couple-card__addr-icon" />
+                            <text class="couple-card__addr-text ellipsis">{{
+                                item.service_address
+                            }}</text>
+                        </view>
+
+                        <view v-if="item.pinned_note_preview" class="pinned-preview">
+                            <text class="pinned-preview__tag">置顶手记</text>
+                            <text class="pinned-preview__text ellipsis">{{
+                                item.pinned_note_preview
+                            }}</text>
+                        </view>
+
+                        <view class="couple-card__foot">
+                            <view class="badge-row">
+                                <text class="mini-badge">{{ item.questionnaire_status_desc }}</text>
+                                <text class="mini-badge t-num">
+                                    {{
+                                        item.checklist_total > 0
+                                            ? `清单 ${item.checklist_done}/${item.checklist_total}`
+                                            : '清单待建'
+                                    }}
+                                </text>
+                                <text class="mini-badge t-num">{{ item.note_count }} 篇手记</text>
+                                <text
+                                    v-if="item.pending_followup_count > 0"
+                                    class="mini-badge t-num"
+                                    :class="
+                                        item.overdue_followup_count > 0 ? 'is-danger' : 'is-warn'
+                                    "
+                                >
+                                    {{
+                                        item.overdue_followup_count > 0
+                                            ? `逾期 ${item.overdue_followup_count}`
+                                            : `待跟进 ${item.pending_followup_count}`
+                                    }}
+                                </text>
+                            </view>
+                            <tn-icon name="right" :size="22" class="couple-card__arrow" />
+                        </view>
+                    </base-card>
+                </view>
             </view>
         </view>
         <app-toast />
@@ -186,13 +193,14 @@
 /**
  * 服务人员：新人全周期档案列表（订单/线下档期统一沉淀，关联问卷/Checklist/手记/跟进）。
  */
-import { computed, reactive, ref } from 'vue'
+import { computed, onUnmounted, reactive, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getStaffCoupleList, type StaffCoupleSummaryItem } from '@/api/staff'
 import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { navigate } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { haptic } from '@/utils/haptics'
 
 const FILTER_ITEMS = [
     { label: '全部档案', value: 'all' },
@@ -254,19 +262,45 @@ function reload(): void {
     void fetchList()
 }
 
+/* ---- 列表错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger(): void {
+    if (staggerIn.value || staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
+
 function onFilterChange(val: string | number): void {
     const next = String(val || 'all')
     if (next === activeFilter.value) return
+    /* chip-group 内部已发 light 触觉，这里不再补，避免双震 */
     activeFilter.value = next
     void fetchList()
 }
 
 function clearKeyword(): void {
+    haptic('light', 'couple-clear-keyword')
     keyword.value = ''
     void fetchList()
 }
 
 function openDetail(item: StaffCoupleSummaryItem): void {
+    haptic('light', 'couple-open-detail')
     navigate({
         path: '/packages/pkg-staff/pages/couple-detail/couple-detail',
         query: {
@@ -277,6 +311,7 @@ function openDetail(item: StaffCoupleSummaryItem): void {
 }
 
 function goFollowups(): void {
+    haptic('light', 'couple-open-followups')
     navigate('/packages/pkg-staff/pages/followups/followups')
 }
 
@@ -333,9 +368,12 @@ function onRefresh(done: () => void) {
 
     &__inner {
         padding: var(--sp-3);
+        min-height: 88rpx;
+        box-sizing: border-box;
         border-radius: var(--r-md);
         background: linear-gradient(135deg, var(--c-dark-1), var(--c-dark-2));
-        border: 1rpx solid var(--c-primary-border);
+        border: 1rpx solid var(--c-card-border);
+        box-shadow: var(--shadow-card);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -390,7 +428,7 @@ function onRefresh(done: () => void) {
 }
 
 .search-box {
-    height: 76rpx;
+    height: 88rpx;
     padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
     border: 1rpx solid var(--c-control-border);
@@ -399,6 +437,7 @@ function onRefresh(done: () => void) {
     align-items: center;
     gap: var(--sp-2);
     color: var(--c-ink-3);
+    box-sizing: border-box;
 
     &__icon {
         color: inherit;
@@ -420,6 +459,12 @@ function onRefresh(done: () => void) {
 }
 
 .list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.list__items {
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
