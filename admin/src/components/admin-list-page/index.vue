@@ -24,8 +24,12 @@
 
             <slot />
 
-            <div v-if="pager" class="flex justify-end mt-4">
-                <pagination v-model="pager" @change="emit('change')" />
+            <div v-if="props.pager" class="flex justify-end mt-4">
+                <pagination
+                    :model-value="props.pager"
+                    @update:model-value="(val) => emit('update:pager', val)"
+                    @change="emit('change')"
+                />
             </div>
         </el-card>
 
@@ -50,7 +54,7 @@
  *     <el-table :data="pager.lists">…</el-table>
  *   </admin-list-page>
  */
-defineProps<{
+const props = defineProps<{
     title?: string
     description?: string
     /** 分页对象（usePaging 返回），传了才渲染分页条 */
@@ -60,5 +64,8 @@ defineProps<{
     compact?: boolean
 }>()
 
-const emit = defineEmits<{ (e: 'change'): void }>()
+const emit = defineEmits<{
+    (e: 'change'): void
+    (e: 'update:pager', value: Record<string, any> | undefined): void
+}>()
 </script>

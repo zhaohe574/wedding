@@ -27,7 +27,7 @@ class PackageValidate extends BaseValidate
         'name' => 'require|max:100',
         'price' => 'require|float|egt:0',
         'original_price' => 'float|egt:0',
-        'duration' => 'integer|egt:1',
+        'duration' => 'integer|egt:0',
         'image' => 'max:255',
         'description' => 'max:500',
         'sort' => 'integer|egt:0',
@@ -35,6 +35,7 @@ class PackageValidate extends BaseValidate
         'is_recommend' => 'in:0,1',
         'staff_id' => 'require|integer|gt:0|checkStaff',
         'region_prices' => 'array',
+        'addon_ids' => 'array',
     ];
 
     /**
@@ -50,6 +51,8 @@ class PackageValidate extends BaseValidate
         'price.egt' => '价格必须大于等于0',
         'original_price.float' => '原价必须为数字',
         'original_price.egt' => '原价必须大于等于0',
+        'duration.integer' => '服务时长必须为整数',
+        'duration.egt' => '服务时长不能小于0',
         'image.max' => '图片地址最多255个字符',
         'description.max' => '描述最多500个字符',
         'sort.integer' => '排序必须为整数',
@@ -60,6 +63,7 @@ class PackageValidate extends BaseValidate
         'staff_id.integer' => '员工ID必须为整数',
         'staff_id.gt' => '请选择所属人员',
         'region_prices.array' => '地区价格参数格式错误',
+        'addon_ids.array' => '附加服务参数格式错误',
     ];
 
     /**
@@ -67,8 +71,8 @@ class PackageValidate extends BaseValidate
      * @var array
      */
     protected $scene = [
-        'add' => ['name', 'price', 'original_price', 'duration', 'image', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id', 'region_prices'],
-        'edit' => ['id', 'name', 'price', 'original_price', 'duration', 'image', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id', 'region_prices'],
+        'add' => ['name', 'price', 'original_price', 'duration', 'image', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id', 'region_prices', 'addon_ids'],
+        'edit' => ['id', 'name', 'price', 'original_price', 'duration', 'image', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id', 'region_prices', 'addon_ids'],
         'detail' => ['id'],
         'delete' => ['id'],
         'status' => ['id', 'is_show'],

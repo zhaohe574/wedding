@@ -28,6 +28,7 @@
 - [v2 交互状态与组件选型](../newuniapp/docs/redesign/v2/02-交互状态与组件选型.md)
 - [v2 品牌动态配置](../newuniapp/docs/redesign/v2/09-品牌动态配置.md) · [v2 装修与开屏广告](../newuniapp/docs/redesign/v2/10-装修与开屏广告.md)
 - 重点页面方案与预览：[v3 查档期页](redesign/v3/01-查档期页重设计方案.md) · [v4 可约人员列表](redesign/v4/01-可约人员列表页UI方案.md) · [v5 人员详情页](redesign/v5/01-人员详情页重设计方案.md) · [v6 订单确认页](redesign/v6/01-订单确认页重设计方案.md)
+- 通用设计参考：[UI 与交互设计自查清单](UI与交互设计自查清单.md)（版式降噪、视觉对齐、热区防误触、动效词典、深色模式与 AI 提示词）
 
 ## 提审与验收
 

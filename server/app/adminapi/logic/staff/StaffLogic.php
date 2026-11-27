@@ -656,7 +656,7 @@ class StaffLogic extends BaseLogic
             }
 
             $updateData = [];
-            foreach (['price', 'original_price', 'name', 'description', 'image', 'sort', 'is_show', 'is_recommend'] as $field) {
+            foreach (['price', 'original_price', 'name', 'description', 'image', 'sort', 'duration', 'is_show', 'is_recommend'] as $field) {
                 if (array_key_exists($field, $data)) {
                     $updateData[$field] = $data[$field];
                 }
@@ -709,8 +709,13 @@ class StaffLogic extends BaseLogic
                 return false;
             }
 
-            return PackageLogic::delete(['id' => $packageId]);
-        } catch (\Exception $e) {
+            $result = PackageLogic::delete(['id' => $packageId]);
+            if (!$result) {
+                self::setError(PackageLogic::getError() ?: '删除套餐失败');
+                return false;
+            }
+
+            return true;        } catch (\Exception $e) {
             self::setError($e->getMessage());
             return false;
         }
@@ -741,7 +746,16 @@ class StaffLogic extends BaseLogic
                 return false;
             }
 
-            ServiceAddon::create(self::buildAddonPayload($staffId, $addonData));
+            Db::transaction(function () use ($staffId, $addonData) {
+                $addon = ServiceAddon::create(self::buildAddonPayload($staffId, $addonData));
+                if (array_key_exists('package_ids', $addonData)) {
+                    ServicePackageAddon::syncAddonPackages(
+                        (int)$addon->id,
+                        $staffId,
+                        $addonData['package_ids']
+                    );
+                }
+            });
             return true;
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -770,7 +784,16 @@ class StaffLogic extends BaseLogic
                 return false;
             }
 
-            $addon->save(self::buildAddonPayload($staffId, $addonData, false));
+            Db::transaction(function () use ($addon, $staffId, $addonData) {
+                $addon->save(self::buildAddonPayload($staffId, $addonData, false, $addon));
+                if (array_key_exists('package_ids', $addonData)) {
+                    ServicePackageAddon::syncAddonPackages(
+                        (int)$addon->id,
+                        $staffId,
+                        $addonData['package_ids']
+                    );
+                }
+            });
             return true;
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -798,8 +821,10 @@ class StaffLogic extends BaseLogic
                 return false;
             }
 
-            ServicePackageAddon::clearByAddonId($addonId);
-            $addon->delete();
+            Db::transaction(function () use ($addon, $addonId) {
+                ServicePackageAddon::clearByAddonId($addonId);
+                $addon->delete();
+            });
             return true;
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -974,7 +999,7 @@ class StaffLogic extends BaseLogic
     {
         $packages = ServicePackage::where('staff_id', $staffId)
             ->whereNull('delete_time')
-            ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show, is_recommend')
+            ->field('id, staff_id, category_id, name, price, original_price, description, image, duration, sort, is_show, is_recommend')
             ->append(['category_name', 'staff_name'])
             ->order('sort', 'desc')
             ->order('id', 'desc')
@@ -1007,7 +1032,7 @@ class StaffLogic extends BaseLogic
             $query->whereIn('id', $allowedAddonIds);
         }
 
-        return $query->select()->toArray();
+        return ServicePackageAddon::attachPackageIds($query->select()->toArray());
     }
 
     /**
@@ -1055,10 +1080,15 @@ class StaffLogic extends BaseLogic
      * @param int $staffId
      * @param array $params
      * @param bool $withCreateFields
+     * @param ServiceAddon|null $existing
      * @return array
      */
-    protected static function buildAddonPayload(int $staffId, array $params, bool $withCreateFields = true): array
-    {
+    protected static function buildAddonPayload(
+        int $staffId,
+        array $params,
+        bool $withCreateFields = true,
+        ?ServiceAddon $existing = null
+    ): array {
         $staff = Staff::find($staffId);
         if (!$staff) {
             throw new \RuntimeException('员工不存在');
@@ -1072,13 +1102,27 @@ class StaffLogic extends BaseLogic
         $payload = [
             'staff_id' => $staffId,
             'category_id' => $categoryId,
-            'name' => trim((string)($params['name'] ?? '')),
-            'price' => round((float)($params['price'] ?? 0), 2),
-            'original_price' => round((float)($params['original_price'] ?? 0), 2),
-            'description' => (string)($params['description'] ?? ''),
-            'image' => (string)($params['image'] ?? ''),
-            'sort' => (int)($params['sort'] ?? 0),
-            'is_show' => (int)($params['is_show'] ?? 1),
+            'name' => array_key_exists('name', $params)
+                ? trim((string)$params['name'])
+                : (string)($existing->name ?? ''),
+            'price' => array_key_exists('price', $params)
+                ? round((float)$params['price'], 2)
+                : round((float)($existing->price ?? 0), 2),
+            'original_price' => array_key_exists('original_price', $params)
+                ? round((float)$params['original_price'], 2)
+                : round((float)($existing->original_price ?? 0), 2),
+            'description' => array_key_exists('description', $params)
+                ? (string)$params['description']
+                : (string)($existing->description ?? ''),
+            'image' => array_key_exists('image', $params)
+                ? (string)$params['image']
+                : ($existing ? (string)$existing->getData('image') : ''),
+            'sort' => array_key_exists('sort', $params)
+                ? (int)$params['sort']
+                : (int)($existing->sort ?? 0),
+            'is_show' => array_key_exists('is_show', $params)
+                ? (int)$params['is_show']
+                : (int)($existing->is_show ?? 1),
             'update_time' => time(),
         ];
 

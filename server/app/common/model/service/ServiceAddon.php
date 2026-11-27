@@ -99,9 +99,6 @@ class ServiceAddon extends BaseModel
             return [];
         }
 
-        return array_map(
-            'intval',
-            ServicePackageAddon::where('addon_id', $addonId)->column('package_id')
-        );
+        return ServicePackageAddon::getPackageIds($addonId);
     }
 }

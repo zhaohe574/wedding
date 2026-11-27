@@ -305,36 +305,61 @@
                             </div>
                             <div class="staff-table-card mt-4">
                                 <el-table :data="staffPackages" border>
-                                    <el-table-column label="套餐名称" prop="name" min-width="150" />
+                                    <el-table-column label="套餐名称" min-width="180">
+                                        <template #default="{ row }">
+                                            <div class="staff-entity">
+                                                <span class="staff-entity__name">{{ row.name }}</span>
+                                                <el-tag
+                                                    v-if="Number(row.is_recommend) === 1"
+                                                    type="warning"
+                                                    size="small"
+                                                    effect="plain"
+                                                >
+                                                    推荐
+                                                </el-tag>
+                                                <el-tag
+                                                    v-if="Number(row.duration) > 0"
+                                                    size="small"
+                                                    effect="plain"
+                                                >
+                                                    {{ row.duration }}小时
+                                                </el-tag>
+                                            </div>
+                                        </template>
+                                    </el-table-column>
                                     <el-table-column label="地区价" min-width="150">
                                         <template #default="{ row }">
                                             <package-region-price-summary
                                                 :region-prices="row.region_prices"
-                                                empty-class="admin-edit-muted"
+                                                empty-text="未配置"
+                                                empty-class="text-warning text-xs"
                                             />
                                         </template>
                                     </el-table-column>
-                                    <el-table-column label="价格" prop="price" width="140">
-                                        <template #default="{ row }">¥{{ row.price }}</template>
-                                    </el-table-column>
-                                    <el-table-column label="原价" width="140">
+                                    <el-table-column label="价格" width="150">
                                         <template #default="{ row }">
-                                            <span v-if="Number(row.original_price || 0) > 0">¥{{ row.original_price }}</span>
-                                            <span v-else class="admin-edit-muted">-</span>
+                                            <span class="staff-price">¥{{ formatMoney(row.price) }}</span>
+                                            <span
+                                                v-if="Number(row.original_price) > Number(row.price)"
+                                                class="staff-price-original"
+                                            >
+                                                ¥{{ formatMoney(row.original_price) }}
+                                            </span>
                                         </template>
                                     </el-table-column>
-                                    <el-table-column label="推荐" width="100">
+                                    <el-table-column label="附加项" width="100">
                                         <template #default="{ row }">
-                                            <el-tag :type="row.is_recommend ? 'warning' : 'info'">
-                                                {{ row.is_recommend ? '推荐' : '普通' }}
-                                            </el-tag>
+                                            <span v-if="row.addon_ids?.length">{{ row.addon_ids.length }} 项</span>
+                                            <span v-else class="admin-edit-muted">未关联</span>
                                         </template>
                                     </el-table-column>
-                                    <el-table-column label="状态" prop="is_show" width="100">
+                                    <el-table-column label="状态" width="95">
                                         <template #default="{ row }">
-                                            <el-tag :type="row.is_show ? 'success' : 'info'">
-                                                {{ row.is_show ? '上架' : '下架' }}
-                                            </el-tag>
+                                            <el-switch
+                                                :model-value="Number(row.is_show) === 1"
+                                                :loading="packageStatusLoadingId === row.id"
+                                                @change="toggleStaffPackageStatus(row)"
+                                            />
                                         </template>
                                     </el-table-column>
                                     <el-table-column label="操作" width="140">
@@ -353,40 +378,60 @@
                             <div class="admin-edit-toolbar">
                                 <div>
                                     <div class="admin-edit-section__title">预约附加项</div>
-                                    <div class="admin-edit-muted">客户预约时会逐项确认，可自由增加或减少条目。</div>
                                 </div>
                                 <el-button type="primary" @click="openCreateStaffAddon">新增附加项</el-button>
                             </div>
                             <div class="staff-table-card mt-4">
                                 <el-table :data="staffAddons" border>
-                                    <el-table-column label="展示图" width="120">
+                                    <el-table-column label="展示图" width="80">
                                         <template #default="{ row }">
-                                            <el-image
-                                                v-if="row.image"
-                                                :src="row.image"
-                                                fit="cover"
-                                                style="width: 72px; height: 72px; border-radius: 12px"
-                                                :preview-src-list="[row.image]"
+                                            <div class="staff-addon-thumb">
+                                                <el-image
+                                                    v-if="row.image"
+                                                    :src="row.image"
+                                                    fit="cover"
+                                                    :preview-src-list="[row.image]"
+                                                    preview-teleported
+                                                />
+                                                <div v-else class="staff-addon-thumb__placeholder">
+                                                    <icon name="el-icon-Picture" size="14px" />
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="附加项名称" min-width="200">
+                                        <template #default="{ row }">
+                                            <div class="staff-entity__name">{{ row.name }}</div>
+                                            <div v-if="row.description" class="staff-entity__desc">
+                                                {{ row.description }}
+                                            </div>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="价格" width="150">
+                                        <template #default="{ row }">
+                                            <span class="staff-price">¥{{ formatMoney(row.price) }}</span>
+                                            <span
+                                                v-if="Number(row.original_price) > Number(row.price)"
+                                                class="staff-price-original"
+                                            >
+                                                ¥{{ formatMoney(row.original_price) }}
+                                            </span>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="适用套餐" width="110">
+                                        <template #default="{ row }">
+                                            <span v-if="row.package_ids?.length">{{ row.package_ids.length }} 个</span>
+                                            <span v-else class="admin-edit-muted">未关联</span>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="排序" prop="sort" width="80" />
+                                    <el-table-column label="状态" width="95">
+                                        <template #default="{ row }">
+                                            <el-switch
+                                                :model-value="Number(row.is_show) === 1"
+                                                :loading="addonStatusLoadingId === row.id"
+                                                @change="toggleStaffAddonStatus(row)"
                                             />
-                                            <span v-else class="admin-edit-muted">未设置</span>
-                                        </template>
-                                    </el-table-column>
-                                    <el-table-column label="附加项名称" prop="name" min-width="160" />
-                                    <el-table-column label="价格" width="140">
-                                        <template #default="{ row }">¥{{ row.price }}</template>
-                                    </el-table-column>
-                                    <el-table-column label="介绍" min-width="220">
-                                        <template #default="{ row }">
-                                            <span v-if="row.description">{{ row.description }}</span>
-                                            <span v-else class="admin-edit-muted">未填写</span>
-                                        </template>
-                                    </el-table-column>
-                                    <el-table-column label="排序" prop="sort" width="100" />
-                                    <el-table-column label="状态" width="100">
-                                        <template #default="{ row }">
-                                            <el-tag :type="row.is_show ? 'success' : 'info'">
-                                                {{ row.is_show ? '上架' : '下架' }}
-                                            </el-tag>
                                         </template>
                                     </el-table-column>
                                     <el-table-column label="操作" width="140">
@@ -717,134 +762,23 @@
             <el-button v-else type="primary" @click="handleSave">保存</el-button>
         </footer-btns>
 
-        <!-- 创建专属套餐弹窗 -->
-        <el-dialog
-            v-model="showStaffPackageDialog"
-            :title="isEditingStaffPackage ? '编辑专属套餐' : '创建专属套餐'"
-            width="960px"
-            class="staff-edit-dialog"
-            @closed="resetStaffPackageForm"
-        >
-            <el-form
-                ref="staffPackageFormRef"
-                :model="staffPackageForm"
-                :rules="staffPackageRules"
-                label-width="100px"
-            >
-                <el-form-item label="套餐名称" prop="name">
-                    <el-input v-model="staffPackageForm.name" placeholder="请输入套餐名称" />
-                </el-form-item>
-                <el-form-item label="默认价格" prop="price">
-                    <el-input-number v-model="staffPackageForm.price" :min="0" :precision="2" class="w-full" />
-                </el-form-item>
-                <el-form-item label="原价" prop="original_price">
-                    <el-input-number v-model="staffPackageForm.original_price" :min="0" :precision="2" class="w-full" />
-                </el-form-item>
-                <el-form-item label="封面图" prop="image">
-                    <material-picker v-model="staffPackageForm.image" :limit="1" />
-                </el-form-item>
-                <el-form-item label="套餐说明" prop="description">
-                    <el-input
-                        v-model="staffPackageForm.description"
-                        type="textarea"
-                        :rows="3"
-                        placeholder="请输入套餐说明"
-                    />
-                </el-form-item>
-                <el-form-item label="地区价格">
-                    <package-region-price-editor v-model="staffPackageForm.region_prices" />
-                </el-form-item>
-                <el-form-item label="可选附加项">
-                    <div class="w-full">
-                        <el-checkbox-group
-                            v-if="staffAddons.length"
-                            v-model="staffPackageForm.addon_ids"
-                            class="staff-package-addon-grid"
-                        >
-                            <el-checkbox v-for="addon in staffAddons" :key="addon.id" :label="addon.id">
-                                {{ addon.name }}（¥{{ addon.price }}）
-                            </el-checkbox>
-                        </el-checkbox-group>
-                        <div v-else class="admin-edit-muted">请先新增附加项，再为套餐勾选可售附加内容。</div>
-                    </div>
-                </el-form-item>
-                <div class="grid staff-edit-grid gap-x-8">
-                    <el-form-item label="排序" prop="sort">
-                        <el-input-number v-model="staffPackageForm.sort" :min="0" :max="9999" class="w-full" />
-                    </el-form-item>
-                    <el-form-item label="推荐" prop="is_recommend">
-                        <el-radio-group v-model="staffPackageForm.is_recommend">
-                            <el-radio :value="1">是</el-radio>
-                            <el-radio :value="0">否</el-radio>
-                        </el-radio-group>
-                    </el-form-item>
-                </div>
-                <el-form-item label="状态" prop="is_show">
-                    <el-radio-group v-model="staffPackageForm.is_show">
-                        <el-radio :value="1">上架</el-radio>
-                        <el-radio :value="0">下架</el-radio>
-                    </el-radio-group>
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="showStaffPackageDialog = false">取消</el-button>
-                <el-button type="primary" @click="submitStaffPackage">
-                    {{ isEditingStaffPackage ? '保存' : '创建' }}
-                </el-button>
-            </template>
-        </el-dialog>
-
-        <el-dialog
-            v-model="showStaffAddonDialog"
-            :title="isEditingStaffAddon ? '编辑附加项' : '新增附加项'"
-            width="680px"
-            class="staff-edit-dialog"
-            @closed="resetStaffAddonForm"
-        >
-            <el-form
-                ref="staffAddonFormRef"
-                :model="staffAddonForm"
-                :rules="staffAddonRules"
-                label-width="100px"
-            >
-                <el-form-item label="附加项名称" prop="name">
-                    <el-input v-model="staffAddonForm.name" placeholder="例如：晨袍跟拍" maxlength="100" />
-                </el-form-item>
-                <el-form-item label="附加项价格" prop="price">
-                    <el-input-number v-model="staffAddonForm.price" :min="0" :precision="2" class="w-full" />
-                </el-form-item>
-                <el-form-item label="展示图" prop="image">
-                    <material-picker v-model="staffAddonForm.image" :limit="1" />
-                </el-form-item>
-                <el-form-item label="附加项介绍" prop="description">
-                    <el-input
-                        v-model="staffAddonForm.description"
-                        type="textarea"
-                        :rows="4"
-                        maxlength="500"
-                        show-word-limit
-                        placeholder="请输入附加项介绍，便于客户理解服务场景和内容"
-                    />
-                </el-form-item>
-                <div class="grid staff-edit-grid gap-x-8">
-                    <el-form-item label="排序" prop="sort">
-                        <el-input-number v-model="staffAddonForm.sort" :min="0" :max="9999" class="w-full" />
-                    </el-form-item>
-                    <el-form-item label="状态" prop="is_show">
-                        <el-radio-group v-model="staffAddonForm.is_show">
-                            <el-radio :value="1">上架</el-radio>
-                            <el-radio :value="0">下架</el-radio>
-                        </el-radio-group>
-                    </el-form-item>
-                </div>
-            </el-form>
-            <template #footer>
-                <el-button @click="showStaffAddonDialog = false">取消</el-button>
-                <el-button type="primary" @click="submitStaffAddon">
-                    {{ isEditingStaffAddon ? '保存' : '创建' }}
-                </el-button>
-            </template>
-        </el-dialog>
+        <package-form-drawer
+            v-model="showPackageDrawer"
+            mode="staff"
+            options-api-scene="service"
+            :addons="staffAddons"
+            :initial-data="editingPackage"
+            :saving="packageSaving"
+            @submit="submitStaffPackage"
+        />
+        <addon-form-drawer
+            v-model="showAddonDrawer"
+            mode="staff"
+            :packages="staffPackages"
+            :initial-data="editingAddon"
+            :saving="addonSaving"
+            @submit="submitStaffAddon"
+        />
 
         <!-- 轮播图添加/编辑弹窗 -->
         <el-dialog
@@ -971,6 +905,7 @@ import {
     staffScheduleConfirmLetterSave,
     staffScheduleConfirmLetterSetDefault,
     staffUpdateAddon,
+    staffUpdatePackageConfig,
     staffUpdateStaffPackage} from '@/api/staff'
 import AccountBinding from '@/components/account-binding/index.vue'
 import bindingRequest from '@/utils/request'
@@ -981,8 +916,10 @@ const loadAdminOptions = async (visible: boolean) => {
 import { QuestionFilled, VideoPlay } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
+import { formatMoney } from '@shared/utils/format'
 import { categoryTree, styleTagAll } from '@/api/service'
-import PackageRegionPriceEditor from '@/components/service/package-region-price-editor.vue'
+import AddonFormDrawer from '@/components/service/addon-form-drawer.vue'
+import PackageFormDrawer from '@/components/service/package-form-drawer.vue'
 import PackageRegionPriceSummary from '@/components/service/package-region-price-summary.vue'
 import LongDetailEditor from '@/components/staff/long-detail-editor.vue'
 import ScheduleConfirmLetterDesigner from '@/components/staff/schedule-confirm-letter-designer.vue'
@@ -996,18 +933,20 @@ const { removeTab } = useMultipleTabs()
 const isEditing = computed(() => Boolean(route.query.id))
 const labelTipStyle = { maxWidth: '320px', lineHeight: '1.6' }
 const formRef = shallowRef<FormInstance>()
-const staffPackageFormRef = shallowRef<FormInstance>()
-const staffAddonFormRef = shallowRef<FormInstance>()
 const bannerFormRef = shallowRef<FormInstance>()
 const activeTab = ref('basic')
-const showStaffPackageDialog = ref(false)
-const showStaffAddonDialog = ref(false)
+const showPackageDrawer = ref(false)
+const showAddonDrawer = ref(false)
 const showBannerDialog = ref(false)
 const credentialDialogVisible = ref(false)
 const pendingBack = ref(false)
-const isEditingStaffPackage = ref(false)
-const isEditingStaffAddon = ref(false)
 const isEditingBanner = ref(false)
+const packageSaving = ref(false)
+const addonSaving = ref(false)
+const packageStatusLoadingId = ref<number | null>(null)
+const addonStatusLoadingId = ref<number | null>(null)
+const editingPackage = ref<Record<string, any> | null>(null)
+const editingAddon = ref<Record<string, any> | null>(null)
 const staffSn = ref('')
 const displayPriceText = ref('')
 const groupedTags = ref<Record<string, any[]>>({})
@@ -1172,31 +1111,6 @@ const normalizeMonthlyReportMaterial = (material: any = {}) => ({
     status: Number(material?.status ?? 1)
 })
 
-// 专属套餐表单
-const staffPackageForm = reactive({
-    id: 0,
-    name: '',
-    price: 0,
-    original_price: 0,
-    image: '',
-    description: '',
-    region_prices: [] as Record<string, any>[],
-    addon_ids: [] as number[],
-    sort: 0,
-    is_show: 1,
-    is_recommend: 0
-})
-
-const staffAddonForm = reactive({
-    addon_id: 0,
-    name: '',
-    price: 0,
-    image: '',
-    description: '',
-    sort: 0,
-    is_show: 1
-})
-
 // 轮播图配置
 const bannerConfig = reactive({
     banner_mode: 1,
@@ -1263,16 +1177,6 @@ const rules = reactive({
     category_id: [{ required: true, message: '请选择服务分类', trigger: 'change' }]
 })
 
-const staffPackageRules = reactive({
-    name: [{ required: true, message: '请输入套餐名称', trigger: 'blur' }],
-    price: [{ required: true, message: '请输入套餐价格', trigger: 'blur' }]
-})
-
-const staffAddonRules = reactive({
-    name: [{ required: true, message: '请输入附加项名称', trigger: 'blur' }],
-    price: [{ required: true, message: '请输入附加项价格', trigger: 'blur' }]
-})
-
 const bannerRules = reactive({
     type: [{ required: true, message: '请选择类型', trigger: 'change' }],
     file_url: [{ required: true, message: '请上传文件', trigger: 'change' }],
@@ -1294,36 +1198,6 @@ const tagTypeLabelMap: Record<number, string> = {
     1: '风格',
     2: '特长',
     3: '其他'
-}
-
-const resetStaffPackageForm = () => {
-    Object.assign(staffPackageForm, {
-        id: 0,
-        name: '',
-        price: 0,
-        original_price: 0,
-        image: '',
-        description: '',
-        region_prices: [],
-        addon_ids: [],
-        sort: 0,
-        is_show: 1,
-        is_recommend: 0
-    })
-    isEditingStaffPackage.value = false
-}
-
-const resetStaffAddonForm = () => {
-    Object.assign(staffAddonForm, {
-        addon_id: 0,
-        name: '',
-        price: 0,
-        image: '',
-        description: '',
-        sort: 0,
-        is_show: 1
-    })
-    isEditingStaffAddon.value = false
 }
 
 const { optionsData } = useDictOptions<{
@@ -1672,8 +1546,8 @@ const getStaffAddons = async () => {
 }
 
 const openCreateStaffPackage = () => {
-    resetStaffPackageForm()
-    showStaffPackageDialog.value = true
+    editingPackage.value = null
+    showPackageDrawer.value = true
 }
 
 const openCreateStaffAddon = () => {
@@ -1681,38 +1555,60 @@ const openCreateStaffAddon = () => {
         ElMessage.error('请先保存人员基本信息')
         return
     }
-    resetStaffAddonForm()
-    showStaffAddonDialog.value = true
+    editingAddon.value = null
+    showAddonDrawer.value = true
 }
 
 const openEditStaffPackage = (row: any) => {
-    resetStaffPackageForm()
-    isEditingStaffPackage.value = true
-    staffPackageForm.id = row.id
-    staffPackageForm.name = row.name || ''
-    staffPackageForm.price = row.price || 0
-    staffPackageForm.original_price = row.original_price || 0
-    staffPackageForm.image = row.image || ''
-    staffPackageForm.description = row.description || ''
-    staffPackageForm.region_prices = Array.isArray(row.region_prices) ? row.region_prices : []
-    staffPackageForm.addon_ids = Array.isArray(row.addon_ids) ? row.addon_ids.map((id: any) => Number(id)) : []
-    staffPackageForm.sort = row.sort || 0
-    staffPackageForm.is_show = Number(row.is_show || 0)
-    staffPackageForm.is_recommend = Number(row.is_recommend || 0)
-    showStaffPackageDialog.value = true
+    editingPackage.value = { ...row }
+    showPackageDrawer.value = true
 }
 
 const openEditStaffAddon = (row: any) => {
-    resetStaffAddonForm()
-    isEditingStaffAddon.value = true
-    staffAddonForm.addon_id = Number(row.id || 0)
-    staffAddonForm.name = row.name || ''
-    staffAddonForm.price = Number(row.price || 0)
-    staffAddonForm.image = row.image || ''
-    staffAddonForm.description = row.description || ''
-    staffAddonForm.sort = Number(row.sort || 0)
-    staffAddonForm.is_show = Number(row.is_show ?? 1)
-    showStaffAddonDialog.value = true
+    editingAddon.value = { ...row }
+    showAddonDrawer.value = true
+}
+
+const refreshStaffPackageResources = async () => {
+    await Promise.all([getStaffPackages(), getStaffAddons()])
+}
+
+const toggleStaffPackageStatus = async (row: any) => {
+    if (!route.query.id) return
+    const next = Number(row.is_show) === 1 ? 0 : 1
+    packageStatusLoadingId.value = row.id
+    try {
+        await staffUpdatePackageConfig({
+            staff_id: route.query.id,
+            package_id: row.id,
+            is_show: next
+        })
+        row.is_show = next
+        ElMessage.success('操作成功')
+    } catch {
+        // 失败保持原状态，开关按 model-value 自动回位
+    } finally {
+        packageStatusLoadingId.value = null
+    }
+}
+
+const toggleStaffAddonStatus = async (row: any) => {
+    if (!route.query.id) return
+    const next = Number(row.is_show) === 1 ? 0 : 1
+    addonStatusLoadingId.value = row.id
+    try {
+        await staffUpdateAddon({
+            staff_id: route.query.id,
+            addon_id: row.id,
+            is_show: next
+        })
+        row.is_show = next
+        ElMessage.success('操作成功')
+    } catch {
+        // 失败保持原状态，开关按 model-value 自动回位
+    } finally {
+        addonStatusLoadingId.value = null
+    }
 }
 
 const deleteStaffPackage = async (row: any) => {
@@ -1720,11 +1616,15 @@ const deleteStaffPackage = async (row: any) => {
         ElMessage.error('请先保存人员基本信息')
         return
     }
-    await feedback.confirm(`确定要删除专属套餐「${row.name || ''}」吗？`)
+    try {
+        await feedback.confirm(`确定要删除专属套餐「${row.name || ''}」吗？`)
+    } catch {
+        return
+    }
     try {
         await staffDeletePackage({ staff_id: route.query.id, package_id: row.id })
         ElMessage.success('删除成功')
-        await getStaffPackages()
+        await refreshStaffPackageResources()
     } catch (e: any) {
         ElMessage.error(e.message || '删除失败')
     }
@@ -1735,89 +1635,69 @@ const deleteStaffAddon = async (row: any) => {
         ElMessage.error('请先保存人员基本信息')
         return
     }
-    await feedback.confirm(`确定要删除附加项「${row.name || ''}」吗？`)
+    try {
+        await feedback.confirm(`确定要删除附加项「${row.name || ''}」吗？`)
+    } catch {
+        return
+    }
     try {
         await staffDeleteAddon({
             staff_id: route.query.id,
             addon_id: row.id
         })
         ElMessage.success('删除成功')
-        await getStaffAddons()
+        await refreshStaffPackageResources()
     } catch (e: any) {
         ElMessage.error(e.message || '删除失败')
     }
 }
 
 // 创建/编辑专属套餐
-const submitStaffPackage = async () => {
-    await staffPackageFormRef.value?.validate()
+const submitStaffPackage = async (payload: Record<string, any>) => {
     if (!route.query.id) {
         ElMessage.error('请先保存人员基本信息')
         return
     }
+    packageSaving.value = true
     try {
-        const payload = {
-            staff_id: route.query.id,
-            id: staffPackageForm.id,
-            name: staffPackageForm.name,
-            price: staffPackageForm.price,
-            original_price: staffPackageForm.original_price,
-            image: staffPackageForm.image,
-            description: staffPackageForm.description,
-            region_prices: [...staffPackageForm.region_prices],
-            addon_ids: [...staffPackageForm.addon_ids],
-            is_show: staffPackageForm.is_show,
-            is_recommend: staffPackageForm.is_recommend,
-            sort: staffPackageForm.sort
-        }
-        if (isEditingStaffPackage.value) {
-            await staffUpdateStaffPackage({
-                ...payload,
-                package_id: staffPackageForm.id
-            })
+        const body = { ...payload, staff_id: route.query.id }
+        if (payload.id) {
+            await staffUpdateStaffPackage({ ...body, package_id: payload.id })
             ElMessage.success('更新成功')
         } else {
-            await staffCreatePackage(payload)
+            await staffCreatePackage(body)
             ElMessage.success('创建成功')
         }
-        showStaffPackageDialog.value = false
-        resetStaffPackageForm()
-        // 刷新专属套餐列表
-        await getStaffPackages()
+        showPackageDrawer.value = false
+        await refreshStaffPackageResources()
     } catch (e: any) {
-        ElMessage.error(e.message || (isEditingStaffPackage.value ? '更新失败' : '创建失败'))
+        ElMessage.error(e.message || (payload.id ? '更新失败' : '创建失败'))
+    } finally {
+        packageSaving.value = false
     }
 }
 
-const submitStaffAddon = async () => {
-    await staffAddonFormRef.value?.validate()
+const submitStaffAddon = async (payload: Record<string, any>) => {
     if (!route.query.id) {
         ElMessage.error('请先保存人员基本信息')
         return
     }
+    addonSaving.value = true
     try {
-        const payload = {
-            staff_id: route.query.id,
-            addon_id: staffAddonForm.addon_id,
-            name: staffAddonForm.name,
-            price: Number(staffAddonForm.price ?? 0),
-            image: staffAddonForm.image,
-            description: staffAddonForm.description,
-            sort: Number(staffAddonForm.sort ?? 0),
-            is_show: Number(staffAddonForm.is_show ?? 1)
-        }
-        if (isEditingStaffAddon.value) {
-            await staffUpdateAddon(payload)
+        const body = { ...payload, staff_id: route.query.id, addon_id: payload.id }
+        if (payload.id) {
+            await staffUpdateAddon(body)
             ElMessage.success('更新成功')
         } else {
-            await staffCreateAddon(payload)
+            await staffCreateAddon(body)
             ElMessage.success('创建成功')
         }
-        showStaffAddonDialog.value = false
-        resetStaffAddonForm()
-        await getStaffAddons()
+        showAddonDrawer.value = false
+        await refreshStaffPackageResources()
     } catch (e: any) {
-        ElMessage.error(e.message || (isEditingStaffAddon.value ? '更新失败' : '创建失败'))
+        ElMessage.error(e.message || (payload.id ? '更新失败' : '创建失败'))
+    } finally {
+        addonSaving.value = false
     }
 }
 
@@ -2330,8 +2210,63 @@ const saveBannerConfig = async () => {
         border: 1px solid var(--el-border-color-light);
     }
 
-    .staff-package-addon-grid {
-        @apply flex flex-wrap gap-x-4 gap-y-2;
+    .staff-entity {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .staff-entity__name {
+        overflow: hidden;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--admin-color-title);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .staff-entity__desc {
+        overflow: hidden;
+        margin-top: 2px;
+        font-size: 12px;
+        color: var(--admin-color-muted);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .staff-price {
+        font-weight: 600;
+        color: var(--el-color-danger);
+    }
+
+    .staff-price-original {
+        margin-left: 6px;
+        font-size: 12px;
+        color: var(--admin-color-muted);
+        text-decoration: line-through;
+    }
+
+    .staff-addon-thumb {
+        width: 40px;
+        height: 40px;
+        overflow: hidden;
+        border-radius: var(--admin-radius-sm);
+        background: var(--admin-surface-soft);
+
+        :deep(.el-image) {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .staff-addon-thumb__placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        color: var(--admin-color-muted);
     }
 
     :deep(.staff-edit-tabs .el-tabs__header) {

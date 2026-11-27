@@ -18,12 +18,14 @@ use app\common\model\order\OrderChange;
 use app\common\model\order\OrderLog;
 use app\common\model\order\OrderItem;
 use app\common\model\order\Payment;
+use app\common\model\package\PackageBooking;
 use app\common\model\questionnaire\CoupleQuestionnaireAnswer;
 use app\common\model\questionnaire\CoupleQuestionnaireTask;
 use app\common\model\schedule\Schedule;
 use app\common\model\schedule\ManualSchedule;
 use app\common\model\schedule\Waitlist;
 use app\common\model\service\ServiceAddon;
+use app\common\model\service\ServiceCategory;
 use app\common\model\service\ServicePackage;
 use app\common\model\service\ServicePackageAddon;
 use app\common\model\service\ServicePackageRegionPrice;
@@ -1221,7 +1223,6 @@ class StaffCenterLogic extends BaseLogic
         $query = ServicePackage::where('staff_id', $staffId)
             ->where('delete_time', null)
             ->field('id, staff_id, category_id, name, price, original_price, description, image, duration, sort, is_show, is_recommend')
-            ->append(['category_name'])
             ->order('sort', 'desc')
             ->order('id', 'desc');
 
@@ -1239,7 +1240,9 @@ class StaffCenterLogic extends BaseLogic
 
         $result = $query->paginate($pageSize)->toArray();
         $rows = is_array($result['data'] ?? null) ? $result['data'] : [];
+        $categoryName = self::resolveStaffCategoryName($staffId);
         foreach ($rows as &$row) {
+            $row['category_name'] = $categoryName;
             if (!empty($row['image'])) {
                 $row['image'] = \app\common\service\FileService::getFileUrl((string) $row['image']);
             }
@@ -1333,7 +1336,7 @@ class StaffCenterLogic extends BaseLogic
 
         try {
             Db::transaction(function () use ($package, $staffId, $params) {
-                $package->save(self::buildPackagePayload($staffId, $params, false));
+                $package->save(self::buildPackagePayload($staffId, $params, false, $package));
                 if (array_key_exists('region_prices', $params) && is_array($params['region_prices'])) {
                     PackageRegionPriceService::syncPackageRegionPrices(
                         (int) $package->id,
@@ -1341,13 +1344,13 @@ class StaffCenterLogic extends BaseLogic
                         $params['region_prices']
                     );
                 }
-                ServicePackageAddon::syncPackageAddons(
-                    (int) $package->id,
-                    $staffId,
-                    array_key_exists('addon_ids', $params)
-                        ? $params['addon_ids']
-                        : ServicePackageAddon::getAddonIds((int) $package->id)
-                );
+                if (array_key_exists('addon_ids', $params)) {
+                    ServicePackageAddon::syncPackageAddons(
+                        (int) $package->id,
+                        $staffId,
+                        $params['addon_ids']
+                    );
+                }
             });
             return true;
         } catch (\Throwable $e) {
@@ -1375,10 +1378,25 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
-        ServicePackageAddon::clearByPackageId($packageId);
-        ServicePackageRegionPrice::where('package_id', $packageId)->delete();
-        $package->delete();
-        return true;
+        $bookingCount = PackageBooking::where('package_id', $packageId)
+            ->whereIn('status', [PackageBooking::STATUS_TEMP_LOCK, PackageBooking::STATUS_CONFIRMED])
+            ->count();
+        if ($bookingCount > 0) {
+            self::setError('该套餐存在有效预订，无法删除');
+            return false;
+        }
+
+        try {
+            Db::transaction(function () use ($package, $packageId) {
+                ServicePackageAddon::clearByPackageId($packageId);
+                ServicePackageRegionPrice::where('package_id', $packageId)->delete();
+                $package->delete();
+            });
+            return true;
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -1395,7 +1413,6 @@ class StaffCenterLogic extends BaseLogic
         $query = ServiceAddon::where('staff_id', $staffId)
             ->whereNull('delete_time')
             ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show')
-            ->append(['category_name', 'package_ids'])
             ->order('sort', 'desc')
             ->order('id', 'desc');
 
@@ -1410,13 +1427,15 @@ class StaffCenterLogic extends BaseLogic
 
         $result = $query->paginate($pageSize)->toArray();
         $rows = is_array($result['data'] ?? null) ? $result['data'] : [];
+        $categoryName = self::resolveStaffCategoryName($staffId);
         foreach ($rows as &$row) {
+            $row['category_name'] = $categoryName;
             if (!empty($row['image'])) {
                 $row['image'] = \app\common\service\FileService::getFileUrl((string) $row['image']);
             }
         }
         unset($row);
-        $result['data'] = $rows;
+        $result['data'] = ServicePackageAddon::attachPackageIds($rows);
         return $result;
     }
 
@@ -1461,7 +1480,14 @@ class StaffCenterLogic extends BaseLogic
 
         try {
             Db::transaction(function () use ($staffId, $params) {
-                ServiceAddon::create(self::buildAddonPayload($staffId, $params));
+                $addon = ServiceAddon::create(self::buildAddonPayload($staffId, $params));
+                if (array_key_exists('package_ids', $params)) {
+                    ServicePackageAddon::syncAddonPackages(
+                        (int) $addon->id,
+                        $staffId,
+                        $params['package_ids']
+                    );
+                }
             });
             return true;
         } catch (\Throwable $e) {
@@ -1491,7 +1517,14 @@ class StaffCenterLogic extends BaseLogic
 
         try {
             Db::transaction(function () use ($addon, $staffId, $params) {
-                $addon->save(self::buildAddonPayload($staffId, $params, false));
+                $addon->save(self::buildAddonPayload($staffId, $params, false, $addon));
+                if (array_key_exists('package_ids', $params)) {
+                    ServicePackageAddon::syncAddonPackages(
+                        (int) $addon->id,
+                        $staffId,
+                        $params['package_ids']
+                    );
+                }
             });
             return true;
         } catch (\Throwable $e) {
@@ -1519,9 +1552,16 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
-        ServicePackageAddon::clearByAddonId($addonId);
-        $addon->delete();
-        return true;
+        try {
+            Db::transaction(function () use ($addon, $addonId) {
+                ServicePackageAddon::clearByAddonId($addonId);
+                $addon->delete();
+            });
+            return true;
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -3144,27 +3184,75 @@ class StaffCenterLogic extends BaseLogic
     }
 
     /**
+     * @notes 读取人员当前服务分类名称
+     * @param int $staffId
+     * @return string
+     */
+    protected static function resolveStaffCategoryName(int $staffId): string
+    {
+        if ($staffId <= 0) {
+            return '';
+        }
+
+        $staff = Staff::where('id', $staffId)->field('id, category_id')->find();
+        if (!$staff) {
+            return '';
+        }
+
+        $categoryId = (int)($staff->category_id ?? 0);
+        if ($categoryId <= 0) {
+            return '';
+        }
+
+        $category = ServiceCategory::where('id', $categoryId)->field('id, name')->find();
+        return $category ? (string)$category->name : '';
+    }
+
+    /**
      * @notes 构造套餐写入载荷
      * @param int $staffId
      * @param array $params
      * @param bool $withCreateFields
+     * @param ServicePackage|null $existing
      * @return array
      */
-    protected static function buildPackagePayload(int $staffId, array $params, bool $withCreateFields = true): array
-    {
+    protected static function buildPackagePayload(
+        int $staffId,
+        array $params,
+        bool $withCreateFields = true,
+        ?ServicePackage $existing = null
+    ): array {
         $image = trim((string)($params['image'] ?? ''));
         $payload = [
             'staff_id' => $staffId,
             'category_id' => self::resolveStaffCategoryId($staffId),
-            'name' => (string)($params['name'] ?? ''),
-            'price' => round((float)($params['price'] ?? 0), 2),
-            'original_price' => round((float)($params['original_price'] ?? 0), 2),
-            'description' => (string)($params['description'] ?? ''),
-            'image' => $image !== '' ? \app\common\service\FileService::setFileUrl($image) : '',
-            'sort' => (int)($params['sort'] ?? 0),
-            'is_show' => (int)($params['is_show'] ?? 1),
-            'is_recommend' => (int)($params['is_recommend'] ?? 0),
-            'duration' => (int)($params['duration'] ?? 0),
+            'name' => array_key_exists('name', $params)
+                ? (string)$params['name']
+                : (string)($existing->name ?? ''),
+            'price' => array_key_exists('price', $params)
+                ? round((float)$params['price'], 2)
+                : round((float)($existing->price ?? 0), 2),
+            'original_price' => array_key_exists('original_price', $params)
+                ? round((float)$params['original_price'], 2)
+                : round((float)($existing->original_price ?? 0), 2),
+            'description' => array_key_exists('description', $params)
+                ? (string)$params['description']
+                : (string)($existing->description ?? ''),
+            'image' => array_key_exists('image', $params)
+                ? ($image !== '' ? \app\common\service\FileService::setFileUrl($image) : '')
+                : ($existing ? (string)$existing->getData('image') : ''),
+            'sort' => array_key_exists('sort', $params)
+                ? (int)$params['sort']
+                : (int)($existing->sort ?? 0),
+            'is_show' => array_key_exists('is_show', $params)
+                ? (int)$params['is_show']
+                : (int)($existing->is_show ?? 1),
+            'is_recommend' => array_key_exists('is_recommend', $params)
+                ? (int)$params['is_recommend']
+                : (int)($existing->is_recommend ?? 0),
+            'duration' => array_key_exists('duration', $params)
+                ? (int)$params['duration']
+                : (int)($existing->duration ?? 0),
             'update_time' => time(),
         ];
 
@@ -3180,21 +3268,40 @@ class StaffCenterLogic extends BaseLogic
      * @param int $staffId
      * @param array $params
      * @param bool $withCreateFields
+     * @param ServiceAddon|null $existing
      * @return array
      */
-    protected static function buildAddonPayload(int $staffId, array $params, bool $withCreateFields = true): array
-    {
+    protected static function buildAddonPayload(
+        int $staffId,
+        array $params,
+        bool $withCreateFields = true,
+        ?ServiceAddon $existing = null
+    ): array {
         $image = trim((string)($params['image'] ?? ''));
         $payload = [
             'staff_id' => $staffId,
             'category_id' => self::resolveStaffCategoryId($staffId),
-            'name' => (string)($params['name'] ?? ''),
-            'price' => round((float)($params['price'] ?? 0), 2),
-            'original_price' => round((float)($params['original_price'] ?? 0), 2),
-            'description' => (string)($params['description'] ?? ''),
-            'image' => $image !== '' ? \app\common\service\FileService::setFileUrl($image) : '',
-            'sort' => (int)($params['sort'] ?? 0),
-            'is_show' => (int)($params['is_show'] ?? 1),
+            'name' => array_key_exists('name', $params)
+                ? (string)$params['name']
+                : (string)($existing->name ?? ''),
+            'price' => array_key_exists('price', $params)
+                ? round((float)$params['price'], 2)
+                : round((float)($existing->price ?? 0), 2),
+            'original_price' => array_key_exists('original_price', $params)
+                ? round((float)$params['original_price'], 2)
+                : round((float)($existing->original_price ?? 0), 2),
+            'description' => array_key_exists('description', $params)
+                ? (string)$params['description']
+                : (string)($existing->description ?? ''),
+            'image' => array_key_exists('image', $params)
+                ? ($image !== '' ? \app\common\service\FileService::setFileUrl($image) : '')
+                : ($existing ? (string)$existing->getData('image') : ''),
+            'sort' => array_key_exists('sort', $params)
+                ? (int)$params['sort']
+                : (int)($existing->sort ?? 0),
+            'is_show' => array_key_exists('is_show', $params)
+                ? (int)$params['is_show']
+                : (int)($existing->is_show ?? 1),
             'update_time' => time(),
         ];
 

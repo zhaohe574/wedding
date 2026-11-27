@@ -11,6 +11,8 @@ use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\service\AddonLists;
 use app\adminapi\logic\service\AddonLogic;
 use app\adminapi\validate\service\AddonValidate;
+use app\common\model\service\ServiceAddon;
+use app\common\service\StaffService;
 
 /**
  * 附加服务管理控制器
@@ -40,6 +42,10 @@ class AddonController extends BaseAdminController
     public function detail()
     {
         $params = (new AddonValidate())->goCheck('detail');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && !$this->belongsToScope((int)$params['id'], $staffScopeId)) {
+            return $this->fail('无权限操作');
+        }
         $result = AddonLogic::detail((int)$params['id']);
         if (empty($result)) {
             return $this->fail('附加服务不存在');
@@ -54,6 +60,10 @@ class AddonController extends BaseAdminController
     public function add()
     {
         $params = (new AddonValidate())->post()->goCheck('add');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $params['staff_id'] = $staffScopeId;
+        }
         $result = AddonLogic::add($params);
         if (true === $result) {
             return $this->success('添加成功', [], 1, 1);
@@ -68,6 +78,13 @@ class AddonController extends BaseAdminController
     public function edit()
     {
         $params = (new AddonValidate())->post()->goCheck('edit');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            if (!$this->belongsToScope((int)$params['id'], $staffScopeId)) {
+                return $this->fail('无权限操作');
+            }
+            $params['staff_id'] = $staffScopeId;
+        }
         $result = AddonLogic::edit($params);
         if (true === $result) {
             return $this->success('编辑成功', [], 1, 1);
@@ -82,6 +99,10 @@ class AddonController extends BaseAdminController
     public function delete()
     {
         $params = (new AddonValidate())->post()->goCheck('delete');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && !$this->belongsToScope((int)$params['id'], $staffScopeId)) {
+            return $this->fail('无权限操作');
+        }
         $result = AddonLogic::delete($params);
         if (true === $result) {
             return $this->success('删除成功', [], 1, 1);
@@ -96,6 +117,10 @@ class AddonController extends BaseAdminController
     public function changeStatus()
     {
         $params = (new AddonValidate())->post()->goCheck('status');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && !$this->belongsToScope((int)$params['id'], $staffScopeId)) {
+            return $this->fail('无权限操作');
+        }
         $result = AddonLogic::changeStatus($params);
         if (true === $result) {
             return $this->success('操作成功', [], 1, 1);
@@ -109,6 +134,29 @@ class AddonController extends BaseAdminController
      */
     public function all()
     {
-        return $this->data(AddonLogic::getAll($this->request->get()));
+        $params = $this->request->get();
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $params['staff_id'] = $staffScopeId;
+        }
+        return $this->data(AddonLogic::getAll($params));
+    }
+
+    /**
+     * @notes 校验附加服务是否属于当前人员数据范围
+     * @param int $addonId
+     * @param int $staffScopeId
+     * @return bool
+     */
+    protected function belongsToScope(int $addonId, int $staffScopeId): bool
+    {
+        if ($addonId <= 0 || $staffScopeId <= 0) {
+            return false;
+        }
+
+        return ServiceAddon::where('id', $addonId)
+            ->where('staff_id', $staffScopeId)
+            ->whereNull('delete_time')
+            ->count() > 0;
     }
 }

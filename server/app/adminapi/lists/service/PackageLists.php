@@ -10,7 +10,10 @@ namespace app\adminapi\lists\service;
 use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsSearchInterface;
 use app\common\lists\ListsExcelInterface;
+use app\common\model\service\ServiceCategory;
 use app\common\model\service\ServicePackage;
+use app\common\model\service\ServicePackageAddon;
+use app\common\model\staff\Staff;
 use app\common\service\PackageRegionPriceService;
 
 /**
@@ -51,16 +54,27 @@ class PackageLists extends BaseAdminDataLists implements ListsSearchInterface, L
             $query->where('s.category_id', (int)$this->params['category_id']);
         }
 
+        $staffScopeId = $this->getStaffScopeId();
+        if ($staffScopeId > 0) {
+            $query->where('p.staff_id', $staffScopeId);
+        }
+
         $list = $query
             ->field('p.*')
-            ->with(['staff'])
-            ->append(['category_name', 'is_show_desc', 'is_recommend_desc', 'staff_name'])
             ->order($this->sortOrder ?: ['p.sort' => 'desc', 'p.id' => 'desc'])
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
             ->toArray();
 
-        return PackageRegionPriceService::attachRegionPrices($list);
+        $list = $this->fillStaffAndCategoryNames($list);
+        $list = PackageRegionPriceService::attachRegionPrices($list);
+        $list = ServicePackageAddon::attachAddonIds($list);
+
+        foreach ($list as $index => $item) {
+            $list[$index]['addon_count'] = count($item['addon_ids'] ?? []);
+        }
+
+        return $list;
     }
 
     /**
@@ -79,7 +93,78 @@ class PackageLists extends BaseAdminDataLists implements ListsSearchInterface, L
             $query->where('s.category_id', (int)$this->params['category_id']);
         }
 
+        $staffScopeId = $this->getStaffScopeId();
+        if ($staffScopeId > 0) {
+            $query->where('p.staff_id', $staffScopeId);
+        }
+
         return $query->count();
+    }
+
+    /**
+     * @notes 批量填充人员与分类名称，避免逐行查询
+     * @param array $list
+     * @return array
+     */
+    protected function fillStaffAndCategoryNames(array $list): array
+    {
+        if (empty($list)) {
+            return [];
+        }
+
+        $staffIds = array_values(array_unique(array_filter(array_map(
+            static fn (array $item) => (int)($item['staff_id'] ?? 0),
+            $list
+        ))));
+
+        $staffMap = [];
+        $staffCategoryMap = [];
+        if (!empty($staffIds)) {
+            $staffRows = Staff::whereIn('id', $staffIds)
+                ->whereNull('delete_time')
+                ->field('id, name, category_id')
+                ->select()
+                ->toArray();
+            foreach ($staffRows as $staff) {
+                $staffId = (int)($staff['id'] ?? 0);
+                $staffMap[$staffId] = (string)($staff['name'] ?? '');
+                $staffCategoryMap[$staffId] = (int)($staff['category_id'] ?? 0);
+            }
+        }
+
+        $categoryIds = array_values(array_unique(array_filter(array_map(
+            static fn (array $item) => (int)($item['category_id'] ?? 0),
+            $list
+        ))));
+        foreach ($staffCategoryMap as $categoryId) {
+            if ($categoryId > 0) {
+                $categoryIds[] = $categoryId;
+            }
+        }
+        $categoryIds = array_values(array_unique($categoryIds));
+
+        $categoryMap = [];
+        if (!empty($categoryIds)) {
+            $categoryRows = ServiceCategory::whereIn('id', $categoryIds)
+                ->field('id, name')
+                ->select()
+                ->toArray();
+            foreach ($categoryRows as $category) {
+                $categoryMap[(int)($category['id'] ?? 0)] = (string)($category['name'] ?? '');
+            }
+        }
+
+        foreach ($list as $index => $item) {
+            $staffId = (int)($item['staff_id'] ?? 0);
+            $categoryId = $staffCategoryMap[$staffId] ?? (int)($item['category_id'] ?? 0);
+
+            $list[$index]['staff_name'] = $staffMap[$staffId] ?? '';
+            $list[$index]['category_name'] = $categoryMap[$categoryId] ?? '';
+            $list[$index]['is_show_desc'] = !empty($item['is_show']) ? '上架' : '下架';
+            $list[$index]['is_recommend_desc'] = !empty($item['is_recommend']) ? '是' : '否';
+        }
+
+        return $list;
     }
 
     /**

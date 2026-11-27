@@ -118,6 +118,8 @@ class PackageLogic extends BaseLogic
             if ($staffId <= 0) {
                 throw new \Exception('请选择所属人员');
             }
+            $originalStaffId = (int)$package->staff_id;
+            $staffChanged = ($originalStaffId !== $staffId);
             $categoryId = self::resolveStaffCategoryId($staffId);
 
             $updateData = [
@@ -135,20 +137,30 @@ class PackageLogic extends BaseLogic
                 'update_time' => time(),
             ];
 
-            Db::transaction(function () use ($package, $updateData, $staffId, $params) {
+            Db::transaction(function () use ($package, $updateData, $staffId, $params, $staffChanged) {
                 $package->save($updateData);
-                PackageRegionPriceService::syncPackageRegionPrices(
-                    (int)$package->id,
-                    $staffId,
-                    $params['region_prices'] ?? []
-                );
-                ServicePackageAddon::syncPackageAddons(
-                    (int)$package->id,
-                    $staffId,
-                    array_key_exists('addon_ids', $params)
-                        ? $params['addon_ids']
-                        : ServicePackageAddon::getAddonIds((int)$package->id)
-                );
+
+                if (array_key_exists('region_prices', $params) && is_array($params['region_prices'])) {
+                    PackageRegionPriceService::syncPackageRegionPrices(
+                        (int)$package->id,
+                        $staffId,
+                        $params['region_prices']
+                    );
+                } elseif ($staffChanged) {
+                    // 未传地区价但换了人员：只迁移归属，避免误清空已有地区价
+                    ServicePackageRegionPrice::where('package_id', (int)$package->id)
+                        ->update([
+                            'staff_id' => $staffId,
+                            'update_time' => time(),
+                        ]);
+                }
+
+                if (array_key_exists('addon_ids', $params)) {
+                    ServicePackageAddon::syncPackageAddons((int)$package->id, $staffId, $params['addon_ids']);
+                } elseif ($staffChanged) {
+                    // 跨人员变更且未重新选择附加项：清理旧人员绑定，避免跨人脏数据
+                    ServicePackageAddon::clearByPackageId((int)$package->id);
+                }
             });
 
             return true;
@@ -199,9 +211,16 @@ class PackageLogic extends BaseLogic
     public static function changeStatus(array $params): bool
     {
         try {
-            ServicePackage::update([
-                'id' => $params['id'],
-                'is_show' => $params['is_show'],
+            $package = ServicePackage::where('id', (int)$params['id'])
+                ->whereNull('delete_time')
+                ->find();
+            if (!$package) {
+                self::setError('套餐不存在');
+                return false;
+            }
+
+            $package->save([
+                'is_show' => (int)$params['is_show'],
                 'update_time' => time(),
             ]);
             return true;

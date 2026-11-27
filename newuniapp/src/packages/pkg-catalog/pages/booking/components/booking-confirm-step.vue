@@ -89,7 +89,7 @@
             index="01"
             title="套餐与服务"
             :action="orderId ? '' : '修改'"
-            @action="emit('editStep', 1)"
+            @action="emit('editStep', 'package')"
         >
             <view class="cf-row">
                 <text class="cf-row__k">套餐</text>
@@ -123,12 +123,13 @@
             <text v-if="packageRules" class="cf-note">{{ packageRules }}</text>
         </confirm-section>
 
-        <!-- 02 附加项 -->
+        <!-- 02 附加项：套餐本身没有可加购项时整块隐藏，不给指向跳过步骤的「去挑选」 -->
         <confirm-section
+            v-if="hasAvailableAddons || selectedAddonList.length"
             index="02"
             :title="addonTitle"
             :action="orderId ? '' : selectedAddonList.length ? '修改' : '去挑选'"
-            @action="emit('editStep', 2)"
+            @action="emit('editStep', 'addon')"
         >
             <template v-if="selectedAddonList.length">
                 <view v-for="a in selectedAddonList" :key="addonId(a)" class="cf-line">
@@ -390,6 +391,8 @@ const props = defineProps<{
     packageDurationText: string
     packageRules: string
     quoteRoleRows: QuoteRoleRow[]
+    /** 当前套餐是否绑定可加购附加项：为 false 时整块隐藏，避免出现空的「附加项」区 */
+    hasAvailableAddons: boolean
     addonTitle: string
     selectedAddonList: any[]
     addonSumText: string
@@ -422,7 +425,7 @@ const emit = defineEmits<{
     (e: 'openDatePicker'): void
     (e: 'goOrderDetail'): void
     (e: 'relock'): void
-    (e: 'editStep', step: number): void
+    (e: 'editStep', target: number | 'package' | 'addon'): void
     (e: 'addUpsell'): void
     (e: 'openContact'): void
     (e: 'openAddress'): void

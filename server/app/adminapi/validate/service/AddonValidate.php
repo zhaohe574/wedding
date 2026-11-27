@@ -28,6 +28,7 @@ class AddonValidate extends BaseValidate
         'sort' => 'integer|egt:0',
         'is_show' => 'in:0,1',
         'staff_id' => 'require|integer|gt:0|checkStaff',
+        'package_ids' => 'array',
     ];
 
     protected $message = [
@@ -47,11 +48,12 @@ class AddonValidate extends BaseValidate
         'staff_id.require' => '请选择所属人员',
         'staff_id.integer' => '所属人员ID必须为整数',
         'staff_id.gt' => '请选择所属人员',
+        'package_ids.array' => '适用套餐参数格式错误',
     ];
 
     protected $scene = [
-        'add' => ['name', 'price', 'original_price', 'image', 'description', 'sort', 'is_show', 'staff_id'],
-        'edit' => ['id', 'name', 'price', 'original_price', 'image', 'description', 'sort', 'is_show', 'staff_id'],
+        'add' => ['name', 'price', 'original_price', 'image', 'description', 'sort', 'is_show', 'staff_id', 'package_ids'],
+        'edit' => ['id', 'name', 'price', 'original_price', 'image', 'description', 'sort', 'is_show', 'staff_id', 'package_ids'],
         'detail' => ['id'],
         'delete' => ['id'],
         'status' => ['id', 'is_show'],

@@ -484,34 +484,45 @@ class BookingFlowService
      */
     protected static function getRecommendedPackage(int $staffId, array $regionContext = []): array
     {
-        $package = ServicePackage::where('staff_id', $staffId)
+        if ($staffId <= 0) {
+            return [];
+        }
+
+        $packages = ServicePackage::where('staff_id', $staffId)
             ->where('is_show', 1)
             ->whereNull('delete_time')
             ->order('is_recommend', 'desc')
             ->order('sort', 'desc')
             ->order('id', 'desc')
-            ->find();
-        if (!$package) {
+            ->select();
+
+        if ($packages->isEmpty()) {
             return [];
         }
 
-        $price = round((float)$package->price, 2);
-        if (PackageRegionPriceService::hasRegionContext($regionContext)) {
-            $resolvedPrice = PackageRegionPriceService::resolvePackagePrice((int)$package->id, $regionContext);
-            if (!($resolvedPrice['available'] ?? false)) {
-                return [];
+        $hasRegionContext = PackageRegionPriceService::hasRegionContext($regionContext);
+        foreach ($packages as $package) {
+            $price = round((float)$package->price, 2);
+
+            if ($hasRegionContext) {
+                $resolvedPrice = PackageRegionPriceService::resolvePackagePrice((int)$package->id, $regionContext);
+                if (!($resolvedPrice['available'] ?? false)) {
+                    continue;
+                }
+                $price = round((float)($resolvedPrice['price'] ?? 0), 2);
             }
-            $price = round((float)($resolvedPrice['price'] ?? 0), 2);
+
+            return [
+                'id' => (int)$package->id,
+                'name' => (string)$package->name,
+                'description' => (string)($package->description ?? ''),
+                'price' => $price,
+                'original_price' => round((float)$package->original_price, 2),
+                'category_id' => (int)$package->category_id,
+            ];
         }
 
-        return [
-            'id' => (int)$package->id,
-            'name' => (string)$package->name,
-            'description' => (string)($package->description ?? ''),
-            'price' => $price,
-            'original_price' => round((float)$package->original_price, 2),
-            'category_id' => (int)$package->category_id,
-        ];
+        return [];
     }
 
     /**

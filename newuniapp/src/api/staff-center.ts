@@ -37,13 +37,30 @@ export function getStaffWorkList(params: {
     return request.get<any>('/staff_center/workLists', params, { auth: true, silent: true })
 }
 
+/** 分页返回（小程序端统一由 request 的 normalizePage 归一，data / lists 两种形态都出现过） */
+export interface StaffPagedResult<T> {
+    data?: T[]
+    lists?: T[]
+    total?: number
+    per_page?: number
+    current_page?: number
+    last_page?: number
+}
+
 /** @endpoint staff_center.packageLists */
 export function getStaffPackageList(params: {
     page?: number
     page_size?: number
     is_show?: number | ''
 }) {
-    return request.get<any>('/staff_center/packageLists', params, { auth: true, silent: true })
+    return request.get<StaffPagedResult<StaffPackageListItem>>(
+        '/staff_center/packageLists',
+        params,
+        {
+            auth: true,
+            silent: true
+        }
+    )
 }
 
 /** @endpoint staff_center.addonLists */
@@ -52,7 +69,10 @@ export function getStaffAddonList(params: {
     page_size?: number
     is_show?: number | ''
 }) {
-    return request.get<any>('/staff_center/addonLists', params, { auth: true, silent: true })
+    return request.get<StaffPagedResult<StaffAddonListItem>>('/staff_center/addonLists', params, {
+        auth: true,
+        silent: true
+    })
 }
 
 /** @endpoint staff_center.dynamicLists */
@@ -331,6 +351,44 @@ export interface StaffPackageRegionPriceItem {
     price: number
 }
 
+/**
+ * 套餐列表/详情行（后端 packageLists / packageDetail 返回）。
+ * `duration` 单位为小时；`region_prices` 与 `addon_ids` 由后端按关联表拼装，
+ * 列表页据此展示「X 条地区价」「X 项加购」与「未配地区价」提醒。
+ */
+export interface StaffPackageListItem {
+    id: number
+    name: string
+    price: number | string
+    original_price?: number | string
+    description?: string
+    image?: string
+    duration?: number | string
+    sort?: number
+    is_show?: number
+    is_recommend?: number
+    addon_ids?: number[]
+    region_prices?: StaffPackageRegionPriceItem[]
+    category_name?: string
+}
+
+/** 附加项列表/详情行（后端 addonLists / addonDetail 返回），`package_ids` 为适用套餐 */
+export interface StaffAddonListItem {
+    id: number
+    name: string
+    price: number | string
+    original_price?: number | string
+    description?: string
+    image?: string
+    sort?: number
+    is_show?: number
+    category_name?: string
+    /** 适用套餐 id（后端 attachPackageIds 回数组；历史数据亦可能是逗号串） */
+    package_ids?: number[] | string
+    /** 部分列表实现只回数量，页面两种都要兼容 */
+    package_count?: number
+}
+
 export interface StaffPackageSaveParams {
     package_id?: number
     name: string
@@ -348,7 +406,10 @@ export interface StaffPackageSaveParams {
 
 /** 套餐详情（编辑回填用） @endpoint staff_center.packageDetail */
 export function getStaffPackageDetail(params: { package_id: number }) {
-    return request.get<any>('/staff_center/packageDetail', params, { auth: true, silent: true })
+    return request.get<StaffPackageListItem>('/staff_center/packageDetail', params, {
+        auth: true,
+        silent: true
+    })
 }
 
 /** 新增套餐 @endpoint staff_center.packageAdd */
@@ -387,11 +448,16 @@ export interface StaffAddonSaveParams {
     image?: string
     sort?: number
     is_show?: 0 | 1
+    /** 适用套餐 id 集合；不传时后端保留原有关联（局部更新） */
+    package_ids?: number[]
 }
 
 /** 附加项详情（编辑回填用） @endpoint staff_center.addonDetail */
 export function getStaffAddonDetail(params: { addon_id: number }) {
-    return request.get<any>('/staff_center/addonDetail', params, { auth: true, silent: true })
+    return request.get<StaffAddonListItem>('/staff_center/addonDetail', params, {
+        auth: true,
+        silent: true
+    })
 }
 
 /** 新增附加项 @endpoint staff_center.addonAdd */

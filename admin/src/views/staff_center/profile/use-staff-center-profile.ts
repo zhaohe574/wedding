@@ -80,6 +80,7 @@ interface StaffPackageResponse {
     name?: string
     price?: number | string
     original_price?: number | string
+    duration?: number | string
     image?: string
     description?: string
     region_prices?: RegionPrice[]
@@ -149,6 +150,7 @@ export interface StaffPackageFormData {
     name: string
     price: number
     original_price: number
+    duration: number
     image: string
     description: string
     region_prices: RegionPrice[]
@@ -321,6 +323,7 @@ export function useStaffCenterProfile() {
         name: '',
         price: 0,
         original_price: 0,
+        duration: 0,
         image: '',
         description: '',
         region_prices: [],
@@ -449,6 +452,7 @@ export function useStaffCenterProfile() {
             name: '',
             price: 0,
             original_price: 0,
+            duration: 0,
             image: '',
             description: '',
             region_prices: [],
@@ -566,6 +570,7 @@ export function useStaffCenterProfile() {
             name: toStringValue(item.name),
             price: toNumber(item.price),
             original_price: toNumber(item.original_price),
+            duration: toNumber(item.duration),
             image: toStringValue(item.image),
             description: toStringValue(item.description),
             region_prices: Array.isArray(item.region_prices) ? item.region_prices : [],
@@ -623,6 +628,7 @@ export function useStaffCenterProfile() {
             name: row.name,
             price: toNumber(row.price),
             original_price: toNumber(row.original_price),
+            duration: toNumber(row.duration),
             image: row.image,
             description: row.description,
             region_prices: Array.isArray(row.region_prices) ? row.region_prices : [],
@@ -639,6 +645,7 @@ export function useStaffCenterProfile() {
             name: staffPackageForm.name,
             price: Number(staffPackageForm.price ?? 0),
             original_price: staffPackageForm.original_price ?? null,
+            duration: Number(staffPackageForm.duration ?? 0),
             image: staffPackageForm.image,
             description: staffPackageForm.description,
             region_prices: [...staffPackageForm.region_prices],
@@ -665,10 +672,15 @@ export function useStaffCenterProfile() {
     }
 
     const deleteStaffPackage = async (row: StaffPackageItem) => {
-        await feedback.confirm(`确定要删除专属套餐「${row.name || ''}」吗？`)
+        try {
+            await feedback.confirm(`确定要删除专属套餐「${row.name || ''}」吗？`)
+        } catch {
+            return false
+        }
         await myProfileDeletePackage({ package_id: row.id })
         ElMessage.success('删除成功')
         await loadPackageConfig()
+        return true
     }
 
     const openAddBanner = () => {

@@ -39,7 +39,7 @@
                 </view>
 
                 <base-card>
-                    <section-header title="基础信息" flush />
+                    <section-header title="基础信息与定价" flush />
                     <form-field
                         label="套餐名称"
                         type="input"
@@ -77,12 +77,12 @@
                     <form-field label="服务时长" :error="errors.duration">
                         <base-input
                             type="number"
-                            placeholder="选填，如 480"
+                            placeholder="选填，如 8（不填为全天）"
                             :model-value="form.duration"
                             @update:model-value="(v: string) => (form.duration = v)"
                         >
                             <template #suffix>
-                                <text class="unit">分钟</text>
+                                <text class="unit">小时</text>
                             </template>
                         </base-input>
                     </form-field>
@@ -94,21 +94,38 @@
                             @update:model-value="(v: string) => (form.sort = v)"
                         />
                     </form-field>
+                    <form-field
+                        label="套餐封面"
+                        type="upload"
+                        layout="stack"
+                        :max="1"
+                        :model-value="imageList"
+                        @update:model-value="(v: string[]) => (imageList = v)"
+                    />
+                    <form-field
+                        label="服务说明"
+                        type="textarea"
+                        layout="stack"
+                        :maxlength="500"
+                        placeholder="介绍包含的人员配置、服务流程、交付标准等（选填，最多 500 字）"
+                        :model-value="form.description"
+                        @update:model-value="(v: string) => (form.description = v)"
+                    />
                 </base-card>
 
                 <base-card>
                     <view class="rp-head">
                         <section-header
                             class="rp-head__sec"
-                            title="地区价格"
-                            subtitle="区县 > 城市 > 省级 > 基础价"
+                            title="地区定价"
+                            subtitle="优先级：区县 > 城市 > 省级"
                             flush
                         />
                         <view
                             v-if="canWrite"
                             hover-class="is-pressed"
                             class="rp-add-btn"
-                            aria-label="添加地区价格"
+                            aria-label="添加地区定价"
                             @tap="openCreateRegionPrice"
                         >
                             <tn-icon name="add" :size="24" class="rp-add-btn__icon" />
@@ -126,10 +143,10 @@
                             <tn-icon name="add" :size="28" class="rp-empty__icon" />
                         </view>
                         <text class="rp-empty__title">
-                            {{ canWrite ? '点击添加地区差异价' : '暂未配置地区价格' }}
+                            {{ canWrite ? '添加地区定价' : '暂未配置地区定价' }}
                         </text>
                         <text class="rp-empty__desc">
-                            未单独设置时，所有地区统一按基础售价执行
+                            未配置地区价时，客户选区县后将无法预约该套餐，请至少添加一条地区定价
                         </text>
                     </view>
 
@@ -214,28 +231,82 @@
                 </base-card>
 
                 <base-card>
-                    <section-header title="封面与服务说明" flush />
-                    <form-field
-                        label="套餐封面"
-                        type="upload"
-                        layout="stack"
-                        :max="1"
-                        :model-value="imageList"
-                        @update:model-value="(v: string[]) => (imageList = v)"
-                    />
-                    <form-field
-                        label="服务说明"
-                        type="textarea"
-                        layout="stack"
-                        :maxlength="500"
-                        placeholder="介绍包含的人员配置、服务流程、交付标准等（选填，最多 500 字）"
-                        :model-value="form.description"
-                        @update:model-value="(v: string) => (form.description = v)"
-                    />
+                    <view class="sec-head">
+                        <section-header class="sec-head__sec" title="可搭配附加项" flush />
+                        <view v-if="canWrite && addonOptions.length" class="sec-head__ops">
+                            <view
+                                hover-class="is-pressed"
+                                class="mini-btn"
+                                aria-role="button"
+                                aria-label="全选附加项"
+                                @tap="selectAllAddons"
+                            >
+                                <text class="mini-btn__text">全选</text>
+                            </view>
+                            <view
+                                hover-class="is-pressed"
+                                class="mini-btn"
+                                aria-role="button"
+                                aria-label="清空已选附加项"
+                                @tap="clearAddons"
+                            >
+                                <text class="mini-btn__text">清空</text>
+                            </view>
+                        </view>
+                    </view>
+
+                    <view v-if="!addonOptions.length" class="empty-block">
+                        <text class="empty-block__title">还没有附加项</text>
+                        <text class="empty-block__desc">新增后可在此勾选搭配到当前套餐</text>
+                        <base-button
+                            v-if="canWrite"
+                            text="新增附加项"
+                            size="sm"
+                            variant="ghost"
+                            :block="false"
+                            @click="goCreateAddon"
+                        />
+                    </view>
+
+                    <view v-else class="addon-list">
+                        <view
+                            v-for="ad in addonOptions"
+                            :key="ad.id"
+                            class="addon"
+                            :class="{ 'is-on': isAddonSelected(ad.id) }"
+                            hover-class="is-pressed"
+                            aria-role="checkbox"
+                            :aria-checked="isAddonSelected(ad.id)"
+                            :aria-label="ad.name"
+                            @tap="toggleAddon(ad.id)"
+                        >
+                            <view class="addon__check" :class="{ 'is-on': isAddonSelected(ad.id) }">
+                                <tn-icon
+                                    v-if="isAddonSelected(ad.id)"
+                                    name="check"
+                                    :size="20"
+                                    class="addon__check-icon"
+                                />
+                            </view>
+                            <view class="addon__main">
+                                <text class="addon__name ellipsis">{{ ad.name }}</text>
+                                <status-tag
+                                    v-if="ad.is_show === 0"
+                                    label="已停用"
+                                    tone="neutral"
+                                    size="sm"
+                                    :dot="false"
+                                />
+                            </view>
+                            <text class="addon__price"
+                                >+¥{{ formatMoneyNum(Number(ad.price)) }}</text
+                            >
+                        </view>
+                    </view>
                 </base-card>
 
                 <base-card>
-                    <section-header title="展示设置与关联附加项" flush />
+                    <section-header title="上架与推荐设置" flush />
                     <form-field label="上架状态">
                         <view class="pills">
                             <view
@@ -252,7 +323,7 @@
                                 hover-class="is-pressed"
                                 @tap="form.is_show = 0"
                             >
-                                <text class="pill__text">已下架</text>
+                                <text class="pill__text">已停用</text>
                             </view>
                         </view>
                     </form-field>
@@ -274,25 +345,6 @@
                                 @tap="form.is_recommend = 0"
                             >
                                 <text class="pill__text">普通展示</text>
-                            </view>
-                        </view>
-                    </form-field>
-
-                    <form-field
-                        v-if="addonOptions.length"
-                        label="关联附加项"
-                        layout="stack"
-                    >
-                        <view class="pills">
-                            <view
-                                v-for="ad in addonOptions"
-                                :key="ad.id"
-                                class="pill"
-                                :class="{ 'is-on': isAddonSelected(ad.id) }"
-                                hover-class="is-pressed"
-                                @tap="toggleAddon(ad.id)"
-                            >
-                                <text class="pill__text">{{ ad.name }} · ¥{{ ad.price }}</text>
                             </view>
                         </view>
                     </form-field>
@@ -347,7 +399,7 @@
 <script setup lang="ts">
 /** 服务人员：新增 / 编辑套餐 */
 import { computed, reactive, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getRegionTree } from '@/api/catalog'
 import type { RegionProvinceVO } from '@/api/types/catalog'
 import {
@@ -363,6 +415,7 @@ import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { useStaffWriteGate, STAFF_WRITE_GATE_TIP } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import {
     buildGroupSubtitle,
@@ -381,15 +434,8 @@ const editId = ref(0)
 const isEdit = computed(() => editId.value > 0)
 
 const { canWrite } = useStaffWriteGate()
-const {
-    guardPhase,
-    guardReason,
-    guardError,
-    guardAllowed,
-    verify,
-    onGuardRetry,
-    onGuardAction
-} = useStaffGuard(() => init(true))
+const { guardPhase, guardReason, guardError, guardAllowed, verify, onGuardRetry, onGuardAction } =
+    useStaffGuard(() => init(true))
 
 const loading = ref(false)
 const rawError = ref<unknown>(null)
@@ -398,7 +444,9 @@ const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: t
 
 const submitting = ref(false)
 const deleting = ref(false)
-const addonOptions = ref<Array<{ id: number; name: string; price: string | number }>>([])
+const addonOptions = ref<
+    Array<{ id: number; name: string; price: string | number; is_show: number }>
+>([])
 
 const REGION_FILTER_TABS: Array<{ key: 0 | 1 | 2 | 3; label: string }> = [
     { key: 0, label: '全部' },
@@ -511,11 +559,54 @@ function isAddonSelected(id: number): boolean {
 }
 
 function toggleAddon(id: number) {
+    if (!canWrite.value) return
     const numId = Number(id)
     if (isAddonSelected(numId)) {
         form.addon_ids = form.addon_ids.filter((x) => x !== numId)
     } else {
         form.addon_ids = [...form.addon_ids, numId]
+    }
+}
+
+function selectAllAddons() {
+    if (!canWrite.value) return
+    form.addon_ids = addonOptions.value.map((ad) => ad.id)
+}
+
+function clearAddons() {
+    if (!canWrite.value) return
+    form.addon_ids = []
+}
+
+function goCreateAddon() {
+    navigate({ path: '/packages/pkg-staff/pages/addon-edit/addon-edit' })
+}
+
+/**
+ * 拉取附加项可选列表。
+ * prune=true 时剔除已不存在的已选项（附加项被删除后表单里不该再提交它）；
+ * 其余表单字段一律不动，从附加项编辑页返回时用户未保存的编辑内容不丢。
+ */
+async function loadAddonOptions(prune = true) {
+    try {
+        const res = await getStaffAddonList({ page: 1, page_size: 100 })
+        const rows = Array.isArray(res?.data)
+            ? res.data
+            : Array.isArray(res?.lists)
+            ? res.lists
+            : []
+        addonOptions.value = rows.map((x) => ({
+            id: Number(x.id),
+            name: String(x.name || '附加项'),
+            price: x.price ?? 0,
+            is_show: Number(x.is_show ?? 1)
+        }))
+        if (prune) {
+            const valid = new Set(addonOptions.value.map((ad) => ad.id))
+            form.addon_ids = form.addon_ids.filter((id) => valid.has(id))
+        }
+    } catch {
+        // 附加项拉取失败不阻断套餐表单，用户可以先去维护附加项再回来
     }
 }
 
@@ -543,7 +634,7 @@ function validate(): boolean {
         form.duration.trim() !== '' &&
         (!/^\d+$/.test(form.duration.trim()) || Number(form.duration) < 0)
     ) {
-        errors.duration = '服务时长须为非负整数'
+        errors.duration = '服务时长须为非负整数（小时）'
         toast.warning(errors.duration)
         return false
     }
@@ -623,32 +714,23 @@ function onPrimary() {
     uni.navigateBack()
 }
 
+let hasLoaded = false
+
 async function init(forceGuard = false) {
     if (!(await verify(forceGuard))) return
     loading.value = true
     rawError.value = null
     try {
-        const addonsPromise = getStaffAddonList({ page: 1, page_size: 50 }).catch(() => null)
         const treePromise = loadRegionTree()
         const detailPromise = isEdit.value
             ? getStaffPackageDetail({ package_id: editId.value })
             : Promise.resolve(null)
-        const [addonsRes, detail] = await Promise.all([addonsPromise, detailPromise, treePromise])
-
-        const rows = Array.isArray(addonsRes?.data)
-            ? addonsRes.data
-            : Array.isArray(addonsRes?.lists)
-            ? addonsRes.lists
-            : []
-        addonOptions.value = rows.map((x: any) => ({
-            id: Number(x.id),
-            name: String(x.name || '附加项'),
-            price: x.price ?? 0
-        }))
+        const [detail] = await Promise.all([detailPromise, treePromise, loadAddonOptions(false)])
 
         if (detail) {
             form.name = String(detail.name || '')
-            form.price = detail.price !== undefined && detail.price !== null ? String(detail.price) : ''
+            form.price =
+                detail.price !== undefined && detail.price !== null ? String(detail.price) : ''
             form.original_price =
                 Number(detail.original_price || 0) > 0 ? String(detail.original_price) : ''
             form.duration = Number(detail.duration || 0) > 0 ? String(detail.duration) : ''
@@ -664,16 +746,26 @@ async function init(forceGuard = false) {
         } else {
             regionPrices.value = []
         }
+
+        // 详情回填后再修剪一次，避免已删除的附加项残留在已选项里
+        const valid = new Set(addonOptions.value.map((ad) => ad.id))
+        form.addon_ids = form.addon_ids.filter((id) => valid.has(id))
     } catch (e) {
         rawError.value = e
     } finally {
         loading.value = false
+        hasLoaded = true
     }
 }
 
 onLoad((options?: Record<string, any>) => {
     editId.value = Number(options?.id || 0)
     void init()
+})
+
+/** 从附加项编辑页返回时刷新可选项；只动选项，不覆盖用户未保存的表单 */
+onShow(() => {
+    if (hasLoaded) void loadAddonOptions()
 })
 </script>
 
@@ -706,7 +798,8 @@ onLoad((options?: Record<string, any>) => {
     }
 }
 
-.rp-head {
+.rp-head,
+.sec-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -715,6 +808,31 @@ onLoad((options?: Record<string, any>) => {
     &__sec {
         flex: 1;
         min-width: 0;
+    }
+}
+
+.sec-head {
+    align-items: center;
+
+    &__ops {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+    }
+}
+
+.mini-btn {
+    min-height: 56rpx;
+    padding: 0 var(--sp-3);
+    border-radius: var(--r-pill);
+    border: 1rpx solid var(--c-control-border);
+    display: flex;
+    align-items: center;
+
+    &__text {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-2);
     }
 }
 
@@ -778,6 +896,7 @@ onLoad((options?: Record<string, any>) => {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
         text-align: center;
+        line-height: var(--lh-body);
     }
 }
 
@@ -948,6 +1067,97 @@ onLoad((options?: Record<string, any>) => {
         .rp-level-tag__text {
             color: var(--c-success);
         }
+    }
+}
+
+.empty-block {
+    margin-top: var(--sp-2);
+    padding: var(--sp-4) var(--sp-3);
+    border-radius: var(--r-md);
+    border: 1rpx dashed var(--c-control-border);
+    background: var(--c-surface-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-1);
+
+    &__title {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink);
+    }
+
+    &__desc {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+        text-align: center;
+        line-height: var(--lh-body);
+    }
+}
+
+.addon-list {
+    margin-top: var(--sp-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.addon {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--c-surface-2);
+    border: 1rpx solid var(--c-line);
+
+    &.is-on {
+        border-color: var(--c-brand-text);
+        background: var(--c-brand-bg);
+    }
+
+    &__check {
+        flex-shrink: 0;
+        width: 40rpx;
+        height: 40rpx;
+        border-radius: var(--r-xs);
+        border: 1rpx solid var(--c-control-border);
+        background: var(--c-surface);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &.is-on {
+            border-color: var(--c-brand-text);
+            background: var(--c-brand-text);
+        }
+    }
+
+    &__check-icon {
+        color: var(--c-surface);
+    }
+
+    &__main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--sp-1);
+    }
+
+    &__name {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-md);
+        color: var(--c-ink);
+    }
+
+    &__price {
+        flex-shrink: 0;
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-brand-text);
+        font-variant-numeric: tabular-nums;
     }
 }
 

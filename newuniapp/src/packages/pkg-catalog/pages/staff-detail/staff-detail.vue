@@ -189,6 +189,70 @@
                         </view>
                     </view>
 
+                    <!-- 服务套餐：详情页直接选购，选中项与吸底栏、预约页同源 -->
+                    <view v-if="packages.length" class="pkgpick">
+                        <view class="pkgpick__head">
+                            <text class="pkgpick__title">服务套餐</text>
+                            <text class="pkgpick__count">{{ packages.length }} 档</text>
+                        </view>
+                        <view class="pkglist">
+                            <view
+                                v-for="c in packageCards"
+                                :key="c.id"
+                                class="pkgcard"
+                                :class="{ 'is-on': c.id === selectedPackageId }"
+                                hover-class="is-pressed"
+                                aria-role="radio"
+                                :aria-checked="c.id === selectedPackageId"
+                                @tap="onSelectPackage(c.id)"
+                            >
+                                <view class="pkgcard__top">
+                                    <view class="pkgcard__namewrap">
+                                        <text class="pkgcard__name ellipsis">{{ c.name }}</text>
+                                        <text v-if="c.recommended" class="pkgcard__rec">推荐</text>
+                                    </view>
+                                    <view class="pkgcard__tick" aria-hidden="true">
+                                        <tn-icon name="check" :size="16" />
+                                    </view>
+                                </view>
+                                <view v-if="c.duration || c.addonCount" class="pkgcard__tags">
+                                    <text v-if="c.duration" class="pkgcard__tag">{{
+                                        c.duration
+                                    }}</text>
+                                    <text v-if="c.addonCount" class="pkgcard__tag pkgcard__tag--addon"
+                                        >{{ c.addonCount }} 项加购</text
+                                    >
+                                </view>
+                                <text v-if="c.description" class="pkgcard__desc ellipsis">{{
+                                    c.description
+                                }}</text>
+                                <view class="pkgcard__price">
+                                    <price size="sm" :content="c.price" />
+                                    <text class="pkgcard__unit">/ 场</text>
+                                    <price
+                                        v-if="c.originalPrice > Number(c.price)"
+                                        size="sm"
+                                        :content="c.originalPrice"
+                                        line-through
+                                    />
+                                </view>
+                            </view>
+                        </view>
+                    </view>
+                    <view v-else-if="regionReady" class="pkgempty">
+                        <text class="pkgempty__text">当前地区暂无可约套餐</text>
+                        <view
+                            v-if="!pickMode"
+                            class="pkgempty__btn"
+                            hover-class="is-pressed"
+                            aria-role="button"
+                            @tap="openScheduleSheet"
+                        >
+                            <text class="pkgempty__btn-text">切换服务地区</text>
+                            <tn-icon name="right" :size="18" class="pkgempty__btn-ic" />
+                        </view>
+                    </view>
+
                     <!-- 服务说明：取后台人员资料里的 service_desc（不再从套餐 desc 拼条目） -->
                     <view v-if="serviceParagraphs.length" class="inc">
                         <text class="inc__title">服务说明</text>
@@ -241,11 +305,10 @@
                         <text class="abp__note">{{ pickHint }}</text>
                     </template>
                     <template v-else>
-                        <text class="abp__label">服务起价</text>
+                        <text class="abp__label">{{ selectedPackage ? '当前套餐' : '服务起价' }}</text>
                         <price v-if="startPrice != null" size="md" :content="startPrice" />
                         <text v-else class="abp__na">面议</text>
-                        <text v-if="hasActiveOrder" class="abp__note">该日已有你的预约</text>
-                        <text v-else-if="!scheduleAvailable" class="abp__note">{{ fullNote }}</text>
+                        <text v-if="barNote" class="abp__note">{{ barNote }}</text>
                     </template>
                 </view>
                 <template #actions>
@@ -339,7 +402,13 @@ import StaffBanner from './components/staff-banner.vue'
 import StaffReviewsPanel from './components/staff-reviews-panel.vue'
 import StaffScheduleSheet from './components/staff-schedule-sheet.vue'
 import StaffWorksPanel from './components/staff-works-panel.vue'
-import { tomorrowKey, useStaffDetail, type StaffDetailTabKey } from './useStaffDetail'
+import {
+    staffPackageId,
+    tomorrowKey,
+    toStaffPackageCard,
+    useStaffDetail,
+    type StaffDetailTabKey
+} from './useStaffDetail'
 
 const navTotalPx = getNavBarHeight()
 
@@ -378,6 +447,10 @@ const {
     minSelectableDate,
     maxSelectableDate,
     scheduleAvailable,
+    selectedPackageId,
+    selectedPackage,
+    selectedPackageName,
+    selectPackage,
     myOrder,
     hasActiveOrder,
     isFavorite,
@@ -433,9 +506,7 @@ const pickLabel = computed(() => {
 })
 const pickPackage = computed(
     () =>
-        packages.value.find(
-            (p) => Number(p?.package_id || p?.id) === Number(pickPackageId.value)
-        ) || null
+        packages.value.find((p) => staffPackageId(p) === Number(pickPackageId.value)) || null
 )
 const pickPrice = computed(() => {
     const raw = pickPackage.value
@@ -449,6 +520,13 @@ const pickHint = computed(() => {
     return name ? String(name) : '按所选人员服务计价'
 })
 const fullNote = computed(() => '该日不可约')
+const packageCards = computed(() => packages.value.map(toStaffPackageCard))
+/** 吸底栏副文案：订单/可约状态优先，其次是当前选中套餐名 */
+const barNote = computed(() => {
+    if (hasActiveOrder.value) return '该日已有你的预约'
+    if (!scheduleAvailable.value) return fullNote.value
+    return selectedPackageName.value
+})
 
 function goBack() {
     const pages = getCurrentPages()
@@ -469,13 +547,19 @@ function confirmPick() {
     cache.set('booking_role_pick', {
         role_key: pickRole.value,
         staff_id: staffId.value,
-        package_id: Number(pkg.package_id || pkg.id || 0),
+        package_id: staffPackageId(pkg),
         name: String(staff.value.name || ''),
         avatar: String(staff.value.avatar || ''),
         price: Number(pkg.price ?? pkg?.package?.price ?? 0),
         ts: Date.now()
     })
     backFromPick()
+}
+
+/** 套餐卡点击：选人模式同步 pick_package_id，避免下方「选择 TA」沿用旧套餐价 */
+function onSelectPackage(id: number) {
+    selectPackage(id)
+    if (pickMode.value) pickPackageId.value = Number(id || 0)
 }
 
 function switchTab(key: StaffDetailTabKey) {
@@ -543,10 +627,15 @@ function handlePrimaryAction() {
         toast.info('请选择服务地区后继续')
         return
     }
-    const pkg = packages.value[0]
+    // 有地区但没有可售套餐：跳空预约页只会让用户卡在「暂无套餐」，就地引导换地区
+    if (!packages.value.length) {
+        toast.warning('当前地区暂无可约套餐，请切换地区')
+        openScheduleSheet()
+        return
+    }
     const shared = {
         staff_id: staffId.value,
-        package_id: pkg ? pkg.package_id || pkg.id : '',
+        package_id: selectedPackageId.value > 0 ? selectedPackageId.value : '',
         date: date.value,
         ...regionParams(region.value)
     }
@@ -598,6 +687,8 @@ onLoad((options: any) => {
     staffId.value = Number(options?.id || 0)
     pickRole.value = String(options?.pick_role || '')
     pickPackageId.value = Number(options?.pick_package_id || 0)
+    // 入口带了套餐就先生效，列表回来后再按「是否仍可售」校准
+    selectedPackageId.value = Number(options?.package_id || options?.pick_package_id || 0)
     if (!staffId.value) {
         rawError.value = new Error('missing-staff-id')
         error.value = true
@@ -979,6 +1070,188 @@ onLoad((options: any) => {
         font-size: var(--fs-22);
         color: var(--c-ink);
         line-height: var(--lh-body);
+    }
+}
+
+/* ========== 服务套餐：详情页内选购预览 ========== */
+.pkgpick {
+    margin-top: 31rpx;
+    padding-top: 27rpx;
+    border-top: 1rpx solid var(--c-line);
+
+    &__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--sp-2);
+    }
+
+    &__title {
+        font-size: var(--fs-22);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
+
+    &__count {
+        font-size: var(--fs-18);
+        color: var(--c-ink-3);
+    }
+}
+
+.pkglist {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+    margin-top: 18rpx;
+}
+
+.pkgcard {
+    padding: 20rpx;
+    border-radius: var(--r-sm);
+    border: 1rpx solid var(--c-line);
+    background: var(--c-surface);
+    transition: border-color var(--dur-fast) var(--ease-out);
+
+    &.is-on {
+        border-color: var(--c-active-border);
+
+        .pkgcard__tick {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    &__top {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--sp-2);
+    }
+
+    &__namewrap {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 8rpx;
+    }
+
+    &__name {
+        min-width: 0;
+        font-size: var(--fs-25);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+        line-height: var(--lh-tight);
+    }
+
+    &__rec {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        height: 30rpx;
+        padding: 0 10rpx;
+        border-radius: var(--r-xs);
+        background: var(--c-brand);
+        color: var(--c-on-brand);
+        font-size: var(--fs-18);
+        line-height: var(--lh-none);
+    }
+
+    &__tick {
+        flex: none;
+        width: 30rpx;
+        height: 30rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-active-bg);
+        color: var(--c-active-fg);
+        border: 1rpx solid var(--c-active-border);
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(0.7);
+        transition: opacity var(--dur-fast) var(--ease-out),
+            transform var(--dur-fast) var(--ease-out);
+    }
+
+    &__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8rpx;
+        margin-top: 10rpx;
+    }
+
+    &__tag {
+        display: inline-flex;
+        align-items: center;
+        height: 34rpx;
+        padding: 0 10rpx;
+        border-radius: var(--r-xs);
+        background: var(--c-surface-2);
+        font-size: var(--fs-18);
+        line-height: var(--lh-none);
+        color: var(--c-ink-2);
+    }
+
+    &__tag--addon {
+        background: var(--c-brand-bg);
+        color: var(--c-brand-text);
+    }
+
+    &__desc {
+        display: block;
+        margin-top: 8rpx;
+        font-size: var(--fs-20);
+        line-height: var(--lh-body);
+        color: var(--c-ink-3);
+    }
+
+    &__price {
+        display: flex;
+        align-items: baseline;
+        gap: 8rpx;
+        margin-top: 10rpx;
+    }
+
+    &__unit {
+        font-size: var(--fs-18);
+        color: var(--c-ink-3);
+    }
+}
+
+.pkgempty {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-top: 27rpx;
+    padding: 22rpx 24rpx;
+    border: 1rpx dashed var(--c-line-strong);
+    border-radius: var(--r-sm);
+
+    &__text {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-20);
+        color: var(--c-ink-2);
+    }
+
+    &__btn {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 2rpx;
+        padding: 12rpx 0;
+        margin: -12rpx 0;
+    }
+
+    &__btn-text {
+        font-size: var(--fs-20);
+        color: var(--c-brand-text);
+    }
+
+    &__btn-ic {
+        color: var(--c-brand-text);
     }
 }
 

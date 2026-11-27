@@ -11,6 +11,7 @@ use app\common\logic\BaseLogic;
 use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackageAddon;
 use app\common\model\staff\Staff;
+use think\facade\Db;
 
 /**
  * 附加服务管理逻辑
@@ -33,7 +34,9 @@ class AddonLogic extends BaseLogic
             return [];
         }
 
-        return $addon->append(['category_name', 'staff_name', 'is_show_desc'])->toArray();
+        $data = $addon->append(['category_name', 'staff_name', 'is_show_desc'])->toArray();
+        $list = ServicePackageAddon::attachPackageIds([$data]);
+        return $list[0] ?? $data;
     }
 
     /**
@@ -49,19 +52,29 @@ class AddonLogic extends BaseLogic
                 throw new \Exception('请选择所属人员');
             }
 
-            ServiceAddon::create([
-                'staff_id' => $staffId,
-                'category_id' => self::resolveStaffCategoryId($staffId),
-                'name' => trim((string)$params['name']),
-                'price' => $params['price'] ?? 0,
-                'original_price' => $params['original_price'] ?? 0,
-                'image' => $params['image'] ?? '',
-                'description' => $params['description'] ?? '',
-                'sort' => $params['sort'] ?? 0,
-                'is_show' => $params['is_show'] ?? 1,
-                'create_time' => time(),
-                'update_time' => time(),
-            ]);
+            Db::transaction(function () use ($staffId, $params) {
+                $addon = ServiceAddon::create([
+                    'staff_id' => $staffId,
+                    'category_id' => self::resolveStaffCategoryId($staffId),
+                    'name' => trim((string)$params['name']),
+                    'price' => $params['price'] ?? 0,
+                    'original_price' => $params['original_price'] ?? 0,
+                    'image' => $params['image'] ?? '',
+                    'description' => $params['description'] ?? '',
+                    'sort' => $params['sort'] ?? 0,
+                    'is_show' => $params['is_show'] ?? 1,
+                    'create_time' => time(),
+                    'update_time' => time(),
+                ]);
+
+                if (array_key_exists('package_ids', $params)) {
+                    ServicePackageAddon::syncAddonPackages(
+                        (int)$addon->id,
+                        $staffId,
+                        $params['package_ids']
+                    );
+                }
+            });
 
             return true;
         } catch (\Exception $e) {
@@ -87,19 +100,33 @@ class AddonLogic extends BaseLogic
             if ($staffId <= 0) {
                 throw new \Exception('请选择所属人员');
             }
+            $originalStaffId = (int)$addon->staff_id;
+            $staffChanged = ($originalStaffId !== $staffId);
 
-            $addon->save([
+            $updateData = [
                 'staff_id' => $staffId,
                 'category_id' => self::resolveStaffCategoryId($staffId),
-                'name' => trim((string)$params['name']),
-                'price' => $params['price'] ?? $addon->price,
-                'original_price' => $params['original_price'] ?? $addon->original_price,
-                'image' => $params['image'] ?? $addon->image,
-                'description' => $params['description'] ?? $addon->description,
-                'sort' => $params['sort'] ?? $addon->sort,
-                'is_show' => $params['is_show'] ?? $addon->is_show,
                 'update_time' => time(),
-            ]);
+            ];
+
+            if (array_key_exists('name', $params)) {
+                $updateData['name'] = trim((string)$params['name']);
+            }
+            foreach (['price', 'original_price', 'image', 'description', 'sort', 'is_show'] as $field) {
+                if (array_key_exists($field, $params)) {
+                    $updateData[$field] = $params[$field];
+                }
+            }
+
+            Db::transaction(function () use ($addon, $updateData, $staffId, $params, $staffChanged) {
+                $addon->save($updateData);
+
+                if (array_key_exists('package_ids', $params)) {
+                    ServicePackageAddon::syncAddonPackages((int)$addon->id, $staffId, $params['package_ids']);
+                } elseif ($staffChanged) {
+                    ServicePackageAddon::clearByAddonId((int)$addon->id);
+                }
+            });
 
             return true;
         } catch (\Exception $e) {
@@ -121,8 +148,11 @@ class AddonLogic extends BaseLogic
                 throw new \Exception('附加服务不存在');
             }
 
-            ServicePackageAddon::clearByAddonId((int)$params['id']);
-            ServiceAddon::destroy((int)$params['id']);
+            Db::transaction(function () use ($addon) {
+                ServicePackageAddon::clearByAddonId((int)$addon->id);
+                $addon->delete();
+            });
+
             return true;
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -138,8 +168,15 @@ class AddonLogic extends BaseLogic
     public static function changeStatus(array $params): bool
     {
         try {
-            ServiceAddon::update([
-                'id' => (int)$params['id'],
+            $addon = ServiceAddon::where('id', (int)$params['id'])
+                ->whereNull('delete_time')
+                ->find();
+            if (!$addon) {
+                self::setError('附加服务不存在');
+                return false;
+            }
+
+            $addon->save([
                 'is_show' => (int)$params['is_show'],
                 'update_time' => time(),
             ]);

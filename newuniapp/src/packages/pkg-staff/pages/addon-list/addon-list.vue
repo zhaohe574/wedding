@@ -4,6 +4,7 @@
         bg="page"
         :show-back="true"
         :pull-refresh="true"
+        :bottom-bar="guardAllowed && canWrite"
         @refresh="onRefresh"
         @reach-bottom="onReachBottomLoad"
     >
@@ -17,28 +18,12 @@
         />
 
         <view v-else class="page-wrap addon">
-            <view v-if="canWrite" class="action page-pad">
-                <view
-                    hover-class="is-pressed"
-                    class="action__btn"
-                    aria-role="button"
-                    aria-label="新增附加项"
-                    @tap="goCreate"
-                >
-                    <tn-icon name="add" :size="24" class="action__icon" />
-                    <text class="action__text">新增附加项</text>
-                </view>
-            </view>
-            <view v-else class="gate page-pad">
+            <view v-if="!canWrite" class="gate page-pad">
                 <text class="gate__text">附加项维护功能灰度中，暂未开放</text>
             </view>
 
-            <view class="tabs page-pad">
-                <chip-group
-                    :items="TABS.map((t) => ({ label: t.label, value: t.key }))"
-                    :model-value="active"
-                    @change="switchTab"
-                />
+            <view class="filter page-pad">
+                <chip-group :items="tabItems" :model-value="active" @change="switchTab" />
             </view>
 
             <view v-if="phase === 'loading' || phase === 'idle'" class="page-pad">
@@ -61,93 +46,154 @@
                 v-else-if="phase === 'empty'"
                 status="empty"
                 empty-text="还没有附加项"
-                :desc="canWrite ? '点击上方「新增附加项」，可用于套餐加购' : '附加项是套餐之外可单独加购的服务'"
+                :desc="
+                    canWrite
+                        ? '点击下方「新增附加项」，可用于套餐加购'
+                        : '附加项是套餐之外可单独加购的服务'
+                "
                 fixed
             />
 
-            <view v-else class="page-pad list">
-                <base-card v-for="item in list" :key="item.id" compact>
-                    <view class="item">
-                        <image
-                            v-if="item.image"
-                            class="item__cover"
-                            :src="item.image"
-                            mode="aspectFill"
-                            aria-label="附加项封面"
-                        />
-                        <view class="item__body">
-                            <view class="item__line">
-                                <text class="item__name ellipsis">{{
-                                    item.name || '未命名附加项'
-                                }}</text>
-                                <status-tag
-                                    :label="item.is_show ? '已上架' : '已下架'"
-                                    :tone="item.is_show ? 'success' : 'neutral'"
-                                    size="sm"
-                                    :dot="false"
-                                />
-                            </view>
-                            <text v-if="item.description" class="item__desc ellipsis-2">
-                                {{ item.description }}
-                            </text>
-                            <view class="item__foot">
-                                <price
-                                    size="md"
-                                    :content="item.price"
-                                    color="var(--c-brand-text)"
-                                />
-                                <text v-if="Number(item.original_price) > 0" class="item__origin">
-                                    原价 ¥{{ item.original_price }}
-                                </text>
-                                <text v-if="attachedCount(item)" class="item__bind">
-                                    已关联 {{ attachedCount(item) }} 个套餐
-                                </text>
-                            </view>
-                        </view>
-                    </view>
+            <template v-else>
+                <base-empty
+                    v-if="!filteredList.length"
+                    status="empty"
+                    empty-text="当前筛选下暂无附加项"
+                />
 
-                    <view v-if="canWrite" class="ops">
-                        <view
-                            hover-class="is-pressed"
-                            class="ops__btn"
-                            :aria-label="`${item.is_show ? '下架' : '上架'}附加项：${item.name || ''}`"
-                            @tap="onToggleShow(item)"
-                        >
-                            <text class="ops__text">{{
-                                togglingId === item.id ? '处理中…' : item.is_show ? '下架' : '上架'
-                            }}</text>
-                        </view>
-                        <view
-                            hover-class="is-pressed"
-                            class="ops__btn"
-                            :aria-label="`编辑附加项：${item.name || ''}`"
-                            @tap="goEdit(item)"
-                        >
-                            <text class="ops__text">编辑</text>
-                        </view>
-                        <view
-                            hover-class="is-pressed"
-                            class="ops__btn"
-                            :aria-label="`删除附加项：${item.name || ''}`"
-                            @tap="onDelete(item)"
-                        >
-                            <text class="ops__text ops__text--danger">删除</text>
-                        </view>
-                    </view>
-                </base-card>
+                <view v-else class="page-pad list">
+                    <base-card
+                        v-for="item in filteredList"
+                        :key="item.id"
+                        compact
+                        clickable
+                        :aria-label="`编辑附加项：${item.name || '未命名附加项'}`"
+                        @tap="goEdit(item)"
+                    >
+                        <view class="acard">
+                            <view class="acard__cover">
+                                <image
+                                    v-if="item.image"
+                                    class="acard__img"
+                                    :src="item.image"
+                                    mode="aspectFill"
+                                    aria-label="附加项封面"
+                                />
+                                <view v-else class="acard__ph" aria-hidden="true">
+                                    <tn-icon name="image" :size="40" class="acard__ph-icon" />
+                                </view>
+                            </view>
 
-                <load-more :status="loadMoreStatus" @retry="loadMore" />
-            </view>
+                            <view class="acard__body">
+                                <view class="acard__head">
+                                    <text class="acard__name ellipsis">{{
+                                        item.name || '未命名附加项'
+                                    }}</text>
+                                    <view
+                                        v-if="canWrite"
+                                        class="sw"
+                                        :class="{
+                                            'is-on': Number(item.is_show) === 1,
+                                            'is-busy': togglingId === Number(item.id)
+                                        }"
+                                        hover-class="is-pressed"
+                                        aria-role="switch"
+                                        :aria-checked="Number(item.is_show) === 1"
+                                        :aria-label="`${
+                                            Number(item.is_show) === 1 ? '下架' : '上架'
+                                        }附加项：${item.name || ''}`"
+                                        @tap.stop="onToggleShow(item)"
+                                    >
+                                        <view class="sw__knob" />
+                                    </view>
+                                    <status-tag
+                                        v-else
+                                        :label="Number(item.is_show) === 1 ? '已上架' : '已停用'"
+                                        :tone="Number(item.is_show) === 1 ? 'success' : 'neutral'"
+                                        size="sm"
+                                        :dot="false"
+                                    />
+                                </view>
+
+                                <view class="acard__price">
+                                    <price
+                                        size="md"
+                                        :content="item.price"
+                                        color="var(--c-brand-text)"
+                                    />
+                                    <text
+                                        v-if="Number(item.original_price) > 0"
+                                        class="acard__origin"
+                                    >
+                                        ¥{{ item.original_price }}
+                                    </text>
+                                </view>
+
+                                <text v-if="item.description" class="acard__desc ellipsis">
+                                    {{ item.description }}
+                                </text>
+
+                                <view class="acard__meta">
+                                    <text v-if="attachedCount(item) > 0" class="meta">
+                                        已关联 {{ attachedCount(item) }} 个套餐
+                                    </text>
+                                    <status-tag
+                                        v-else
+                                        label="未关联套餐"
+                                        tone="warning"
+                                        size="sm"
+                                        :dot="false"
+                                    />
+                                </view>
+                            </view>
+                        </view>
+
+                        <view v-if="canWrite" class="ops">
+                            <view
+                                hover-class="is-pressed"
+                                class="ops__btn"
+                                aria-role="button"
+                                :aria-label="`编辑附加项：${item.name || ''}`"
+                                @tap.stop="goEdit(item)"
+                            >
+                                <text class="ops__text">编辑</text>
+                            </view>
+                            <view
+                                hover-class="is-pressed"
+                                class="ops__btn"
+                                aria-role="button"
+                                :aria-label="`删除附加项：${item.name || ''}`"
+                                @tap.stop="onDelete(item)"
+                            >
+                                <text class="ops__text ops__text--danger">删除</text>
+                            </view>
+                        </view>
+                    </base-card>
+
+                    <load-more :status="loadMoreStatus" @retry="loadMore" />
+                </view>
+            </template>
         </view>
-        <app-toast />
+
+        <template #bottom>
+            <bottom-bar v-if="guardAllowed && canWrite">
+                <base-button text="新增附加项" variant="ink" size="lg" @click="goCreate" />
+            </bottom-bar>
+            <app-toast />
+        </template>
     </page-shell>
 </template>
 
 <script setup lang="ts">
-/** 服务人员：我的附加项（支持增删改与快捷上下架）。 */
+/** 服务人员：我的附加项（支持增删改、快捷上下架与关联套餐透出）。 */
 import { computed, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { getStaffAddonList, staffAddonRemove, staffAddonUpdate } from '@/api/staff-center'
+import {
+    getStaffAddonList,
+    staffAddonRemove,
+    staffAddonUpdate,
+    type StaffAddonListItem
+} from '@/api/staff-center'
 import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { usePagedList } from '@/composables/usePagedList'
@@ -157,43 +203,59 @@ import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 
 const { canWrite } = useStaffWriteGate()
-const {
-    guardPhase,
-    guardReason,
-    guardError,
-    guardAllowed,
-    verify,
-    onGuardRetry,
-    onGuardAction
-} = useStaffGuard(() => init(true))
+const { guardPhase, guardReason, guardError, guardAllowed, verify, onGuardRetry, onGuardAction } =
+    useStaffGuard(() => init(true))
 
-const TABS = [
-    { key: '', label: '全部' },
-    { key: 1, label: '已上架' },
-    { key: 0, label: '已下架' }
-]
-
+/** 筛选与计数都在已加载列表上做：一次取回（最多 100 条）后本地过滤，三个 tab 的数量才一致 */
 const active = ref<string | number>('')
 const togglingId = ref(0)
 const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 
-const query = computed(() => ({
-    is_show: active.value === '' ? '' : Number(active.value)
-}))
-
-const { list, phase, loadMoreStatus, reload, loadMore, refresh } = usePagedList<any>({
-    fetcher: (q) => getStaffAddonList(q as any),
-    query,
-    onError: (e) => {
-        rawError.value = e
+const { list, phase, loadMoreStatus, reload, loadMore, refresh } = usePagedList<StaffAddonListItem>(
+    {
+        fetcher: (q) => getStaffAddonList(q as any),
+        pageSize: 100,
+        onError: (e) => {
+            rawError.value = e
+        }
     }
+)
+
+const counts = computed(() => {
+    let show = 0
+    for (const item of list.value) {
+        if (Number(item.is_show) === 1) show += 1
+    }
+    return { all: list.value.length, show, hidden: list.value.length - show }
+})
+
+const tabItems = computed(() => {
+    // 列表未加载完（或本就为空）时不显示 0，避免首屏计数闪烁
+    if (!list.value.length) {
+        return [
+            { label: '全部', value: '' },
+            { label: '上架中', value: 1 },
+            { label: '已停用', value: 0 }
+        ]
+    }
+    return [
+        { label: `全部 ${counts.value.all}`, value: '' },
+        { label: `上架中 ${counts.value.show}`, value: 1 },
+        { label: `已停用 ${counts.value.hidden}`, value: 0 }
+    ]
+})
+
+const filteredList = computed(() => {
+    if (active.value === '') return list.value
+    return list.value.filter((item) => Number(item.is_show) === Number(active.value))
 })
 
 let hasLoaded = false
 
-/** package_ids 可能是数组或逗号串，两种都认 */
-function attachedCount(item: any) {
+/** package_count / package_ids（数组或逗号串）三种形态都认 */
+function attachedCount(item: StaffAddonListItem): number {
+    if (typeof item?.package_count === 'number') return item.package_count
     const v = item?.package_ids
     if (Array.isArray(v)) return v.length
     if (typeof v === 'string' && v.trim()) return v.split(',').filter(Boolean).length
@@ -205,7 +267,7 @@ function goCreate() {
     navigate({ path: '/packages/pkg-staff/pages/addon-edit/addon-edit' })
 }
 
-function goEdit(item: any) {
+function goEdit(item: StaffAddonListItem) {
     if (!guardAllowed.value) return
     if (!item?.id) {
         toast.warning('附加项编号缺失，请刷新后重试')
@@ -217,7 +279,11 @@ function goEdit(item: any) {
     })
 }
 
-async function onToggleShow(item: any) {
+/**
+ * 只提交上下架开关需要的字段。
+ * 不传 package_ids：后端 addonUpdate 对未传字段保留原值，避免开关把适用套餐清空。
+ */
+async function onToggleShow(item: StaffAddonListItem) {
     if (!guardAllowed.value || togglingId.value > 0) return
     if (!item?.id) return
     const nextShow = Number(item.is_show) === 1 ? 0 : 1
@@ -242,7 +308,7 @@ async function onToggleShow(item: any) {
     }
 }
 
-function onDelete(item: any) {
+function onDelete(item: StaffAddonListItem) {
     if (!guardAllowed.value) return
     if (!item?.id) {
         toast.warning('附加项编号缺失，请刷新后重试')
@@ -269,7 +335,6 @@ function onDelete(item: any) {
 function switchTab(key: string | number) {
     if (!guardAllowed.value) return
     active.value = key
-    reload()
 }
 
 function onPrimary() {
@@ -319,42 +384,17 @@ async function onRefresh(done: () => void) {
     padding-bottom: calc(var(--sp-5) + var(--safe-bottom));
 }
 
-.action {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: var(--sp-2);
-
-    &__btn {
-        display: flex;
-        align-items: center;
-        gap: var(--sp-1);
-        padding: var(--sp-2) var(--sp-3);
-        border-radius: var(--r-pill);
-        background: var(--c-brand-bg);
-    }
-
-    &__icon {
-        color: var(--c-brand-text);
-    }
-
-    &__text {
-        font-size: var(--fs-xs);
-        color: var(--c-brand-text);
-    }
-}
-
 .gate {
     padding-top: var(--sp-2);
 
     &__text {
         display: block;
-        text-align: right;
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
     }
 }
 
-.tabs {
+.filter {
     padding-top: var(--sp-2);
     padding-bottom: var(--sp-2);
 }
@@ -365,16 +405,36 @@ async function onRefresh(done: () => void) {
     gap: var(--sp-2);
 }
 
-.item {
+.acard {
     display: flex;
     gap: var(--sp-3);
 
     &__cover {
-        width: 120rpx;
-        height: 120rpx;
+        width: 152rpx;
+        height: 152rpx;
         border-radius: var(--r-sm);
-        background: var(--c-neutral-bg);
+        overflow: hidden;
+        background: var(--c-surface-2);
+        border: 1rpx solid var(--c-line);
         flex-shrink: 0;
+    }
+
+    &__img {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    &__ph {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__ph-icon {
+        color: var(--c-ink-3);
     }
 
     &__body {
@@ -382,10 +442,10 @@ async function onRefresh(done: () => void) {
         min-width: 0;
     }
 
-    &__line {
+    &__head {
         display: flex;
         align-items: center;
-        gap: var(--sp-2);
+        gap: var(--sp-1);
     }
 
     &__name {
@@ -396,6 +456,20 @@ async function onRefresh(done: () => void) {
         color: var(--c-ink);
     }
 
+    &__price {
+        display: flex;
+        align-items: baseline;
+        gap: var(--sp-2);
+        margin-top: var(--sp-1);
+    }
+
+    &__origin {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+        text-decoration: line-through;
+        font-variant-numeric: tabular-nums;
+    }
+
     &__desc {
         display: block;
         margin-top: var(--sp-1);
@@ -404,23 +478,55 @@ async function onRefresh(done: () => void) {
         color: var(--c-ink-3);
     }
 
-    &__foot {
+    &__meta {
         display: flex;
         flex-wrap: wrap;
-        align-items: baseline;
-        gap: var(--sp-2);
+        align-items: center;
+        gap: var(--sp-1);
         margin-top: var(--sp-2);
     }
+}
 
-    &__origin {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-        text-decoration: line-through;
+.meta {
+    padding: 2rpx 12rpx;
+    border-radius: var(--r-xs);
+    background: var(--c-surface-2);
+    font-size: var(--fs-xs);
+    line-height: var(--lh-tight);
+    color: var(--c-ink-3);
+    font-variant-numeric: tabular-nums;
+}
+
+.sw {
+    flex-shrink: 0;
+    width: 76rpx;
+    height: 44rpx;
+    padding: 4rpx;
+    box-sizing: border-box;
+    border-radius: var(--r-pill);
+    background: var(--c-control-border);
+    display: flex;
+    align-items: center;
+    transition: background var(--dur-fast) var(--ease-out);
+
+    &__knob {
+        width: 36rpx;
+        height: 36rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-surface);
+        transition: transform var(--dur-fast) var(--ease-out);
     }
 
-    &__bind {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
+    &.is-on {
+        background: var(--c-success);
+
+        .sw__knob {
+            transform: translateX(32rpx);
+        }
+    }
+
+    &.is-busy {
+        opacity: 0.55;
     }
 }
 

@@ -227,6 +227,10 @@ class StaffController extends BaseAdminController
         if (empty($params['name'])) {
             return $this->fail('请输入套餐名称');
         }
+        $fieldError = $this->validatePackageFields($params);
+        if ($fieldError !== '') {
+            return $this->fail($fieldError);
+        }
 
         $packageId = StaffLogic::createStaffPackage($staffId, $params);
         if ($packageId) {
@@ -256,6 +260,10 @@ class StaffController extends BaseAdminController
         if (empty($params['name'])) {
             return $this->fail('请输入套餐名称');
         }
+        $fieldError = $this->validatePackageFields($params);
+        if ($fieldError !== '') {
+            return $this->fail($fieldError);
+        }
 
         $result = StaffLogic::updateStaffPackage($staffId, $packageId, $params);
         if (true === $result) {
@@ -283,14 +291,18 @@ class StaffController extends BaseAdminController
         }
 
         $data = [];
-        if (isset($params['price'])) {
-            $data['price'] = $params['price'];
+        foreach (['price', 'original_price', 'duration', 'sort', 'is_recommend'] as $field) {
+            if (array_key_exists($field, $params)) {
+                $data[$field] = $params[$field];
+            }
         }
-        if (array_key_exists('original_price', $params)) {
-            $data['original_price'] = $params['original_price'];
-        }
-        if (isset($params['status'])) {
+        if (array_key_exists('is_show', $params)) {
+            $data['is_show'] = $params['is_show'];
+        } elseif (array_key_exists('status', $params)) {
             $data['is_show'] = $params['status'];
+        }
+        if (array_key_exists('region_prices', $params) && is_array($params['region_prices'])) {
+            $data['region_prices'] = $params['region_prices'];
         }
 
         $result = StaffLogic::updatePackageConfig($staffId, $packageId, $data);
@@ -389,7 +401,13 @@ class StaffController extends BaseAdminController
         }
 
         $params['id'] = $addonId;
-        $params = (new AddonValidate())->post()->goCheck('edit', $params);
+        if (array_key_exists('status', $params) && !array_key_exists('is_show', $params)) {
+            $params['is_show'] = $params['status'];
+        }
+        $isStatusOnly = !array_key_exists('name', $params)
+            && !array_key_exists('price', $params)
+            && array_key_exists('is_show', $params);
+        $params = (new AddonValidate())->post()->goCheck($isStatusOnly ? 'status' : 'edit', $params);
         $result = StaffLogic::updateStaffAddon($staffId, $addonId, $params);
         if (true === $result) {
             return $this->success('更新成功', [], 1, 1);
@@ -1268,14 +1286,18 @@ class StaffController extends BaseAdminController
         }
 
         $data = [];
-        if (isset($params['price'])) {
-            $data['price'] = $params['price'];
+        foreach (['price', 'original_price', 'duration', 'sort', 'is_recommend'] as $field) {
+            if (array_key_exists($field, $params)) {
+                $data[$field] = $params[$field];
+            }
         }
-        if (array_key_exists('original_price', $params)) {
-            $data['original_price'] = $params['original_price'];
-        }
-        if (isset($params['status'])) {
+        if (array_key_exists('is_show', $params)) {
+            $data['is_show'] = $params['is_show'];
+        } elseif (array_key_exists('status', $params)) {
             $data['is_show'] = $params['status'];
+        }
+        if (array_key_exists('region_prices', $params) && is_array($params['region_prices'])) {
+            $data['region_prices'] = $params['region_prices'];
         }
 
         $result = StaffLogic::updatePackageConfig($staffScopeId, $packageId, $data);
@@ -1299,6 +1321,10 @@ class StaffController extends BaseAdminController
         $params = $this->request->post();
         if (empty($params['name'])) {
             return $this->fail('请输入套餐名称');
+        }
+        $fieldError = $this->validatePackageFields($params);
+        if ($fieldError !== '') {
+            return $this->fail($fieldError);
         }
         $packageId = StaffLogic::createStaffPackage($staffScopeId, $params);
         if ($packageId) {
@@ -1325,6 +1351,10 @@ class StaffController extends BaseAdminController
         }
         if (empty($params['name'])) {
             return $this->fail('请输入套餐名称');
+        }
+        $fieldError = $this->validatePackageFields($params);
+        if ($fieldError !== '') {
+            return $this->fail($fieldError);
         }
 
         $result = StaffLogic::updateStaffPackage($staffScopeId, $packageId, $params);
@@ -1413,7 +1443,13 @@ class StaffController extends BaseAdminController
 
         $params['staff_id'] = $staffScopeId;
         $params['id'] = $addonId;
-        $params = (new AddonValidate())->post()->goCheck('edit', $params);
+        if (array_key_exists('status', $params) && !array_key_exists('is_show', $params)) {
+            $params['is_show'] = $params['status'];
+        }
+        $isStatusOnly = !array_key_exists('name', $params)
+            && !array_key_exists('price', $params)
+            && array_key_exists('is_show', $params);
+        $params = (new AddonValidate())->post()->goCheck($isStatusOnly ? 'status' : 'edit', $params);
         $result = StaffLogic::updateStaffAddon($staffScopeId, $addonId, $params);
         if (true === $result) {
             return $this->success('更新成功', [], 1, 1);
@@ -1683,5 +1719,56 @@ class StaffController extends BaseAdminController
         }
 
         return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 校验套餐价格/时长/排序/附加项参数
+     * @param array $params
+     * @return string 错误信息，空字符串表示通过
+     */
+    protected function validatePackageFields(array $params): string
+    {
+        if (!array_key_exists('price', $params) || $params['price'] === '' || $params['price'] === null) {
+            return '请输入套餐价格';
+        }
+        if (!is_numeric($params['price'])) {
+            return '套餐价格必须为数字';
+        }
+        if ((float)$params['price'] < 0) {
+            return '套餐价格不能小于0';
+        }
+
+        if (array_key_exists('original_price', $params) && $params['original_price'] !== '' && $params['original_price'] !== null) {
+            if (!is_numeric($params['original_price'])) {
+                return '原价必须为数字';
+            }
+            if ((float)$params['original_price'] < 0) {
+                return '原价不能小于0';
+            }
+        }
+
+        if (array_key_exists('duration', $params) && $params['duration'] !== '' && $params['duration'] !== null) {
+            if (filter_var($params['duration'], FILTER_VALIDATE_INT) === false) {
+                return '服务时长必须为整数';
+            }
+            if ((int)$params['duration'] < 0) {
+                return '服务时长不能小于0';
+            }
+        }
+
+        if (array_key_exists('sort', $params) && $params['sort'] !== '' && $params['sort'] !== null) {
+            if (filter_var($params['sort'], FILTER_VALIDATE_INT) === false) {
+                return '排序必须为整数';
+            }
+            if ((int)$params['sort'] < 0) {
+                return '排序不能小于0';
+            }
+        }
+
+        if (array_key_exists('addon_ids', $params) && !is_array($params['addon_ids'])) {
+            return '附加服务参数格式错误';
+        }
+
+        return '';
     }
 }

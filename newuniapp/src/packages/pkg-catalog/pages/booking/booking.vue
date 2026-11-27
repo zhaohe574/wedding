@@ -94,37 +94,61 @@
             </view>
 
             <!-- ============ 06 选择套餐 ============ -->
-            <view v-if="step === 1" class="panel">
+            <view v-if="currentStepKey === 'package'" class="panel">
                 <view class="stephead">
                     <text class="stephead__title">选择服务套餐</text>
-                    <text class="stephead__hint">左右滑动查看，价格按所选地区计算</text>
                 </view>
 
-                <scroll-view v-if="packages.length" scroll-x class="opts" :show-scrollbar="false">
-                    <view class="opts__track">
-                        <view
-                            v-for="p in packages"
-                            :key="pkgId(p)"
-                            class="optcard"
-                            :class="{ 'is-on': Number(packageId) === Number(pkgId(p)) }"
-                            hover-class="is-pressed"
-                            aria-role="radio"
-                            :aria-checked="Number(packageId) === Number(pkgId(p))"
-                            @tap="selectPackage(p)"
-                        >
-                            <view class="optcard__head">
-                                <text class="optcard__name ellipsis-2">{{ pkgName(p) }}</text>
-                                <view class="optcard__tick" aria-hidden="true">
-                                    <tn-icon name="check" :size="18" />
+                <view v-if="packages.length" class="optlist">
+                    <view
+                        v-for="p in packages"
+                        :key="pkgId(p)"
+                        class="optcard"
+                        :class="{ 'is-on': Number(packageId) === Number(pkgId(p)) }"
+                        hover-class="is-pressed"
+                        aria-role="radio"
+                        :aria-checked="Number(packageId) === Number(pkgId(p))"
+                        @tap="selectPackage(p)"
+                    >
+                        <view class="optcard__top">
+                            <view class="optcard__namewrap">
+                                <text class="optcard__name ellipsis">{{ pkgName(p) }}</text>
+                                <view v-if="pkgRecommend(p)" class="optcard__rec">
+                                    <tn-icon name="star-fill" :size="14" class="optcard__rec-ic" />
+                                    <text class="optcard__rec-text">推荐</text>
                                 </view>
                             </view>
-                            <view class="optcard__price">
-                                <price size="sm" :content="pkgPrice(p)" />
-                                <text class="optcard__unit">/ 场</text>
+                            <view class="optcard__tick" aria-hidden="true">
+                                <tn-icon name="check" :size="18" />
                             </view>
                         </view>
+
+                        <view v-if="pkgDuration(p) || pkgAddonCount(p)" class="optcard__tags">
+                            <text v-if="pkgDuration(p)" class="optcard__tag">{{
+                                pkgDuration(p)
+                            }}</text>
+                            <text v-if="pkgAddonCount(p)" class="optcard__tag optcard__tag--addon"
+                                >含 {{ pkgAddonCount(p) }} 项可选加购</text
+                            >
+                        </view>
+
+                        <text v-if="pkgDesc(p)" class="optcard__desc ellipsis-2">{{
+                            pkgDesc(p)
+                        }}</text>
+
+                        <view class="optcard__price">
+                            <price size="md" :content="pkgPrice(p)" />
+                            <text class="optcard__unit">/ 场</text>
+                            <price
+                                v-if="pkgOriginalPrice(p) > Number(pkgPrice(p))"
+                                size="sm"
+                                :content="pkgOriginalPrice(p)"
+                                line-through
+                                :trim-zeros="true"
+                            />
+                        </view>
                     </view>
-                </scroll-view>
+                </view>
                 <base-empty
                     v-else
                     status="empty"
@@ -135,81 +159,83 @@
                     @action="onBack"
                 />
 
-                <view v-if="packageRules" class="bkline">
-                    <text class="bkline__sum">{{ packageRules }}</text>
+                <view v-if="packageRuleText" class="bkline">
+                    <text class="bkline__sum">{{ packageRuleText }}</text>
                 </view>
             </view>
 
-            <!-- ============ 07 选择附加项 ============ -->
-            <view v-else-if="step === 2" class="panel">
+            <!-- ============ 07 选择附加项（仅当前套餐有绑定附加项时才成为一步） ============ -->
+            <view v-else-if="currentStepKey === 'addon'" class="panel">
                 <view class="stephead">
                     <text class="stephead__title">选择附加项</text>
-                    <text class="stephead__hint">可多选，左右滑动查看；不需要可直接跳过</text>
                 </view>
 
-                <template v-if="addons.length">
-                    <scroll-view scroll-x class="opts" :show-scrollbar="false">
-                        <view class="opts__track">
-                            <view
-                                v-for="a in addons"
-                                :key="addonId(a)"
-                                class="optcard"
-                                :class="{ 'is-on': selectedAddons.includes(addonId(a)) }"
-                                hover-class="is-pressed"
-                                aria-role="checkbox"
-                                :aria-checked="selectedAddons.includes(addonId(a))"
-                                @tap="toggleAddon(addonId(a))"
-                            >
-                                <view class="optcard__head">
-                                    <text class="optcard__name ellipsis-2">{{ a.name }}</text>
-                                    <view class="optcard__tick" aria-hidden="true">
-                                        <tn-icon name="check" :size="18" />
-                                    </view>
-                                </view>
-                                <view class="optcard__price">
-                                    <price
-                                        size="sm"
-                                        :content="addonPrice(a)"
-                                        prefix="+¥"
-                                        :trim-zeros="true"
-                                    />
+                <view class="optlist">
+                    <view
+                        v-for="a in availableAddons"
+                        :key="addonId(a)"
+                        class="optcard optcard--addon"
+                        :class="{ 'is-on': selectedAddons.includes(addonId(a)) }"
+                        hover-class="is-pressed"
+                        aria-role="checkbox"
+                        :aria-checked="selectedAddons.includes(addonId(a))"
+                        @tap="toggleAddon(addonId(a))"
+                    >
+                        <image
+                            v-if="addonImage(a)"
+                            class="optcard__thumb"
+                            :src="imageUrl(addonImage(a))"
+                            mode="aspectFill"
+                        />
+                        <view class="optcard__body">
+                            <view class="optcard__top">
+                                <text class="optcard__name ellipsis">{{ a.name }}</text>
+                                <view class="optcard__tick" aria-hidden="true">
+                                    <tn-icon name="check" :size="18" />
                                 </view>
                             </view>
-                        </view>
-                    </scroll-view>
-
-                    <view class="bkline">
-                        <text class="bkline__sum">
-                            已选
-                            <text class="bkline__strong">{{ selectedAddons.length }}</text> 项
-                            <text class="bkline__strong"> {{ addonSumText }}</text>
-                        </text>
-                        <view
-                            class="bkline__skip"
-                            hover-class="is-pressed"
-                            aria-role="button"
-                            @tap="skipAddons"
-                        >
-                            <text class="bkline__skip-text">不需要，直接下一步</text>
-                            <tn-icon name="right" :size="20" />
+                            <text v-if="addonDesc(a)" class="optcard__desc ellipsis-2">{{
+                                addonDesc(a)
+                            }}</text>
+                            <view class="optcard__price">
+                                <price
+                                    size="sm"
+                                    :content="addonPrice(a)"
+                                    prefix="+¥"
+                                    :trim-zeros="true"
+                                />
+                                <price
+                                    v-if="addonOriginalPrice(a) > Number(addonPrice(a))"
+                                    size="sm"
+                                    :content="addonOriginalPrice(a)"
+                                    line-through
+                                    :trim-zeros="true"
+                                />
+                            </view>
                         </view>
                     </view>
-                </template>
+                </view>
 
-                <base-empty
-                    v-else
-                    status="empty"
-                    empty-text="这档套餐已含全部附加服务"
-                    desc="直接进入下一步即可"
-                    :action-text="nextButtonText"
-                    show-action
-                    @action="nextStep"
-                />
+                <view class="bkline">
+                    <text class="bkline__sum">
+                        已选 <text class="bkline__strong">{{ selectedAddons.length }}</text> 项 ·
+                        <text class="bkline__strong">{{ addonSumText }}</text>
+                    </text>
+                    <view
+                        class="bkline__skip"
+                        hover-class="is-pressed"
+                        aria-role="button"
+                        @tap="skipAddons"
+                    >
+                        <text class="bkline__skip-text">暂不加购，跳过此步</text>
+                        <tn-icon name="right" :size="20" />
+                    </view>
+                </view>
             </view>
 
             <!-- ============ 可选服务：婚礼管家 / 婚礼督导 ============ -->
             <booking-role-step
-                v-else-if="activeRole"
+                v-else-if="activeRoleSlot"
                 :role="activeRole"
                 :needed="activeRoleNeeded"
                 :picked="activeRolePicked"
@@ -243,6 +269,7 @@
                 :package-duration-text="packageDurationText"
                 :package-rules="packageRules"
                 :quote-role-rows="quoteRoleRows"
+                :has-available-addons="hasAddonStep"
                 :addon-title="addonTitle"
                 :selected-addon-list="selectedAddonList"
                 :addon-sum-text="addonSumText"
@@ -355,7 +382,7 @@
  * 页面壳负责编排：步骤流转、头图/底栏展示、弹层调度，
  * 锁档状态机 / 角色选人 / 核价下单分别下沉到同目录 composables 与子组件。
  */
-import { computed, nextTick, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { onLoad, onPageScroll, onShow, onUnload } from '@dcloudio/uni-app'
 import { formatDate, parseDateValue } from '@shared/utils/format'
 import { getScheduleRule, getStaffDetail } from '@/api/catalog'
@@ -462,14 +489,82 @@ const {
     markOrderCreated
 } = useBookingLock({ staffId, date, orderId })
 
-const preConfirmCount = computed(
-    () =>
-        2 +
-        roleConfigs.value.filter((r) => r?.role_key === 'butler' || r?.role_key === 'director')
-            .length
+/* ---------------- 流程步骤：语义 key 驱动，步数随可选项伸缩 ---------------- */
+
+/**
+ * 角色步的 key 与 useBookingRoles 内部 filter（butler / director）同口径。
+ * 该 composable 不在本次改动范围，这里独立声明一份，避免流程定义反向依赖它造成循环。
+ */
+const ROLE_STEP_KEYS = ['butler', 'director']
+
+type FlowStepKey = 'package' | 'addon' | 'confirm' | `role:${string}`
+type FlowStepItem = { key: FlowStepKey; label: string; roleKey?: string }
+
+const roleSlots = computed(() =>
+    roleConfigs.value
+        .filter((r) => ROLE_STEP_KEYS.includes(String(r?.role_key || '')))
+        .map((r) => ({
+            key: String(r.role_key || ''),
+            label: String(r.role_label || '关联服务')
+        }))
 )
-const confirmStep = computed(() => preConfirmCount.value + 1)
+
+const currentPackage = computed(() =>
+    packages.value.find((p) => pkgId(p) === Number(packageId.value))
+)
+
+/**
+ * 当前套餐绑定的附加项：只认套餐自己的 addon_ids。
+ * 没绑定就是空 —— 不 fallback 到全场 addons，否则会选出后端必然拒绝的组合。
+ */
+const availableAddons = computed(() => {
+    const pkg = currentPackage.value
+    if (!pkg) return []
+    const rawIds = pkg?.addon_ids ?? pkg?.package?.addon_ids
+    if (!Array.isArray(rawIds) || !rawIds.length) return []
+    const bound = new Set(rawIds.map(Number))
+    return addons.value.filter((a) => bound.has(addonId(a)))
+})
+
+const hasAddonStep = computed(() => availableAddons.value.length > 0)
+
+const flowSteps = computed<FlowStepItem[]>(() => {
+    const items: FlowStepItem[] = [{ key: 'package', label: '套餐' }]
+    if (hasAddonStep.value) items.push({ key: 'addon', label: '附加项' })
+    for (const slot of roleSlots.value) {
+        items.push({ key: `role:${slot.key}` as FlowStepKey, label: slot.label, roleKey: slot.key })
+    }
+    items.push({ key: 'confirm', label: '确认' })
+    return items
+})
+
+const flowLabels = computed(() => flowSteps.value.map((s) => s.label))
+const confirmStep = computed(() => flowSteps.value.length)
 const isConfirm = computed(() => step.value === confirmStep.value)
+const currentStepItem = computed<FlowStepItem | null>(() => flowSteps.value[step.value - 1] || null)
+const currentStepKey = computed<FlowStepKey | ''>(() => currentStepItem.value?.key || '')
+
+/**
+ * useBookingRoles 内部按 `step - 3` 推导当前角色（旧编号：套餐=1、附加项=2）。
+ * 加购步可能被跳过，这里补回虚拟编号，保证角色步下标始终对得上。
+ */
+const rolesStep = computed(() => step.value + (hasAddonStep.value ? 0 : 1))
+
+/** 加购步出现/消失时保持「语义步」不跳变：后续步骤整体右移/左移一位 */
+watch(hasAddonStep, (has) => {
+    if (step.value < 2) return
+    if (has) {
+        step.value = Math.min(step.value + 1, flowSteps.value.length)
+        return
+    }
+    // 停在已消失的加购步：原地前进；之后的步骤各左移一位
+    step.value = step.value === 2 ? Math.min(2, flowSteps.value.length) : step.value - 1
+})
+
+/** 角色配置变化等导致总步数收缩时，把越界的 step 收回最后一个合法步 */
+watch(confirmStep, (max) => {
+    if (step.value > max) step.value = max
+})
 
 let invalidateQuoteRef: () => void = () => undefined
 
@@ -496,10 +591,15 @@ const {
     date,
     region,
     roleConfigs,
-    step,
+    step: rolesStep,
     isConfirm,
     onInvalidateQuote: () => invalidateQuoteRef()
 })
+
+/** 当前步骤如果落在角色步，返回对应的步骤槽（key / label），否则 null */
+const activeRoleSlot = computed(
+    () => roleSlots.value.find((s) => s.key === currentStepItem.value?.roleKey) || null
+)
 
 function buildParams() {
     const params: Record<string, any> = {
@@ -557,15 +657,11 @@ invalidateQuoteRef = invalidateQuote
 
 /* ---------------- 展示与金额派生 ---------------- */
 
-const flowLabels = computed(() => [
-    '选套餐',
-    '附加项',
-    ...flowRoles.value.map((r) => String(r.role_label || ''))
-])
 const nextButtonText = computed(() => {
-    if (step.value === 1) return '下一步 · 附加项'
-    const nextRole = flowRoles.value[step.value - 2]
-    return nextRole ? `下一步 · ${nextRole.role_label}` : '下一步 · 确认订单'
+    if (isConfirm.value) return '提交申请'
+    const next = flowSteps.value[step.value]
+    if (!next) return '下一步'
+    return next.key === 'confirm' ? '下一步 · 确认订单' : `下一步 · ${next.label}`
 })
 
 function imageUrl(url?: string) {
@@ -575,9 +671,50 @@ function imageUrl(url?: string) {
     return domain ? `${domain}${url}` : url
 }
 
-const currentPackage = computed(() =>
-    packages.value.find((p) => pkgId(p) === Number(packageId.value))
-)
+/* ---- 套餐 / 附加项字段归一：顶层与 .package 两种来源都收 ---- */
+
+function pkgAddonIds(p: any): number[] {
+    const raw = p?.addon_ids ?? p?.package?.addon_ids
+    return Array.isArray(raw) ? raw.map(Number).filter((n) => n > 0) : []
+}
+
+function pkgAddonCount(p: any) {
+    return pkgAddonIds(p).length
+}
+
+function pkgDuration(p: any) {
+    const text = p?.duration_desc ?? p?.package?.duration_desc
+    return text === undefined || text === null || text === '' ? '' : String(text)
+}
+
+function pkgRecommend(p: any) {
+    return Number(p?.is_recommend ?? p?.package?.is_recommend ?? 0) === 1
+}
+
+function pkgDesc(p: any) {
+    const text = p?.description ?? p?.package?.description
+    return text ? String(text) : ''
+}
+
+function pkgOriginalPrice(p: any) {
+    const n = Number(p?.original_price ?? p?.package?.original_price ?? 0)
+    return Number.isFinite(n) ? n : 0
+}
+
+function addonImage(a: any) {
+    return String(a?.image || a?.cover || a?.package?.image || '')
+}
+
+function addonDesc(a: any) {
+    const text = a?.description ?? a?.desc ?? a?.package?.description
+    return text ? String(text) : ''
+}
+
+function addonOriginalPrice(a: any) {
+    const n = Number(a?.original_price ?? a?.package?.original_price ?? 0)
+    return Number.isFinite(n) ? n : 0
+}
+
 const currentPackageName = computed(() => (currentPackage.value ? pkgName(currentPackage.value) : ''))
 const regionReady = computed(() => hasRegionContext(region.value))
 const dateLabel = computed(() => {
@@ -625,27 +762,34 @@ onPageScroll((e: any) => {
 })
 
 const heroEyebrow = computed(() => {
-    const prefix = `STEP ${step.value} / ${preConfirmCount.value}`
+    const total = Math.max(1, flowSteps.value.length - 1)
+    const prefix = `STEP ${step.value} / ${total}`
     if (activeRole.value) return `${prefix} · 可选服务`
-    return `${prefix} · ${step.value === 1 ? '服务套餐' : '附加项'}`
+    return `${prefix} · ${currentStepKey.value === 'addon' ? '附加项' : '服务套餐'}`
 })
 const heroTitle = computed(() => {
-    if (isConfirm.value || step.value === 1) return currentPackageName.value || '服务套餐'
+    if (isConfirm.value || currentStepKey.value === 'package') {
+        return currentPackageName.value || '服务套餐'
+    }
     if (activeRole.value) return activeRole.value.role_label || '可选服务'
-    return selectedAddons.value.length ? `已选 ${selectedAddons.value.length} 项附加` : '附加项'
+    if (currentStepKey.value === 'addon') {
+        return selectedAddons.value.length ? `已选 ${selectedAddons.value.length} 项附加` : '附加项'
+    }
+    return currentPackageName.value || '服务套餐'
 })
 const selectedAddonList = computed(() =>
-    addons.value.filter((a) => selectedAddons.value.includes(addonId(a)))
+    availableAddons.value.filter((a) => selectedAddons.value.includes(addonId(a)))
 )
 const upsellAddon = computed(
-    () => addons.value.find((a) => !selectedAddons.value.includes(addonId(a))) || null
+    () =>
+        availableAddons.value.find((a) => !selectedAddons.value.includes(addonId(a))) || null
 )
 const addonSumText = computed(() => {
     const sum = selectedAddonList.value.reduce((acc, a) => acc + Number(addonPrice(a) || 0), 0)
     return sum > 0 ? `+¥${money(sum)}` : '+¥0'
 })
 const heroPrice = computed(() => {
-    if (isConfirm.value || step.value === 1) {
+    if (isConfirm.value || currentStepKey.value === 'package') {
         return currentPackage.value ? pkgPrice(currentPackage.value) : null
     }
     if (activeRole.value) {
@@ -656,7 +800,7 @@ const heroPrice = computed(() => {
     return sum > 0 ? sum : null
 })
 const heroUnit = computed(() => {
-    if (isConfirm.value || step.value === 1) return '/ 场'
+    if (isConfirm.value || currentStepKey.value === 'package') return '/ 场'
     if (activeRole.value) return '/ 位'
     return '/ 项'
 })
@@ -688,10 +832,17 @@ const addonOnlyAmount = computed(() =>
     Math.max(0, Number(quote.value?.addon_amount || 0) - rolePriceSum.value)
 )
 
+/** 套餐规则：只认规则字段，不与确认页的「服务时长」抢同一段文案 */
+const packageRuleText = computed(() => {
+    const p = currentPackage.value
+    const rules = p?.rules || p?.package?.rules || ''
+    return rules ? String(rules) : ''
+})
+/** 确认页说明：没有规则时退回套餐说明；不再兜底 duration_desc（时长单独一行展示） */
 const packageRules = computed(() => {
     const p = currentPackage.value
-    const rules = p?.rules || p?.package?.rules || p?.duration_desc || ''
-    return rules ? String(rules) : ''
+    const text = packageRuleText.value || p?.description || p?.package?.description || ''
+    return text ? String(text) : ''
 })
 const packageDurationText = computed(() => {
     const p = currentPackage.value
@@ -743,7 +894,9 @@ const cityVenueText = computed(() => {
 })
 
 const barAmount = computed<number | string | null>(() => {
-    if (step.value === 1) return currentPackage.value ? pkgPrice(currentPackage.value) : null
+    if (currentStepKey.value === 'package') {
+        return currentPackage.value ? pkgPrice(currentPackage.value) : null
+    }
     if (!isConfirm.value) {
         const base = Number(currentPackage.value ? pkgPrice(currentPackage.value) : 0)
         const add = selectedAddonList.value.reduce((acc, a) => acc + Number(addonPrice(a) || 0), 0)
@@ -755,7 +908,7 @@ const barAmount = computed<number | string | null>(() => {
     return t === undefined || t === null || t === '' ? null : t
 })
 const barLabel = computed(() => {
-    if (step.value === 1) return '当前套餐'
+    if (currentStepKey.value === 'package') return '当前套餐'
     if (!isConfirm.value) return '当前合计'
     if (!(balanceCents.value && balanceCents.value > 0)) return '订单总额'
     return quote.value?.deposit_amount && Number(quote.value.deposit_amount) > 0
@@ -795,10 +948,18 @@ const submitButtonText = computed(() => {
 
 /* ---------------- 交互与流程控制 ---------------- */
 
+/** 只保留新套餐仍绑定的附加项，避免把后端必然拒绝的组合带进核价 */
+function pruneSelectedAddons() {
+    const allowed = new Set(availableAddons.value.map((a) => addonId(a)))
+    const next = selectedAddons.value.filter((id) => allowed.has(id))
+    if (next.length !== selectedAddons.value.length) selectedAddons.value = next
+}
+
 function selectPackage(p: any) {
     const next = pkgId(p)
     if (Number(next) === Number(packageId.value)) return
     packageId.value = next
+    pruneSelectedAddons()
     invalidateQuote()
 }
 
@@ -809,11 +970,19 @@ function toggleAddon(id: number) {
     invalidateQuote()
 }
 
+/**
+ * 确认页加购：invalidateQuote 会把核价打回 idle，
+ * 不立即重算就会卡在「正在核价…」；条件不满足（已建单 / 缺日期）时交给既有流程。
+ */
 function addUpsell() {
     const a = upsellAddon.value
     if (!a) return
-    if (!selectedAddons.value.includes(addonId(a))) selectedAddons.value.push(addonId(a))
+    const id = addonId(a)
+    if (!selectedAddons.value.includes(id)) selectedAddons.value.push(id)
     invalidateQuote()
+    if (!isConfirm.value || orderId.value || orderPendingConfirm.value) return
+    if (!packageId.value || !date.value || !regionReady.value) return
+    void runPreview()
 }
 
 function validateField(key: BookingValidateField) {
@@ -919,17 +1088,13 @@ function ensureDateTime(): boolean {
 
 function nextStep() {
     if (!ensureDateTime()) return
-    if (step.value === 1) {
-        if (!packageId.value) {
-            toast.info('请选择套餐')
-            return
-        }
-        step.value = 2
-        resetScrollAfterStepChange()
+    if (isConfirm.value) return
+    if (currentStepKey.value === 'package' && !packageId.value) {
+        toast.info('请选择套餐')
         return
     }
     const role = activeRole.value
-    if (role) {
+    if (role && activeRoleSlot.value) {
         const wanted = !!roleWanted[role.role_key]
         const picked = rolePicked[role.role_key]
         if (wanted && (!picked || !picked.staff_id || !picked.package_id)) {
@@ -937,8 +1102,7 @@ function nextStep() {
             return
         }
     }
-    if (isConfirm.value) return
-    step.value += 1
+    step.value = Math.min(step.value + 1, confirmStep.value)
     resetScrollAfterStepChange()
     if (isConfirm.value) {
         if (quoteState.value !== 'ready') runPreview()
@@ -959,9 +1123,15 @@ function prevStep() {
     }
 }
 
-function editStep(target: number) {
+/** 语义 key（'package' / 'addon' / 'role:*'）与数字步序都收，统一换算成 flowSteps 下标 */
+function editStep(target: number | FlowStepKey) {
     if (!isConfirm.value) return
-    step.value = Math.min(Math.max(1, target), confirmStep.value)
+    const index =
+        typeof target === 'number'
+            ? Math.round(target) - 1
+            : flowSteps.value.findIndex((s) => s.key === target)
+    if (index < 0) return
+    step.value = Math.min(Math.max(1, index + 1), confirmStep.value)
     resetScrollAfterStepChange()
 }
 
@@ -1067,19 +1237,21 @@ async function load(options: { silent?: boolean } = {}) {
             ? detail.related_role_configs
             : []
 
+        // 入口带来的 package_id 若仍在本地区可售列表里就保留，不被默认首项覆盖
         if (packages.value.length) {
             const preferred = packages.value.find((p) => pkgId(p) === Number(packageId.value))
-            packageId.value = preferred ? packageId.value : pkgId(packages.value[0])
+            packageId.value = preferred ? pkgId(preferred) : pkgId(packages.value[0])
+        } else {
+            packageId.value = 0
         }
 
         if (options.silent) {
-            selectedAddons.value = selectedAddons.value.filter((id) =>
-                addons.value.some((a) => addonId(a) === id)
-            )
             pruneUnavailableRoles()
         } else {
             selectedAddons.value = []
         }
+        // 附加项只认当前套餐绑定的范围，换地区/换套餐后一律裁剪
+        pruneSelectedAddons()
     } catch (e) {
         rawError.value = e
         if (!options.silent) error.value = true
@@ -1258,14 +1430,6 @@ onLoad((options: any) => {
         color: var(--c-ink);
         line-height: var(--lh-tight);
     }
-
-    &__hint {
-        display: block;
-        margin-top: 8rpx;
-        font-size: var(--fs-20);
-        line-height: var(--lh-body);
-        color: var(--c-ink-3);
-    }
 }
 
 .needbar {
@@ -1299,31 +1463,27 @@ onLoad((options: any) => {
     text-decoration: underline;
 }
 
-.opts {
-    margin: 0 -42rpx;
-    width: auto;
-    white-space: nowrap;
+.optlist {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
 }
 
-.opts__track {
-    display: inline-flex;
-    align-items: stretch;
-    gap: 20rpx;
-    padding: 0 42rpx;
-}
-
+/*
+    选购卡：整宽竖排，一张卡回答「叫什么 / 多长 / 有什么 / 多少钱」。
+    选中态只动描边 + 角标，不做位移，避免列表内点击时整行跳动。
+*/
 .optcard {
-    width: 300rpx;
-    flex: none;
-    min-width: 0;
     position: relative;
-    padding: 22rpx 22rpx 20rpx;
-    border-radius: var(--r-sm);
+    min-width: 0;
+    padding: 24rpx;
+    border-radius: var(--r-md);
     border: 1rpx solid var(--c-line-strong);
     background: var(--c-surface);
+    transition: border-color var(--dur-fast) var(--ease-out);
 
     &.is-on {
-        border-color: var(--c-brand-text);
+        border-color: var(--c-active-border);
 
         .optcard__tick {
             opacity: 1;
@@ -1331,26 +1491,52 @@ onLoad((options: any) => {
         }
     }
 
-    &__head {
+    &__top {
         display: flex;
         align-items: flex-start;
-        gap: 8rpx;
-        min-height: 88rpx;
+        gap: var(--sp-2);
+    }
+
+    &__namewrap {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 10rpx;
     }
 
     &__name {
-        flex: 1;
         min-width: 0;
-        font-size: var(--fs-24);
+        font-size: var(--fs-md);
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
         line-height: var(--lh-tight);
     }
 
+    &__rec {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4rpx;
+        height: 34rpx;
+        padding: 0 10rpx;
+        border-radius: var(--r-xs);
+        background: var(--c-brand);
+        color: var(--c-on-brand);
+    }
+
+    &__rec-ic,
+    &__rec-text {
+        color: var(--c-on-brand);
+        font-size: var(--fs-18);
+        line-height: var(--lh-none);
+    }
+
     &__tick {
         flex: none;
-        width: 32rpx;
-        height: 32rpx;
+        width: 34rpx;
+        height: 34rpx;
+        margin-top: 2rpx;
         border-radius: var(--r-pill);
         background: var(--c-active-bg);
         color: var(--c-active-fg);
@@ -1365,16 +1551,69 @@ onLoad((options: any) => {
             transform var(--dur-fast) var(--ease-out);
     }
 
+    &__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8rpx;
+        margin-top: 12rpx;
+    }
+
+    &__tag {
+        display: inline-flex;
+        align-items: center;
+        height: 36rpx;
+        padding: 0 12rpx;
+        border-radius: var(--r-xs);
+        background: var(--c-surface-2);
+        font-size: var(--fs-18);
+        line-height: var(--lh-none);
+        color: var(--c-ink-2);
+    }
+
+    &__tag--addon {
+        background: var(--c-brand-bg);
+        color: var(--c-brand-text);
+    }
+
+    &__desc {
+        display: block;
+        margin-top: 10rpx;
+        font-size: var(--fs-20);
+        line-height: var(--lh-body);
+        color: var(--c-ink-3);
+    }
+
     &__price {
         display: flex;
         align-items: baseline;
-        gap: 4rpx;
-        margin-top: 12rpx;
+        gap: 10rpx;
+        margin-top: 14rpx;
     }
 
     &__unit {
         font-size: var(--fs-18);
         color: var(--c-ink-3);
+    }
+
+    /* 附加项：可选缩略图 + 右侧信息，无图时文字通栏 */
+    &--addon {
+        display: flex;
+        align-items: flex-start;
+        gap: 18rpx;
+        padding: 20rpx 22rpx;
+    }
+
+    &__thumb {
+        flex: none;
+        width: 128rpx;
+        height: 128rpx;
+        border-radius: var(--r-sm);
+        background: var(--c-neutral-bg);
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
     }
 }
 

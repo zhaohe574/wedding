@@ -1,4 +1,4 @@
-import { computed, ref, type Ref } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 import {
     getScheduleRule,
     getStaffActiveOrder,
@@ -37,6 +37,40 @@ export function tomorrowKey() {
     const d = new Date()
     d.setDate(d.getDate() + 1)
     return dateKeyOf(d.getFullYear(), d.getMonth() + 1, d.getDate())
+}
+
+/** 套餐主键：详情与预约页同口径，兼容 package_id / id 两种下发 */
+export function staffPackageId(p: any) {
+    return Number(p?.package_id || p?.id || 0)
+}
+
+export interface StaffPackageCard {
+    id: number
+    name: string
+    price: number | string
+    originalPrice: number
+    duration: string
+    addonCount: number
+    description: string
+    recommended: boolean
+}
+
+/** 套餐卡字段归一：顶层与 .package 两种结构都收（Batch 1 契约） */
+export function toStaffPackageCard(p: any): StaffPackageCard {
+    const original = Number(p?.original_price ?? p?.package?.original_price ?? 0)
+    const addonIds = p?.addon_ids ?? p?.package?.addon_ids
+    return {
+        id: staffPackageId(p),
+        name: String(p?.package?.name || p?.name || '服务套餐'),
+        price: p?.price ?? p?.package?.price ?? 0,
+        originalPrice: Number.isFinite(original) ? original : 0,
+        duration: String(p?.duration_desc || p?.package?.duration_desc || ''),
+        addonCount: Array.isArray(addonIds)
+            ? addonIds.filter((n: any) => Number(n) > 0).length
+            : 0,
+        description: String(p?.description || p?.package?.description || ''),
+        recommended: Number(p?.is_recommend ?? p?.package?.is_recommend ?? 0) === 1
+    }
 }
 
 export function useStaffDetail(options: {
@@ -86,6 +120,44 @@ export function useStaffDetail(options: {
     }
 
     const scheduleAvailable = computed(() => staff.value.schedule_available !== false)
+
+    /* ---------------- 套餐选购：详情页与预约页共用同一选中项 ---------------- */
+
+    const selectedPackageId = ref(0)
+
+    const selectedPackage = computed(() => {
+        const list = packages.value
+        if (!list.length) return null
+        const hit = list.find((p) => staffPackageId(p) === Number(selectedPackageId.value || 0))
+        return hit || list[0] || null
+    })
+
+    const selectedPackageName = computed(() => {
+        const p = selectedPackage.value
+        return p ? String(p?.package?.name || p?.name || '') : ''
+    })
+
+    function selectPackage(id: number) {
+        const next = Number(id || 0)
+        if (next > 0) selectedPackageId.value = next
+    }
+
+    /** 套餐随地区/日期重拉后校正：仍可售则保留，否则优先推荐款，再退第一项 */
+    function calibrateSelectedPackage() {
+        const list = packages.value
+        if (!list.length) {
+            selectedPackageId.value = 0
+            return
+        }
+        const current = Number(selectedPackageId.value || 0)
+        if (current > 0 && list.some((p) => staffPackageId(p) === current)) return
+        const recommended = list.find(
+            (p) => Number(p?.is_recommend ?? p?.package?.is_recommend ?? 0) === 1
+        )
+        selectedPackageId.value = staffPackageId(recommended || list[0])
+    }
+
+    watch(packages, calibrateSelectedPackage)
 
     /**
      * 当前用户在该人员「当前日期」的有效订单。
@@ -227,6 +299,11 @@ export function useStaffDetail(options: {
     })
 
     const startPrice = computed(() => {
+        const p = selectedPackage.value
+        const pkgValue = p?.price ?? p?.package?.price
+        if (pkgValue !== undefined && pkgValue !== null && pkgValue !== '') {
+            return pkgValue as number | string
+        }
         if (
             staff.value.price !== undefined &&
             staff.value.price !== null &&
@@ -234,9 +311,7 @@ export function useStaffDetail(options: {
         ) {
             return staff.value.price as number | string
         }
-        const p = packages.value[0]
-        const v = p?.price ?? p?.package?.price
-        return v === undefined || v === null || v === '' ? null : (v as number | string)
+        return null
     })
 
     const reviewCount = computed(() => Number(reviewStats.value.total || reviews.value.length || 0))
@@ -530,6 +605,10 @@ export function useStaffDetail(options: {
         minSelectableDate,
         maxSelectableDate,
         scheduleAvailable,
+        selectedPackageId,
+        selectedPackage,
+        selectedPackageName,
+        selectPackage,
         myOrder,
         hasActiveOrder,
         isFavorite,
