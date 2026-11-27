@@ -21,7 +21,7 @@
                 <!-- 「不感兴趣」的本地隐藏记录可在这里找回；角标为当前隐藏条数 -->
                 <view hover-class="is-pressed" class="menu" @tap="openHidden">
                     <text class="menu__label">已隐藏的动态</text>
-                    <text v-if="hiddenCount > 0" class="menu__badge">{{ hiddenCount }}</text>
+                    <text v-if="hiddenCount > 0" class="menu__badge t-num">{{ hiddenCount }}</text>
                     <tn-icon name="right" :size="24" />
                 </view>
                 <!-- 外观模式：三态（跟随系统 / 浅色 / 深色），写 Storage 并即时切换 shell 类名 -->
@@ -55,7 +55,7 @@
                     <view v-if="metaLoading" class="kv__skeleton">
                         <base-skeleton :rows="1" variant="text" />
                     </view>
-                    <text v-else class="kv__v">{{ version }}</text>
+                    <text v-else class="kv__v t-num">{{ version }}</text>
                 </view>
                 <!-- P0 §2-7⑥：退出登录降级为菜单末行（原实心 danger 按钮 + 提示语一并删除）。
                      与其余行同构：label + right 图标；点击走 uni.showModal 二次确认。 -->
@@ -165,7 +165,7 @@
                                 }}</text>
                                 <view class="hidden-item__meta">
                                     <text v-if="item.author">{{ item.author }}</text>
-                                    <text v-if="item.time">{{ item.time }}</text>
+                                    <text v-if="item.time" class="t-num">{{ item.time }}</text>
                                 </view>
                             </view>
                         </view>
@@ -239,7 +239,8 @@ import { useUserStore } from '@/stores/user'
 import { useColorSchemeStore } from '@/stores/colorScheme'
 import type { ColorSchemePreference } from '@/stores/colorScheme'
 import { navigate } from '@/utils/link'
-import { hapticsEnabled, setHapticsEnabled } from '@/utils/haptics'
+import { haptic, hapticsEnabled, setHapticsEnabled } from '@/utils/haptics'
+import { schemeColor } from '@/utils/scheme-color'
 import { getCaseDetail } from '@/api/content'
 import {
     clear,
@@ -309,6 +310,7 @@ function stopRestoreBubble() {
 }
 
 function goHiddenDetail(id: number) {
+    haptic('light', 'settings-hidden-open')
     // 先关面板，避免从详情返回时它还浮着
     hiddenVisible.value = false
     navigate({
@@ -318,6 +320,7 @@ function goHiddenDetail(id: number) {
 }
 
 function openHidden() {
+    haptic('light', 'settings-hidden')
     refreshHidden()
     hiddenVisible.value = true
 }
@@ -387,6 +390,7 @@ async function loadOa() {
 }
 
 function openPassword() {
+    haptic('light', 'settings-password')
     pwdVisible.value = true
 }
 
@@ -399,10 +403,12 @@ const schemeOptions: { value: ColorSchemePreference; label: string }[] = [
 ]
 
 function openColorScheme() {
+    haptic('light', 'settings-scheme')
     schemeVisible.value = true
 }
 
 function pickColorScheme(val: ColorSchemePreference) {
+    haptic('light', 'settings-scheme-pick')
     colorScheme.setPreference(val)
     schemeVisible.value = false
 }
@@ -413,10 +419,12 @@ function onToggleHaptics(next: boolean) {
 }
 
 function openOa() {
+    haptic('light', 'settings-oa')
     navigate({ path: '/pages/oa_subscribe/oa_subscribe' })
 }
 
 function openAgreement(type: string) {
+    haptic('light', `settings-agreement-${type}`)
     navigate({ path: '/pages/agreement/agreement', query: { type } })
 }
 
@@ -439,13 +447,17 @@ async function submitPassword() {
 }
 
 async function handleLogout() {
+    haptic('medium', 'settings-logout')
     const confirmed = await new Promise<boolean>((resolve) => {
+        // uni.showModal 是系统居中确认弹窗：退出登录需要打断当前动作，
+        // 保留居中形态，不改成底部抽屉；confirmColor 走 schemeColor（原生参数不认 CSS 变量）
         uni.showModal({
             title: '退出登录',
             // P0 §2-7⑥：内容讲代价（原来讲"仍可重新登录"，与确认弹窗语气矛盾）
             content: '退出后需要重新登录才能查看订单',
             confirmText: '退出登录',
             cancelText: '取消',
+            confirmColor: schemeColor('danger'),
             success: (r) => resolve(!!r.confirm),
             fail: () => resolve(false)
         })
@@ -500,6 +512,7 @@ onShow(() => {
     min-height: 104rpx;
     padding: var(--sp-3) var(--sp-4);
     box-sizing: border-box;
+    transition: background-color var(--dur-fast) var(--ease-out);
 
     /* P0 §2-7①：分割线用 :not(:last-child)，不再手写 .menu--last ——
        末行是靠位置决定的，新增行会自动接上分割线，不会漏改 */
@@ -579,23 +592,27 @@ onShow(() => {
     z-index: 200;
     display: flex;
     align-items: flex-end;
+    animation: mask-fade 240ms var(--ease-out) both;
 }
 
+/* 第三层浮层表面：比卡片更亮的 --c-surface-float + 顶部发散阴影 */
 .sheet {
     width: 100%;
     max-height: 80vh;
-    background: var(--c-surface);
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    background: var(--c-surface-float);
+    border-radius: var(--r-48) var(--r-48) 0 0;
+    box-shadow: var(--shadow-sheet);
     padding: var(--sp-4);
     padding-bottom: calc(var(--sp-4) + var(--safe-bottom));
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
     box-sizing: border-box;
+    animation: sheet-rise 320ms var(--ease-spring-soft) both;
 
     &__title {
         font-size: var(--fs-lg);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
         color: var(--c-ink);
     }
 
@@ -603,7 +620,7 @@ onShow(() => {
         width: 100%;
         height: 88rpx;
         background: var(--c-surface-2);
-        border: 1rpx solid var(--c-line);
+        border: 1rpx solid var(--c-control-border);
         border-radius: var(--r-md);
         padding: 0 var(--sp-3);
         font-size: var(--fs-md);
@@ -637,6 +654,31 @@ onShow(() => {
     }
 }
 
+@keyframes mask-fade {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes sheet-rise {
+    from {
+        transform: translate3d(0, 100%, 0);
+    }
+    to {
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mask,
+    .sheet {
+        animation: none;
+    }
+}
+
 /* ===== 外观模式（三态选择） ===== */
 .scheme-list {
     display: flex;
@@ -653,8 +695,11 @@ onShow(() => {
     padding: var(--sp-3);
     border-radius: var(--r-md);
     background: var(--c-surface-2);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);
     box-sizing: border-box;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out);
 
     &.is-active {
         border-color: var(--c-brand-text);
@@ -690,6 +735,12 @@ onShow(() => {
         display: flex;
         align-items: center;
         color: var(--c-brand-text);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .scheme-opt {
+        transition: none;
     }
 }
 
@@ -729,8 +780,9 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: var(--sp-1);
+    min-height: 88rpx;
     padding: var(--sp-3);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
     border-radius: var(--r-sm);
     background: var(--c-surface-2);
 
@@ -768,6 +820,12 @@ onShow(() => {
         gap: var(--sp-2);
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .menu {
+        transition: none;
     }
 }
 </style>

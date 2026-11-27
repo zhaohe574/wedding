@@ -5,11 +5,11 @@
             <base-card>
                 <view class="kv">
                     <text class="kv__k">订单编号</text>
-                    <text class="kv__v">{{ orderSn || '-' }}</text>
+                    <text class="kv__v t-num">{{ orderSn || '-' }}</text>
                 </view>
                 <view class="kv">
                     <text class="kv__k">当前服务日期</text>
-                    <text class="kv__v">{{ currentDate || '-' }}</text>
+                    <text class="kv__v t-num">{{ currentDate || '-' }}</text>
                 </view>
             </base-card>
 
@@ -69,8 +69,9 @@
                     >改期需审核，差价以审核结果为准</text
                 >
             </view>
-
-            <view class="submit">
+        </view>
+        <template #bottom>
+            <bottom-bar>
                 <base-button
                     text="提交申请"
                     variant="ink"
@@ -78,8 +79,8 @@
                     :loading="submitting"
                     @click="handleSubmit"
                 />
-            </view>
-        </view>
+            </bottom-bar>
+        </template>
         <app-toast />
     </page-shell>
 </template>
@@ -92,6 +93,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import { applyDateChange, checkCanChange } from '@/api/change'
 import { getOrderDetail } from '@/api/order'
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
+import { haptic } from '@/utils/haptics'
 
 const orderId = ref(0)
 const orderSn = ref('')
@@ -122,6 +124,7 @@ const today = (() => {
 })()
 
 function onDateChange(e: any) {
+    haptic('light', 'apply-date-pick')
     form.new_date = String(e?.detail?.value || '')
 }
 
@@ -163,6 +166,7 @@ async function handleSubmit() {
         return
     }
     submitting.value = true
+    haptic('medium', 'apply-date-submit')
     try {
         // 服务号提醒：表单校验已通过，只在提交前弹一次；
         // 暂停时直接退出，submitting 由 finally 释放
@@ -256,7 +260,7 @@ onLoad((options: any) => {
     min-height: 88rpx;
     padding: 0 var(--sp-3);
     background: var(--c-surface-2);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);
     border-radius: var(--r-md);
     box-sizing: border-box;
 
@@ -295,17 +299,5 @@ onLoad((options: any) => {
         line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
-}
-
-.submit {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 50;
-    padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + var(--safe-bottom));
-    border-top: 1rpx solid var(--c-line);
-    background: var(--c-surface);
-    box-sizing: border-box;
 }
 </style>

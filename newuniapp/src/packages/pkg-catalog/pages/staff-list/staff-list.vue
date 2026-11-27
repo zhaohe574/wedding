@@ -13,7 +13,12 @@
             <view v-if="fromQuery" class="ctx">
                 <view class="ctx__row">
                     <text class="ctx__where">{{ summaryText || '可约人员' }}</text>
-                    <view hover-class="is-pressed" class="ctx__change" aria-role="button" @tap="goBack">
+                    <view
+                        hover-class="is-pressed"
+                        class="ctx__change hit-88"
+                        aria-role="button"
+                        @tap="goBack"
+                    >
                         <text class="ctx__change-text">改条件</text>
                         <tn-icon name="right" :size="18" class="ctx__change-ic" />
                     </view>
@@ -26,11 +31,16 @@
                             <text class="ctx__unit">未加载</text>
                         </template>
                         <template v-else>
-                            <text class="ctx__num">{{ total }}</text>
+                            <text class="ctx__num t-num">{{ total }}</text>
                             <text class="ctx__unit">{{ countUnit }}</text>
                         </template>
                     </view>
-                    <view hover-class="is-pressed" class="ctx__sort" aria-role="button" @tap="openSort">
+                    <view
+                        hover-class="is-pressed"
+                        class="ctx__sort hit-88"
+                        aria-role="button"
+                        @tap="openSort"
+                    >
                         <text class="ctx__sort-text">{{ sortLabel }}</text>
                         <tn-icon name="down-arrow" :size="18" class="ctx__sort-ic" />
                     </view>
@@ -40,43 +50,59 @@
             <!-- 筛选栏：日期 / 分类 / 排序 三组条件常驻，改条件不必退回上一页 -->
             <view v-if="!fromQuery" class="filters">
                 <view class="filters__row">
-                    <picker mode="date" :value="date" :start="today" @change="onDateChange">
-                        <view
-                            hover-class="is-pressed"
-                            class="filters__chip"
-                            :class="{ 'is-active': !!date }"
-                        >
-                            <text class="filters__text">{{ date || '日期' }}</text>
-                            <!-- v1 u-icon → v2 tn-icon：arrow-down → down-arrow -->
-                            <tn-icon name="down-arrow" :size="24" class="ic-ink-3" />
-                        </view>
-                    </picker>
+                    <!-- 横向滚动留出尾部缓冲：窄屏时 chip 不被计数挤压，也不产生死区 -->
+                    <scroll-view scroll-x class="filters__scroll" :show-scrollbar="false">
+                        <view class="filters__chips">
+                            <picker
+                                mode="date"
+                                :value="date"
+                                :start="today"
+                                @change="onDateChange"
+                            >
+                                <view
+                                    hover-class="is-pressed"
+                                    class="filters__chip hit-88"
+                                    :class="{ 'is-active': !!date }"
+                                    @tap="onFilterTap"
+                                >
+                                    <text class="filters__text">{{ date || '日期' }}</text>
+                                    <!-- v1 u-icon → v2 tn-icon：arrow-down → down-arrow -->
+                                    <tn-icon name="down-arrow" :size="24" class="ic-ink-3" />
+                                </view>
+                            </picker>
 
-                    <picker mode="selector" :range="categoryLabels" @change="onCategoryChange">
-                        <view
-                            hover-class="is-pressed"
-                            class="filters__chip"
-                            :class="{ 'is-active': categoryId > 0 }"
-                        >
-                            <text class="filters__text ellipsis">{{ categoryName }}</text>
-                            <!-- v1 u-icon → v2 tn-icon：arrow-down → down-arrow -->
-                            <tn-icon name="down-arrow" :size="24" class="ic-ink-3" />
-                        </view>
-                    </picker>
+                            <picker
+                                mode="selector"
+                                :range="categoryLabels"
+                                @change="onCategoryChange"
+                            >
+                                <view
+                                    hover-class="is-pressed"
+                                    class="filters__chip hit-88"
+                                    :class="{ 'is-active': categoryId > 0 }"
+                                    @tap="onFilterTap"
+                                >
+                                    <text class="filters__text ellipsis">{{ categoryName }}</text>
+                                    <!-- v1 u-icon → v2 tn-icon：arrow-down → down-arrow -->
+                                    <tn-icon name="down-arrow" :size="24" class="ic-ink-3" />
+                                </view>
+                            </picker>
 
-                    <view
-                        hover-class="is-pressed"
-                        class="filters__chip"
-                        :class="{ 'is-active': sort !== 'default' }"
-                        @tap="openSort"
-                    >
-                        <text class="filters__text">{{ sortLabel }}</text>
-                        <!-- v1 u-icon → v2 tn-icon：arrow-down → down-arrow -->
-                        <tn-icon name="down-arrow" :size="24" class="ic-ink-3" />
-                    </view>
+                            <view
+                                hover-class="is-pressed"
+                                class="filters__chip hit-88"
+                                :class="{ 'is-active': sort !== 'default' }"
+                                @tap="openSort"
+                            >
+                                <text class="filters__text">{{ sortLabel }}</text>
+                                <!-- v1 u-icon → v2 tn-icon：arrow-down → down-arrow -->
+                                <tn-icon name="down-arrow" :size="24" class="ic-ink-3" />
+                            </view>
+                        </view>
+                    </scroll-view>
 
                     <view class="filters__meta">
-                        <text class="filters__count">{{ countLabel }}</text>
+                        <text class="filters__count t-num">{{ countLabel }}</text>
                     </view>
                 </view>
                 <view v-if="hasPresetExtraFilters" class="filters__extra">
@@ -91,7 +117,13 @@
                             风格标签 ×{{ tagIds.length }}
                         </text>
                     </view>
-                    <text class="filters__extra-clear" @tap="clearExtraFilters">清空</text>
+                    <view
+                        class="filters__extra-clear hit-88"
+                        aria-role="button"
+                        @tap="clearExtraFilters"
+                    >
+                        <text class="filters__extra-clear-text">清空</text>
+                    </view>
                 </view>
             </view>
 
@@ -106,7 +138,7 @@
                         </view>
                     </view>
                 </view>
-                <base-skeleton v-else :rows="4" />
+                <base-skeleton v-else variant="card" :rows="4" />
             </view>
 
             <base-empty
@@ -172,7 +204,7 @@
                             </view>
                             <!-- 收藏：和详情页同一接口，状态直接读列表下发的 is_favorite -->
                             <view
-                                class="qcard__fav"
+                                class="qcard__fav hit-88"
                                 :class="{ 'is-on': item.is_favorite }"
                                 hover-class="is-pressed"
                                 aria-role="button"
@@ -204,10 +236,10 @@
 
                             <view class="qcard__meta">
                                 <text class="qcard__role">{{ roleText(item) }}</text>
-                                <view v-if="hasPrice(item)" class="qcard__price">
-                                    <text class="qcard__price-num">{{ priceText(item) }}</text>
-                                    <text class="qcard__price-unit">起</text>
-                                </view>
+                            <view v-if="hasPrice(item)" class="qcard__price">
+                                <text class="qcard__price-num t-num">{{ priceText(item) }}</text>
+                                <text class="qcard__price-unit">起</text>
+                            </view>
                             </view>
 
                             <text class="qcard__intro">{{ introText(item) }}</text>
@@ -223,6 +255,7 @@
                     v-for="item in list"
                     :key="item.id"
                     class="card"
+                    :class="{ 'card--featured': item.is_recommend }"
                     @tap="goDetail(item)"
                 >
                     <view class="card__top">
@@ -255,13 +288,13 @@
                             </view>
 
                             <view class="card__meta">
-                                <text v-if="item.rating" class="card__rating"
+                                <text v-if="item.rating" class="card__rating t-num"
                                     >★ {{ ratingText(item.rating) }}</text
                                 >
                                 <text v-if="item.rating && item.order_count" class="card__sep"
                                     >·</text
                                 >
-                                <text v-if="item.order_count" class="card__muted"
+                                <text v-if="item.order_count" class="card__muted t-num"
                                     >{{ item.order_count }} 单</text
                                 >
                                 <text
@@ -269,7 +302,7 @@
                                     class="card__sep"
                                     >·</text
                                 >
-                                <text v-if="item.experience_years" class="card__muted"
+                                <text v-if="item.experience_years" class="card__muted t-num"
                                     >{{ item.experience_years }} 年</text
                                 >
                             </view>
@@ -299,7 +332,7 @@
 
                         <view class="card__acts">
                             <view
-                                class="card__fav"
+                                class="card__fav hit-88"
                                 :aria-label="item.is_favorite ? '取消收藏' : '收藏'"
                                 aria-role="button"
                                 @tap.stop="toggleFav(item)"
@@ -340,6 +373,7 @@ import { normalizePage } from '@/request'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { regionParams, type RegionContext } from '@/utils/region'
 import { saveBookingContext } from '@/utils/booking-context'
 import { resolveErrorView } from '@/utils/resolveErrorView'
@@ -645,6 +679,7 @@ function changeSort(key: string) {
 }
 
 function openSort() {
+    haptic('light', 'staff-sort')
     uni.showActionSheet({
         itemList: SORTS.map((s) =>
             fromQuery.value && s.key === 'default' ? '推荐排序' : s.label
@@ -660,6 +695,11 @@ function onDateChange(e: any) {
     date.value = String(e?.detail?.value || '')
     saveBookingContext({ date: date.value })
     reloadFromTop()
+}
+
+/** 三个 picker 触发器共用一处 light 触觉：连点由 haptic 内部 300ms 节流兜底 */
+function onFilterTap() {
+    haptic('light', 'staff-filter')
 }
 
 function onCategoryChange(e: any) {
@@ -695,6 +735,7 @@ async function toggleFav(item: any) {
         navigate({ path: '/pages/login/login' })
         return
     }
+    haptic('light', 'staff-fav')
     try {
         const res = await toggleStaffFavorite({ id: item.id })
         const next =
@@ -728,6 +769,7 @@ function goDetail(item: any) {
     const now = Date.now()
     if (now - lastNavAt < 300) return
     lastNavAt = now
+    haptic('light', 'staff-open')
     saveBookingContext({ date: date.value, region: currentRegion() })
     // 地区六字段必须一起带走：详情页/预约/报价靠它复算同一个区县价，丢了就会退回全国价
     navigate({
@@ -848,23 +890,44 @@ function onReachBottomLoad() {
         gap: var(--sp-2);
     }
 
+    /* 胶囊行横向滚动：尾部留 24rpx 缓冲，最后一个 chip 不会顶在计数上 */
+    &__scroll {
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+    }
+
+    &__chips {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--sp-2);
+        padding-right: var(--sp-3);
+    }
+
     &__chip {
         display: flex;
         align-items: center;
         gap: 4rpx;
         max-width: 220rpx;
         /* P0 §2-2：对齐 chip 视觉规格（高 56rpx / --r-pill / --c-control-border 边 / 选中 --c-ink 底）。
-           仍是 picker 触发器 —— chip-group 是纯受控单选，唤不起日期/分类选择器，换过去会坏功能。 */
+           仍是 picker 触发器 —— chip-group 是纯受控单选，唤不起日期/分类选择器，换过去会坏功能。
+           热区由 .hit-88 扩到 88rpx（上下各溢出 16rpx，横向不越过 16rpx 间距）。 */
         height: 56rpx;
         padding: 0 var(--sp-2);
         box-sizing: border-box;
         border-radius: var(--r-pill);
         background: var(--c-surface-2);
         border: 1rpx solid var(--c-control-border); /* 控件边界 ≥3:1 */
+        transition:
+            background-color var(--dur-base) var(--ease-out),
+            border-color var(--dur-base) var(--ease-out),
+            box-shadow var(--dur-base) var(--ease-out);
 
         &.is-active {
             background: var(--c-active-bg);
             border-color: var(--c-active-border);
+            /* 选中胶囊轻微浮起：深浅两套都靠 ink/金实底对比，不额外加色 */
+            box-shadow: 0 6rpx 16rpx -8rpx rgba(var(--c-ink-rgb), 0.35);
         }
     }
 
@@ -876,7 +939,7 @@ function onReachBottomLoad() {
 
     &__chip.is-active &__text {
         color: var(--c-active-fg);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
     }
 
     &__meta {
@@ -884,6 +947,7 @@ function onReachBottomLoad() {
         display: flex;
         align-items: center;
         gap: var(--sp-2);
+        flex: none;
     }
 
     &__date {
@@ -925,9 +989,16 @@ function onReachBottomLoad() {
 
     &__extra-clear {
         flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        min-width: 88rpx;
+        min-height: 88rpx;
+    }
+
+    &__extra-clear-text {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        padding: 4rpx 8rpx;
     }
 }
 
@@ -940,9 +1011,16 @@ function onReachBottomLoad() {
 
 .card {
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
     border-radius: var(--r-md);
+    box-shadow: var(--shadow-card);
     padding: 26rpx;
+    transition: box-shadow var(--dur-base) var(--ease-out);
+
+    /* 推荐位比普通卡高一层：同宽同心圆角，只提升投影，不换底色 */
+    &--featured {
+        box-shadow: var(--shadow-card-hover);
+    }
 
     &__top {
         display: flex;
@@ -1050,11 +1128,12 @@ function onReachBottomLoad() {
         line-height: 1.2;
     }
 
-    /* 通栏简介：独占卡片全宽，36 字列表简介 1~2 行完整展示 */
+    /* 通栏简介：独占卡片全宽，36 字列表简介 1~2 行完整展示
+       圆角取同心档：卡片 --r-md 32rpx − 内边距 26rpx ≈ 6rpx，落到 --r-xs */
     &__intro-wrap {
         margin-top: var(--sp-2);
         padding: 14rpx 18rpx;
-        border-radius: var(--r-sm);
+        border-radius: var(--r-xs);
         background: var(--c-surface-2);
     }
 
@@ -1245,8 +1324,9 @@ function onReachBottomLoad() {
 .qcard {
     width: calc((100% - 20rpx) / 2);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
     border-radius: var(--r-md);
+    box-shadow: var(--shadow-card);
     overflow: hidden;
 
     &__media {

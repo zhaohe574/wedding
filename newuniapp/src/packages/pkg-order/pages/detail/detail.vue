@@ -38,7 +38,7 @@
 
                 <view v-if="daysLeft !== null" class="ohero__days">
                     <text class="ohero__days-pre">距离婚礼还有</text>
-                    <text class="ohero__days-num">{{ daysLeft }}</text>
+                    <text class="ohero__days-num t-num">{{ daysLeft }}</text>
                     <text class="ohero__days-suf">天</text>
                 </view>
                 <text v-else class="ohero__days-fallback">{{ statusTitle }}</text>
@@ -48,15 +48,15 @@
                 <view class="ohero__nums">
                     <view class="ohero__num">
                         <text class="ohero__num-k">{{ amountLabels[0] }}</text>
-                        <text class="ohero__num-v">{{ moneyText(paidAmount) }}</text>
+                        <text class="ohero__num-v t-num">{{ moneyText(paidAmount) }}</text>
                     </view>
                     <view class="ohero__num">
                         <text class="ohero__num-k">{{ amountLabels[1] }}</text>
-                        <text class="ohero__num-v">{{ moneyText(dueAmount) }}</text>
+                        <text class="ohero__num-v t-num">{{ moneyText(dueAmount) }}</text>
                     </view>
                     <view class="ohero__num">
                         <text class="ohero__num-k">订单总额</text>
-                        <text class="ohero__num-v">{{ moneyText(order.total_amount) }}</text>
+                        <text class="ohero__num-v t-num">{{ moneyText(order.total_amount) }}</text>
                     </view>
                 </view>
             </view>
@@ -214,8 +214,16 @@
                 </template>
 
                 <view v-if="order.order_sn" class="sn">
-                    <text class="sn__text ellipsis">订单编号 {{ order.order_sn }}</text>
-                    <text class="sn__copy" @tap="copySn">复制</text>
+                    <text class="sn__text ellipsis t-num">订单编号 {{ order.order_sn }}</text>
+                    <view
+                        class="sn__copy hit-88"
+                        hover-class="is-pressed"
+                        aria-role="button"
+                        aria-label="复制订单号"
+                        @tap="copySn"
+                    >
+                        <text class="sn__copy-text">复制</text>
+                    </view>
                 </view>
             </view>
 
@@ -257,130 +265,109 @@
 
             <view class="foot-space" />
 
-            <!-- 重新挑选协作人员 -->
-            <tn-popup
+            <!-- 重新挑选协作人员：磁吸抽屉（标题 / 关闭 / 吸底由 snap-sheet 统一承担） -->
+            <snap-sheet
                 :model-value="reselectPopupVisible"
-                open-direction="bottom"
-                bg-color="transparent"
-                radius="0"
-                :safe-area-inset-bottom="true"
-                :overlay-closeable="!reselectSubmitting"
+                title="重新挑选协作人员"
+                :enable-full="true"
+                :has-foot="true"
+                :close-on-mask="!reselectSubmitting"
                 @update:model-value="onReselectPopupChange"
             >
-                <view class="rsheet">
-                    <view class="rsheet__head">
-                        <view class="rsheet__title-wrap">
-                            <text class="rsheet__title">重新挑选协作人员</text>
-                            <text v-if="reselectItem" class="rsheet__sub"
-                                >{{ reselectItem.role_label }} · 服务日期
-                                {{ reselectItem.service_date || '待定' }}</text
-                            >
-                        </view>
-                        <view
-                            hover-class="is-pressed"
-                            class="rsheet__close"
-                            aria-role="button"
-                            aria-label="关闭"
-                            @tap="closeReselectPopup"
-                        >
-                            <tn-icon name="close" :size="28" class="rsheet__close-icon" />
-                        </view>
-                    </view>
+                <text v-if="reselectItem" class="rsheet-sub"
+                    >{{ reselectItem.role_label }} · 服务日期
+                    {{ reselectItem.service_date || '待定' }}</text
+                >
 
-                    <scroll-view class="rsheet__body" scroll-y>
-                        <view v-if="reselectLoading" class="rsheet__pad">
-                            <base-skeleton :rows="3" />
-                        </view>
+                <view v-if="reselectLoading" class="rsheet-pad">
+                    <base-skeleton :rows="3" />
+                </view>
 
-                        <base-empty
-                            v-else-if="reselectError"
-                            status="error"
-                            error-kind="network"
-                            error-text="候选人加载失败"
-                            :desc="reselectError"
-                            @retry="fetchReselectCandidates"
+                <base-empty
+                    v-else-if="reselectError"
+                    status="error"
+                    :error-kind="reselectErrorView?.errorKind || 'unknown'"
+                    error-text="候选人加载失败"
+                    :desc="reselectError"
+                    @retry="fetchReselectCandidates"
+                />
+
+                <base-empty
+                    v-else-if="!reselectCandidates.length"
+                    status="empty"
+                    empty-text="当前档期暂无其他可约人员"
+                    desc="您可以关闭提醒继续按主服务推进订单，或联系客服协助安排"
+                />
+
+                <view v-else class="rcand-list">
+                    <view
+                        v-for="c in reselectCandidates"
+                        :key="c.staff_id"
+                        class="rcand"
+                        :class="{
+                            'is-selected': selectedCandidateStaffId === c.staff_id,
+                            'is-disabled': !c.schedule_available
+                        }"
+                        :hover-class="c.schedule_available ? 'is-pressed' : 'none'"
+                        @tap="selectReselectCandidate(c)"
+                    >
+                        <image
+                            v-if="c.avatar"
+                            :src="imageUrl(c.avatar)"
+                            class="rcand__avatar"
+                            mode="aspectFill"
                         />
+                        <view v-else class="rcand__avatar rcand__avatar--text">
+                            <text class="rcand__initial">{{ c.name.slice(0, 1) || '师' }}</text>
+                        </view>
 
-                        <base-empty
-                            v-else-if="!reselectCandidates.length"
-                            status="empty"
-                            empty-text="当前档期暂无其他可约人员"
-                            desc="您可以关闭提醒继续按主服务推进订单，或联系客服协助安排"
-                        />
-
-                        <view v-else class="rcand-list">
-                            <view
-                                v-for="c in reselectCandidates"
-                                :key="c.staff_id"
-                                class="rcand"
-                                :class="{
-                                    'is-selected': selectedCandidateStaffId === c.staff_id,
-                                    'is-disabled': !c.schedule_available
-                                }"
-                                :hover-class="c.schedule_available ? 'is-pressed' : 'none'"
-                                @tap="selectReselectCandidate(c)"
-                            >
-                                <image
-                                    v-if="c.avatar"
-                                    :src="imageUrl(c.avatar)"
-                                    class="rcand__avatar"
-                                    mode="aspectFill"
+                        <view class="rcand__body">
+                            <view class="rcand__name-row">
+                                <text class="rcand__name ellipsis">{{ c.name }}</text>
+                                <status-tag
+                                    v-if="c.is_recommend === 1"
+                                    label="推荐"
+                                    tone="primary"
+                                    size="sm"
+                                    :dot="false"
                                 />
-                                <view v-else class="rcand__avatar rcand__avatar--text">
-                                    <text class="rcand__initial">{{
-                                        c.name.slice(0, 1) || '师'
-                                    }}</text>
-                                </view>
-
-                                <view class="rcand__body">
-                                    <view class="rcand__name-row">
-                                        <text class="rcand__name ellipsis">{{ c.name }}</text>
-                                        <status-tag
-                                            v-if="c.is_recommend === 1"
-                                            label="推荐"
-                                            tone="primary"
-                                            size="sm"
-                                            :dot="false"
-                                        />
-                                    </view>
-                                    <text class="rcand__pkg ellipsis">{{ c.package_name }}</text>
-                                    <text
-                                        v-if="shortPackageDesc(c.package_description)"
-                                        class="rcand__desc ellipsis"
-                                        >{{ c.package_description }}</text
-                                    >
-                                    <view class="rcand__meta">
-                                        <text v-if="c.rating">{{ candidateRating(c.rating) }}</text>
-                                        <text v-if="c.order_count">{{ c.order_count }} 单</text>
-                                    </view>
-                                </view>
-
-                                <view class="rcand__right">
-                                    <text class="rcand__price">{{ moneyText(c.price) }}</text>
-                                    <text
-                                        class="rcand__sched"
-                                        :class="{ 'is-ok': c.schedule_available }"
-                                        >{{
-                                            c.schedule_available
-                                                ? '可约'
-                                                : c.schedule_message || '档期不可约'
-                                        }}</text
-                                    >
-                                </view>
-
-                                <view
-                                    class="rcand__check"
-                                    :class="{ 'is-on': selectedCandidateStaffId === c.staff_id }"
-                                    aria-hidden="true"
+                            </view>
+                            <text class="rcand__pkg ellipsis">{{ c.package_name }}</text>
+                            <text
+                                v-if="shortPackageDesc(c.package_description)"
+                                class="rcand__desc ellipsis"
+                                >{{ c.package_description }}</text
+                            >
+                            <view class="rcand__meta">
+                                <text v-if="c.rating" class="t-num">{{
+                                    candidateRating(c.rating)
+                                }}</text>
+                                <text v-if="c.order_count" class="t-num"
+                                    >{{ c.order_count }} 单</text
                                 >
-                                    <text class="rcand__check-text">✓</text>
-                                </view>
                             </view>
                         </view>
-                    </scroll-view>
 
-                    <view class="rsheet__foot">
-                        <view class="rsheet__btn">
+                        <view class="rcand__right">
+                            <text class="rcand__price t-num">{{ moneyText(c.price) }}</text>
+                            <text class="rcand__sched" :class="{ 'is-ok': c.schedule_available }">{{
+                                c.schedule_available ? '可约' : c.schedule_message || '档期不可约'
+                            }}</text>
+                        </view>
+
+                        <view
+                            class="rcand__check"
+                            :class="{ 'is-on': selectedCandidateStaffId === c.staff_id }"
+                            aria-hidden="true"
+                        >
+                            <text class="rcand__check-text">✓</text>
+                        </view>
+                    </view>
+                </view>
+
+                <template #foot>
+                    <view class="rsheet-foot">
+                        <view class="rsheet-btn">
                             <base-button
                                 text="取消"
                                 variant="ghost"
@@ -389,7 +376,7 @@
                                 @click="closeReselectPopup"
                             />
                         </view>
-                        <view class="rsheet__btn">
+                        <view class="rsheet-btn">
                             <base-button
                                 :text="reselectConfirmText"
                                 variant="ink"
@@ -400,8 +387,8 @@
                             />
                         </view>
                     </view>
-                </view>
-            </tn-popup>
+                </template>
+            </snap-sheet>
         </template>
 
         <template #bottom>
@@ -472,6 +459,7 @@ import { prepay, getPayStatus } from '@/api/pay'
 import { requestPayment } from '@/platform/pay'
 import { formatDate, formatMoney, parseDateValue } from '@shared/utils/format'
 import { navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { report } from '@/platform/report'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
@@ -535,6 +523,11 @@ const reselectPopupVisible = ref(false)
 const reselectItem = ref<PendingReselectItem | null>(null)
 const reselectLoading = ref(false)
 const reselectError = ref('')
+/** 候选人失败的真实错误对象：errorKind 由 resolveErrorView 推导，不写死 network */
+const reselectRawError = ref<unknown>(null)
+const reselectErrorView = computed(() =>
+    resolveErrorView(reselectRawError.value as any, { hasForm: false })
+)
 const reselectCandidates = ref<ReselectCandidate[]>([])
 const selectedCandidateStaffId = ref(0)
 const reselectSubmitting = ref(false)
@@ -855,6 +848,7 @@ async function fetchReselectCandidates() {
     if (!item || !orderId.value || reselectLoading.value) return
     reselectLoading.value = true
     reselectError.value = ''
+    reselectRawError.value = null
     try {
         const res = await getOrderReselectCandidates({
             order_id: orderId.value,
@@ -863,6 +857,7 @@ async function fetchReselectCandidates() {
         reselectCandidates.value = Array.isArray(res?.candidates) ? res.candidates : []
         selectedCandidateStaffId.value = 0
     } catch (e: any) {
+        reselectRawError.value = e
         reselectError.value = String(e?.message || '候选人加载失败')
         reselectCandidates.value = []
     } finally {
@@ -872,6 +867,7 @@ async function fetchReselectCandidates() {
 
 function selectReselectCandidate(candidate: ReselectCandidate) {
     if (!candidate.schedule_available || reselectSubmitting.value) return
+    haptic('light', 'order-reselect')
     selectedCandidateStaffId.value =
         selectedCandidateStaffId.value === candidate.staff_id ? 0 : candidate.staff_id
 }
@@ -1118,6 +1114,7 @@ function onPrimary() {
 function copySn() {
     const sn = String(order.value?.order_sn || '')
     if (!sn) return
+    haptic('light', 'order-copy')
     uni.setClipboardData({
         data: sn,
         success: () => toast.info('订单号已复制')
@@ -1416,6 +1413,7 @@ onUnload(() => stopCountdown())
     position: relative;
     overflow: hidden;
     background: linear-gradient(145deg, var(--c-dark-1) 0%, var(--c-dark-3) 62%, var(--c-dark-2) 100%);
+    box-shadow: var(--shadow-card);
 
     &--muted {
         background: var(--c-dark-3);
@@ -1517,7 +1515,8 @@ onUnload(() => stopCountdown())
         gap: 18rpx;
         margin-top: 27rpx;
         padding-top: 23rpx;
-        border-top: 1rpx solid var(--c-on-dark-2);
+        /* 深底分隔线用三档白色填充最浅一档，不用 72% 白的文字色（太抢） */
+        border-top: 1rpx solid var(--c-on-dark-fill-3);
     }
 
     &__num {
@@ -1664,8 +1663,10 @@ onUnload(() => stopCountdown())
     margin: 21rpx 42rpx 0;
     padding: 27rpx 29rpx;
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line-strong);
+    border: 1rpx solid var(--c-card-border);
     border-radius: var(--r-md);
+    /* v10 §2.1：暖白收据卡统一暖影分层，暗色改由 1rpx 描边承担 */
+    box-shadow: var(--shadow-card);
 
     &__title {
         display: block;
@@ -1854,10 +1855,19 @@ onUnload(() => stopCountdown())
         color: var(--c-ink-3);
     }
 
+    /* 复制：88rpx 热区（负外边距抵消，不撑高凭据行） */
     &__copy {
         flex: none;
-        padding: 12rpx 0;
-        margin: -12rpx 0;
+        display: flex;
+        align-items: center;
+        min-height: 88rpx;
+        min-width: 88rpx;
+        padding-left: var(--sp-3);
+        box-sizing: border-box;
+        justify-content: flex-end;
+    }
+
+    &__copy-text {
         font-size: var(--fs-18);
         color: var(--c-ink-3);
         text-decoration: underline;
@@ -2009,80 +2019,35 @@ onUnload(() => stopCountdown())
     font-weight: var(--fw-medium);
 }
 
-/* ========== 重新挑选协作人员弹窗 ========== */
-.rsheet {
+/* ========== 重新挑选协作人员抽屉 ==========
+   模板里已没有 .rsheet 包裹节点：标题/关闭/吸底由 snap-sheet 承担，
+   以下类直接挂在 body / foot 插槽内，必须是顶层完整类名。 */
+.rsheet-sub {
+    display: block;
+    font-size: var(--fs-xs);
+    line-height: var(--lh-body);
+    color: var(--c-ink-3);
+}
+
+.rsheet-pad {
+    padding: var(--sp-2) 0;
+}
+
+.rsheet-foot {
     display: flex;
-    flex-direction: column;
-    padding: var(--sp-4) var(--page-gutter) calc(var(--sp-4) + var(--safe-bottom));
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
-    background: var(--c-surface);
+    gap: var(--sp-2);
+}
 
-    &__head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: var(--sp-2);
-    }
-
-    &__title-wrap {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--sp-1);
-    }
-
-    &__title {
-        font-size: var(--fs-lg);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__sub {
-        font-size: var(--fs-xs);
-        line-height: var(--lh-body);
-        color: var(--c-ink-3);
-    }
-
-    &__close {
-        flex: none;
-        width: 56rpx;
-        height: 56rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--r-pill);
-    }
-
-    &__close-icon {
-        color: var(--c-ink-3);
-    }
-
-    &__body {
-        max-height: 56vh;
-        margin-top: var(--sp-3);
-    }
-
-    &__pad {
-        padding: var(--sp-2) 0;
-    }
-
-    &__foot {
-        display: flex;
-        gap: var(--sp-2);
-        margin-top: var(--sp-4);
-    }
-
-    &__btn {
-        flex: 1;
-        min-width: 0;
-    }
+.rsheet-btn {
+    flex: 1;
+    min-width: 0;
 }
 
 .rcand-list {
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
+    padding-top: var(--sp-3);
 }
 
 .rcand {
@@ -2090,13 +2055,20 @@ onUnload(() => stopCountdown())
     align-items: center;
     gap: var(--sp-3);
     padding: var(--sp-3);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
     border-radius: var(--r-md);
     background: var(--c-surface);
+    box-shadow: var(--shadow-card);
+    transition:
+        border-color var(--dur-fast) var(--ease-out),
+        box-shadow var(--dur-base) var(--ease-out);
 
     &.is-selected {
-        border-color: var(--c-brand-text);
+        border-color: var(--c-active-border);
+        /* 卡片底保持暖金浅底：--c-active-bg 是墨黑实底，会与本卡深色文字撞色；
+           选中语义由描边 + 勾选圆点（--c-active-bg/fg）承担 */
         background: var(--c-brand-bg);
+        box-shadow: var(--shadow-card-hover);
     }
 
     &.is-disabled {
@@ -2141,7 +2113,8 @@ onUnload(() => stopCountdown())
     }
 
     &__name {
-        max-width: 220rpx;
+        /* 候选姓名截断宽：用百分比而不是固定 rpx，窄屏不会把状态标签挤出去 */
+        max-width: 46%;
         font-size: var(--fs-md);
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
@@ -2196,7 +2169,8 @@ onUnload(() => stopCountdown())
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 1rpx solid var(--c-line-strong);
+        /* 未选中是空圈，属于可辨识控件边界 → 用 3:1 的 --c-control-border */
+        border: 1rpx solid var(--c-control-border);
         border-radius: var(--r-pill);
         background: var(--c-surface);
 

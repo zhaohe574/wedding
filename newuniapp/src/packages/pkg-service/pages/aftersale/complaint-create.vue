@@ -16,9 +16,9 @@
                         :hover-stop-propagation="true"
                         v-for="t in TYPES"
                         :key="t.value"
-                        class="chips__item"
+                        class="chips__item hit-88"
                         :class="{ 'is-active': form.type === t.value }"
-                        @tap="form.type = t.value"
+                        @tap="pickType(t.value)"
                     >
                         <text class="chips__text">{{ t.label }}</text>
                     </view>
@@ -33,12 +33,12 @@
                         :hover-stop-propagation="true"
                         v-for="l in LEVELS"
                         :key="l.value"
-                        class="chips__item"
+                        class="chips__item hit-88"
                         :class="[
                             `chips__item--${levelTone(l.value)}`,
                             { 'is-active': form.level === l.value }
                         ]"
-                        @tap="form.level = l.value"
+                        @tap="pickLevel(l.value)"
                     >
                         <text class="chips__text">{{ l.label }}</text>
                     </view>
@@ -137,6 +137,7 @@ import {
     ComplaintLevel
 } from '@shared/contracts'
 import { submitComplaint } from '@/api/aftersale'
+import { haptic } from '@/utils/haptics'
 
 const TYPES = Object.entries(COMPLAINT_TYPE_NAME_MAP).map(([k, label]) => ({
     value: Number(k),
@@ -166,6 +167,16 @@ function levelTone(lv: number) {
     return 'normal'
 }
 
+function pickType(v: number) {
+    form.type = v
+    haptic('light', 'cc-type')
+}
+
+function pickLevel(v: number) {
+    form.level = v
+    haptic('light', 'cc-level')
+}
+
 async function handleSubmit() {
     if (submitting.value) return
     if (!form.title.trim()) {
@@ -173,6 +184,7 @@ async function handleSubmit() {
         return
     }
     submitting.value = true
+    haptic('medium', 'cc-submit')
     try {
         await submitComplaint({
             order_id: orderId.value || undefined,
@@ -260,6 +272,9 @@ onLoad((options: any) => {
         background: var(--c-surface-2);
         border: 1rpx solid var(--c-control-border);
         box-sizing: border-box;
+        transition:
+            background-color var(--dur-base) var(--ease-out),
+            border-color var(--dur-base) var(--ease-out);
 
         &.is-active {
             background: var(--c-active-bg);
@@ -319,5 +334,12 @@ onLoad((options: any) => {
    颜色必须靠 CSS 落在图标根节点上再由内部 <text> 继承。 */
 .ic-ink-3 {
     color: var(--c-ink-3);
+}
+
+/* v10 §3.13：减弱动效下芯片直接换色，不做过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .chips__item {
+        transition: none;
+    }
 }
 </style>

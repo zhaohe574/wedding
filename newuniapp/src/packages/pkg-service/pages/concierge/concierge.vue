@@ -95,7 +95,7 @@
 
             <!-- 主通道：微信原生客服会话（唯一能真正"发出消息"的通道） -->
             <!-- #ifdef MP-WEIXIN -->
-            <button v-if="chatEnabled" class="cta" open-type="contact">
+            <button v-if="chatEnabled" class="cta" open-type="contact" @tap="onChatTap">
                 <tn-icon name="wechat" :size="32" />
                 <text class="cta__text">进入微信客服</text>
             </button>
@@ -142,7 +142,7 @@
                 >
                     <tn-icon name="phone" :size="26" />
                     <text class="row__label">拨打电话</text>
-                    <text class="row__value">{{ contact.mobile }}</text>
+                    <text class="row__value t-num">{{ contact.mobile }}</text>
                     <view class="row__go"><tn-icon name="right" :size="20" /></view>
                 </view>
                 <view
@@ -200,6 +200,7 @@ import { navigate } from '@/utils/link'
 import { report } from '@/platform/report'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 
 const CUSTOMER_SERVICE_PATH = '/pages/customer-service/customer-service'
 
@@ -354,10 +355,16 @@ function onPrimary() {
 }
 
 function goLogin() {
+    haptic('light', 'cc-login')
     navigate({ path: '/pages/login/login' })
 }
 
+function onChatTap() {
+    haptic('light', 'cc-chat')
+}
+
 function onFallbackChat() {
+    haptic('light', 'cc-chat')
     if (contact.mobile) {
         askCall()
         return
@@ -367,15 +374,19 @@ function onFallbackChat() {
 
 function goOrder() {
     if (!orderId.value) return
+    haptic('light', 'cc-order')
     navigate({ path: '/packages/pkg-order/pages/detail/detail', query: { id: orderId.value } })
 }
 
 function goConcierge() {
+    haptic('light', 'cc-guide')
     navigate({ path: CUSTOMER_SERVICE_PATH })
 }
 
 function askCall() {
     if (!contact.mobile) return
+    haptic('light', 'cc-call')
+    // 确认类二次弹窗保留居中形态（tn-modal），不做底部抽屉
     modalRef.value?.showModal({
         title: '拨打客服电话',
         content: `${contact.mobile}\n${stateText.value}`,
@@ -396,6 +407,7 @@ function askCall() {
 
 function copyMobile() {
     if (!contact.mobile) return
+    haptic('light', 'cc-copy')
     uni.setClipboardData({
         data: contact.mobile,
         success: () => toast.success('号码已复制'),
@@ -425,13 +437,13 @@ onShow(() => load(loaded.value))
 
 <style lang="scss" scoped>
 .pad {
-    padding: 0 42rpx;
+    padding: 0 var(--page-gutter);
 }
 .sk {
     padding-top: var(--sp-3);
 }
 .cc {
-    padding: 0 42rpx calc(var(--sp-5) + var(--safe-bottom));
+    padding: 0 var(--page-gutter) calc(var(--sp-5) + var(--safe-bottom));
 }
 
 /* ---------- 顾问名片 ---------- */
@@ -439,7 +451,8 @@ onShow(() => load(loaded.value))
     margin-top: var(--sp-2);
     border-radius: var(--r-lg);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-float);
     padding: var(--sp-4);
 
     &__top {
@@ -556,9 +569,11 @@ onShow(() => load(loaded.value))
         align-items: center;
         justify-content: space-between;
         gap: var(--sp-2);
+        min-height: 88rpx;
         margin-top: var(--sp-3);
         padding-top: var(--sp-3);
         border-top: 1rpx solid var(--c-line);
+        box-sizing: border-box;
     }
 
     &__login-text {
@@ -590,11 +605,14 @@ onShow(() => load(loaded.value))
     display: flex;
     align-items: center;
     gap: var(--sp-2);
+    min-height: 88rpx;
     margin-top: var(--sp-3);
     padding: var(--sp-3);
     border-radius: var(--r-md);
     background: var(--c-brand-bg);
-    border: 1rpx solid var(--c-brand-soft);
+    border: 1rpx solid var(--c-primary-border);
+    box-shadow: var(--shadow-card);
+    box-sizing: border-box;
 
     &__text {
         flex: 1;
@@ -728,7 +746,9 @@ onShow(() => load(loaded.value))
     padding: 0 var(--sp-4);
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
+    box-sizing: border-box;
 
     &__text {
         flex: 1;

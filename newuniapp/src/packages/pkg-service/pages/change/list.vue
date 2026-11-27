@@ -23,7 +23,7 @@
             </view>
 
             <view v-if="loading" class="page-pad">
-                <base-skeleton :rows="3" />
+                <base-skeleton variant="card" :rows="3" />
             </view>
 
             <base-empty
@@ -46,10 +46,11 @@
                 fixed
             />
 
-            <view v-else class="page-pad list">
+            <view v-else class="page-pad list" :class="{ stagger: staggerOn, 'is-in': staggerIn }">
                 <base-card
-                    v-for="item in list"
+                    v-for="(item, index) in list"
                     :key="item.id"
+                    :style="{ '--i': index }"
                     compact
                     clickable
                     @tap="goDetail(item)"
@@ -73,13 +74,13 @@
                         <text class="kv__k">{{
                             active === 'pause' ? '暂停区间' : '新服务日期'
                         }}</text>
-                        <text class="kv__v">{{
+                        <text class="kv__v t-num">{{
                             active === 'pause' ? rangeText(item) : item.start_date || '-'
                         }}</text>
                     </view>
                     <view v-if="item.order_sn" class="kv">
                         <text class="kv__k">关联订单</text>
-                        <text class="kv__v">{{ item.order_sn }}</text>
+                        <text class="kv__v t-num">{{ item.order_sn }}</text>
                     </view>
 
                     <view v-if="canCancel(item)" class="foot">
@@ -103,8 +104,9 @@
 <script setup lang="ts">
 import { toast } from '@/composables/useToast'
 /** 变更记录：改期/加项 与 暂停 两条独立列表（后端也是两套接口） */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
+import { haptic } from '@/utils/haptics'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { FB } from '@/constants/feedback'
 import {
@@ -243,12 +245,40 @@ function reload() {
 
 function switchTab(key: string) {
     if (key === active.value) return
+    haptic('light', 'change-tab')
     active.value = key
     list.value = []
     reload()
 }
 
+/* ---- 首屏错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerOn = ref(false)
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger() {
+    if (!list.value.length || staggerIn.value) return
+    staggerOn.value = true
+    if (staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
+
 function goDetail(item: any) {
+    haptic('light', 'change-item')
     navigate({
         path: '/packages/pkg-service/pages/change/detail',
         query: { id: item.id, type: active.value }
@@ -256,6 +286,7 @@ function goDetail(item: any) {
 }
 
 async function handleCancel(item: any) {
+    /* 撤销申请属不可逆操作：确认类二次弹窗保留居中形态，不做底部抽屉 */
     const confirmed = await new Promise<boolean>((resolve) => {
         uni.showModal({
             title: '撤销申请',
@@ -265,6 +296,7 @@ async function handleCancel(item: any) {
         })
     })
     if (!confirmed) return
+    haptic('medium', 'change-cancel')
     try {
         if (active.value === 'pause') await cancelPause({ id: item.id })
         else await cancelChange({ id: item.id })
@@ -308,9 +340,10 @@ function onReachBottomLoad() {
     position: sticky;
     top: 0;
     z-index: 10;
+    border-bottom: 1rpx solid var(--c-line);
 
     /* P1 §3-8：下划线 tab → 胶囊版式（照 P0 的 search / case-list 成品，不新起样式）
-       高 56rpx / --r-pill / --c-line-strong 边 / 选中 --c-ink 底 + --c-ink-inverse 字 */
+       高 56rpx / --r-pill / 可点控件边界 / 选中 --c-active-* */
     &__item {
         position: relative;
         display: flex;
@@ -319,9 +352,12 @@ function onReachBottomLoad() {
         height: 56rpx;
         padding: 0 var(--sp-3);
         box-sizing: border-box;
-        border: 1rpx solid var(--c-line-strong);
+        border: 1rpx solid var(--c-control-border);
         border-radius: var(--r-pill);
         background: var(--c-surface);
+        transition:
+            background-color var(--dur-base) var(--ease-out),
+            border-color var(--dur-base) var(--ease-out);
 
         /* 视觉 56rpx，触控 88rpx（56 + 16×2）；只做纵向，横向留 0 避免与相邻 tab 热区重叠 */
         &::before {
@@ -342,11 +378,20 @@ function onReachBottomLoad() {
     &__text {
         font-size: var(--fs-md);
         color: var(--c-ink-2);
+        transition: color var(--dur-base) var(--ease-out);
     }
 
     &__item.is-active &__text {
         color: var(--c-active-fg);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
+    }
+}
+
+/* v10 §3.13：减弱动效下筛选态直接切换，不做过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .tabs__item,
+    .tabs__text {
+        transition: none;
     }
 }
 
@@ -370,7 +415,7 @@ function onReachBottomLoad() {
         flex: 1;
         min-width: 0;
         font-size: var(--fs-md);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
         color: var(--c-ink);
         overflow: hidden;
         white-space: nowrap;
@@ -383,7 +428,7 @@ function onReachBottomLoad() {
     margin: var(--sp-3) 0 0;
     font-size: var(--fs-xs);
     color: var(--c-ink-2);
-    line-height: 1.7;
+    line-height: var(--lh-loose);
     overflow-wrap: anywhere;
 }
 

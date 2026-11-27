@@ -3,12 +3,12 @@
     <page-shell title="个人资料" bg="page" :show-back="true">
         <view class="page-wrap profile">
             <view v-if="loading" class="page-pad">
-                <base-skeleton :rows="4" />
+                <base-skeleton :rows="4" variant="card" />
             </view>
 
             <template v-else>
                 <base-card :flush="true">
-                    <view hover-class="is-pressed" class="row" @tap="chooseAvatar">
+                    <view hover-class="is-pressed" class="row hit-88" @tap="chooseAvatar">
                         <text class="row__label">头像</text>
                         <view class="row__value">
                             <image
@@ -50,10 +50,10 @@
                     <view class="row row--last row--plain">
                         <text class="row__label">手机号</text>
                         <view class="row__value">
-                            <text class="row__text">{{ mobile || '未绑定' }}</text>
+                            <text class="row__text t-num">{{ mobile || '未绑定' }}</text>
                             <button
                                 v-if="!mobile"
-                                class="phone-btn"
+                                class="phone-btn hit-88"
                                 open-type="getPhoneNumber"
                                 :disabled="bindingPhone"
                                 @getphonenumber="handlePhone"
@@ -66,6 +66,7 @@
 
                 <view class="submit">
                     <base-button
+                        class="hit-88"
                         text="保存"
                         variant="ink"
                         size="lg"
@@ -95,6 +96,7 @@ import { getMobileByMnp } from '@/api/auth'
 import { uploadImage } from '@/api/app'
 import { extractPhoneCode, isPhoneAuthDenied } from '@/platform/login'
 import { useUserStore } from '@/stores/user'
+import { haptic } from '@/utils/haptics'
 
 const GENDERS = [
     { label: '未设置', value: 0 },
@@ -137,6 +139,7 @@ async function load() {
 }
 
 async function chooseAvatar() {
+    haptic('light', 'profile-avatar')
     // 合规 S1：统一封装，含取消 / 权限被拒 / 异常三种 fail 处理
     const paths = await chooseImages({ count: 1 })
     const path = paths[0]
@@ -151,6 +154,7 @@ async function chooseAvatar() {
 
 async function handlePhone(e: any) {
     if (bindingPhone.value) return
+    haptic('light', 'profile-phone')
     if (isPhoneAuthDenied(e)) {
         toast.info('已取消授权')
         return
@@ -265,7 +269,12 @@ onLoad(() => load())
     &__input {
         flex: 1;
         min-width: 0;
-        height: 72rpx;
+        height: 88rpx;
+        padding: 0 var(--sp-3);
+        border: 1rpx solid var(--c-control-border);
+        border-radius: var(--r-sm);
+        background: var(--c-surface-2);
+        box-sizing: border-box;
         font-size: var(--fs-md);
         color: var(--c-ink);
         text-align: right;
@@ -305,7 +314,7 @@ onLoad(() => load())
     align-items: center;
     justify-content: center;
     min-width: 112rpx;
-    min-height: 64rpx;
+    min-height: 88rpx;
     margin: 0;
     padding: 0 var(--sp-3);
     border-radius: var(--r-pill);

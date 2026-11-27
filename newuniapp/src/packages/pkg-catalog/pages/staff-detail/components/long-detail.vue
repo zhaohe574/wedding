@@ -21,7 +21,8 @@
                 class="ld__images"
                 :class="{
                     'is-first': index === 0,
-                    'is-flush': index > 0 && blocks[index - 1].type === 'image'
+                    'is-flush': index > 0 && blocks[index - 1].type === 'image',
+                    'is-card': index === 0 || blocks[index - 1].type !== 'image'
                 }"
             >
                 <template v-for="(image, imageIndex) in block.images" :key="`${index}-${imageIndex}`">
@@ -270,7 +271,8 @@ function preview(images: string[], index: number) {
         word-break: break-word;
     }
 
-    /* 图片块：全宽铺满，块内/块间都不留缝 */
+    /* 图片块：全宽铺满，块内/块间都不留缝；
+       只有「新起一段」的图块带圆角/描边/暖影，连续图片之间保持无缝拼接（原文排版契约） */
     &__images {
         width: 100%;
         margin-top: var(--sp-4);
@@ -279,6 +281,19 @@ function preview(images: string[], index: number) {
 
         &.is-first,
         &.is-flush {
+            margin-top: 0;
+        }
+
+        &.is-card {
+            margin: var(--sp-4) 42rpx 0;
+            width: auto;
+            overflow: hidden;
+            border-radius: var(--r-md);
+            border: 1rpx solid var(--c-card-border);
+            box-shadow: var(--shadow-card);
+        }
+
+        &.is-card.is-first {
             margin-top: 0;
         }
     }

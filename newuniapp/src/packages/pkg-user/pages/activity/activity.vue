@@ -17,7 +17,7 @@
             <view
                 v-for="s in SEGS"
                 :key="s.key"
-                class="seg__item"
+                class="seg__item hit-88"
                 :class="{ 'is-on': activeSeg === s.key }"
                 hover-class="is-pressed"
                 aria-role="button"
@@ -29,12 +29,12 @@
                     class="seg__dot"
                 />
                 <text class="seg__text">{{ s.label }}</text>
-                <text class="seg__count">{{ counts[s.key] ?? 0 }}</text>
+                <text class="seg__count t-num">{{ counts[s.key] ?? 0 }}</text>
             </view>
         </view>
 
         <view v-if="loading" class="pad">
-            <base-skeleton :rows="4" />
+            <base-skeleton :rows="4" variant="card" />
         </view>
 
         <view v-else-if="error" class="err-wrap">
@@ -59,7 +59,7 @@
                 >
                     <view class="offline__main">
                         <text class="offline__title ellipsis">{{ activityTitle(pass) }}</text>
-                        <text class="offline__meta ellipsis">
+                        <text class="offline__meta ellipsis t-num">
                             {{ formatShortTime(activityStartTs(pass)) }} · {{ pass.checkin_code }}
                         </text>
                     </view>
@@ -93,7 +93,7 @@
                     <view class="next__kicker-row">
                         <text class="next__flag">NEXT INVITATION · 即将参加</text>
                         <view class="next__cd-pill">
-                            <text class="next__cd">{{ countdownBadgeText(pinnedItem, nowMs) }}</text>
+                            <text class="next__cd t-num">{{ countdownBadgeText(pinnedItem, nowMs) }}</text>
                         </view>
                     </view>
 
@@ -111,8 +111,8 @@
 
                         <view class="next__info">
                             <text class="next__title ellipsis-2">{{ activityTitle(pinnedItem) }}</text>
-                            <text class="next__meta">{{ formatShortTime(activityStartTs(pinnedItem)) }}</text>
-                            <text class="next__meta ellipsis">{{ buildMetaLine(pinnedItem) }}</text>
+                            <text class="next__meta t-num">{{ formatShortTime(activityStartTs(pinnedItem)) }}</text>
+                            <text class="next__meta ellipsis t-num">{{ buildMetaLine(pinnedItem) }}</text>
                         </view>
                     </view>
                 </view>
@@ -132,7 +132,7 @@
                                     : '现场核销码（离线可用）'
                             }}
                         </text>
-                        <text class="next__code-val">{{ pinnedItem.checkin_code || '—' }}</text>
+                        <text class="next__code-val t-num">{{ pinnedItem.checkin_code || '—' }}</text>
                     </view>
                     <view
                         class="next__cta"
@@ -145,102 +145,112 @@
                 </view>
             </view>
 
-            <!-- 轻票根列表卡 -->
-            <view
-                v-for="r in displayList"
-                :key="r.id"
-                class="card"
-                :class="{ 'is-done': isMutedCard(r) }"
-                hover-class="is-pressed"
-                @tap="openDetail(r)"
-            >
-                <view class="card__h">
-                    <view class="card__dt">
-                        <text class="card__dt-d">{{ formatDayOf(activityStartTs(r)) }}</text>
-                        <text class="card__dt-w">{{ formatWeekOf(activityStartTs(r)) }}</text>
-                    </view>
-
-                    <view class="card__tt">
-                        <text class="card__title ellipsis-2">{{ activityTitle(r) }}</text>
-                        <text class="card__sub ellipsis">{{ buildMetaLine(r) || '详情点击查看' }}</text>
-                    </view>
-
-                    <status-tag
-                        :label="resolveStatusBadge(r, nowMs).label"
-                        :tone="resolveStatusBadge(r, nowMs).tone"
-                        size="sm"
-                    />
-                </view>
-
+            <!-- 轻票根列表卡（首屏 100ms 错峰入场） -->
+            <view class="card-list" :class="{ stagger: staggerOn, 'is-in': staggerIn }">
                 <view
-                    v-if="bannerOf(r)"
-                    class="card__banner"
-                    :class="`card__banner--${bannerOf(r)?.tone}`"
+                    v-for="(r, index) in displayList"
+                    :key="r.id"
+                    class="card"
+                    :class="{ 'is-done': isMutedCard(r) }"
+                    :style="{ '--i': index + 1 }"
+                    hover-class="is-pressed"
+                    @tap="openDetail(r)"
                 >
-                    <text class="card__banner-text">{{ bannerOf(r)?.text }}</text>
-                    <text v-if="bannerOf(r)?.right" class="card__banner-right">{{
-                        bannerOf(r)?.right
-                    }}</text>
-                </view>
+                    <view class="card__h">
+                        <view class="card__dt">
+                            <text class="card__dt-d t-num">{{ formatDayOf(activityStartTs(r)) }}</text>
+                            <text class="card__dt-w">{{ formatWeekOf(activityStartTs(r)) }}</text>
+                        </view>
 
-                <view class="card__foot">
-                    <text class="card__info ellipsis">{{ formatShortTime(activityStartTs(r)) }}</text>
-                    <view class="card__acts">
-                        <template v-if="Number(r.registration_status) === 0">
-                            <view class="btn" hover-class="is-pressed" @tap.stop="openCancel(r)">
-                                <text class="btn__text">取消</text>
-                            </view>
-                            <view
-                                class="btn btn--ink"
-                                hover-class="is-pressed"
-                                @tap.stop="onPay(r)"
-                            >
-                                <text class="btn__text btn__text--on">
-                                    {{ payingId === r.id ? '支付中…' : '继续支付' }}
-                                </text>
-                            </view>
-                        </template>
+                        <view class="card__tt">
+                            <text class="card__title ellipsis-2">{{ activityTitle(r) }}</text>
+                            <text class="card__sub ellipsis t-num">{{ buildMetaLine(r) || '详情点击查看' }}</text>
+                        </view>
 
-                        <template
-                            v-else-if="
-                                Number(r.registration_status) === 1 && !isActivityEnded(r, nowMs)
-                            "
-                        >
-                            <view
-                                v-if="Number(r.can_cancel) === 1"
-                                class="btn"
-                                hover-class="is-pressed"
-                                @tap.stop="openCancel(r)"
-                            >
-                                <text class="btn__text">取消报名</text>
-                            </view>
-                            <view
-                                class="btn btn--ink"
-                                hover-class="is-pressed"
-                                @tap.stop="openDetail(r)"
-                            >
-                                <text class="btn__text btn__text--on">
-                                    {{ Number(r.checkin_status) === 1 ? '查看凭证' : '入场凭证' }}
-                                </text>
-                            </view>
-                        </template>
+                        <status-tag
+                            :label="resolveStatusBadge(r, nowMs).label"
+                            :tone="resolveStatusBadge(r, nowMs).tone"
+                            size="sm"
+                        />
+                    </view>
 
-                        <template v-else-if="Number(r.registration_status) === 5">
-                            <view
-                                class="btn btn--ink"
-                                hover-class="is-pressed"
-                                @tap.stop="openCancel(r)"
-                            >
-                                <text class="btn__text btn__text--on">重新申请</text>
-                            </view>
-                        </template>
+                    <view
+                        v-if="bannerOf(r)"
+                        class="card__banner"
+                        :class="`card__banner--${bannerOf(r)?.tone}`"
+                    >
+                        <text class="card__banner-text">{{ bannerOf(r)?.text }}</text>
+                        <text v-if="bannerOf(r)?.right" class="card__banner-right t-num">{{
+                            bannerOf(r)?.right
+                        }}</text>
+                    </view>
 
-                        <template v-else>
-                            <view class="btn" hover-class="is-pressed" @tap.stop="openDetail(r)">
-                                <text class="btn__text">查看详情</text>
-                                <tn-icon name="right" :size="18" class="btn__ic" />
-                            </view>
-                        </template>
+                    <view class="card__foot">
+                        <text class="card__info ellipsis t-num">{{
+                            formatShortTime(activityStartTs(r))
+                        }}</text>
+                        <view class="card__acts">
+                            <template v-if="Number(r.registration_status) === 0">
+                                <view class="btn" hover-class="is-pressed" @tap.stop="openCancel(r)">
+                                    <text class="btn__text">取消</text>
+                                </view>
+                                <view
+                                    class="btn btn--ink"
+                                    hover-class="is-pressed"
+                                    @tap.stop="onPay(r)"
+                                >
+                                    <text class="btn__text btn__text--on">
+                                        {{ payingId === r.id ? '支付中…' : '继续支付' }}
+                                    </text>
+                                </view>
+                            </template>
+
+                            <template
+                                v-else-if="
+                                    Number(r.registration_status) === 1 &&
+                                    !isActivityEnded(r, nowMs)
+                                "
+                            >
+                                <view
+                                    v-if="Number(r.can_cancel) === 1"
+                                    class="btn"
+                                    hover-class="is-pressed"
+                                    @tap.stop="openCancel(r)"
+                                >
+                                    <text class="btn__text">取消报名</text>
+                                </view>
+                                <view
+                                    class="btn btn--ink"
+                                    hover-class="is-pressed"
+                                    @tap.stop="openDetail(r)"
+                                >
+                                    <text class="btn__text btn__text--on">
+                                        {{
+                                            Number(r.checkin_status) === 1
+                                                ? '查看凭证'
+                                                : '入场凭证'
+                                        }}
+                                    </text>
+                                </view>
+                            </template>
+
+                            <template v-else-if="Number(r.registration_status) === 5">
+                                <view
+                                    class="btn btn--ink"
+                                    hover-class="is-pressed"
+                                    @tap.stop="openCancel(r)"
+                                >
+                                    <text class="btn__text btn__text--on">重新申请</text>
+                                </view>
+                            </template>
+
+                            <template v-else>
+                                <view class="btn" hover-class="is-pressed" @tap.stop="openDetail(r)">
+                                    <text class="btn__text">查看详情</text>
+                                    <tn-icon name="right" :size="18" class="btn__ic" />
+                                </view>
+                            </template>
+                        </view>
                     </view>
                 </view>
             </view>
@@ -292,7 +302,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import {
     getActivityPayStatus,
@@ -307,6 +317,7 @@ import { normalizePage } from '@/request'
 import { requestPayment, sleep } from '@/platform/pay'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { report } from '@/platform/report'
@@ -407,6 +418,32 @@ const pinnedItem = computed(() => {
 const displayList = computed(() => {
     const pinId = pinnedItem.value?.id
     return pinId ? list.value.filter((item) => item.id !== pinId) : list.value
+})
+
+/* ---- 首屏错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerOn = ref(false)
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger() {
+    if (!displayList.value.length || staggerIn.value) return
+    staggerOn.value = true
+    if (staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => displayList.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
 })
 
 const emptyCopy = computed(() => {
@@ -558,6 +595,7 @@ function reload() {
 
 function switchSeg(key: SegKey) {
     if (activeSeg.value === key) return
+    haptic('light', 'activity-seg')
     activeSeg.value = key
     load(true)
 }
@@ -709,7 +747,8 @@ onUnload(() => {
 .seg {
     display: flex;
     gap: 12rpx;
-    padding: var(--sp-3) var(--page-gutter) var(--sp-1);
+    /* 底部留 16rpx：.hit-88 的伪元素比 56rpx 胶囊高 16rpx，避免被横向滚动容器裁掉 */
+    padding: var(--sp-3) var(--page-gutter) var(--sp-2);
     overflow-x: auto;
     white-space: nowrap;
 
@@ -723,6 +762,14 @@ onUnload(() => {
         display: flex;
         align-items: center;
         gap: 8rpx;
+        transition:
+            background-color var(--dur-fast) var(--ease-out),
+            border-color var(--dur-fast) var(--ease-out),
+            transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.97);
+        }
     }
 
     &__dot {
@@ -750,6 +797,16 @@ onUnload(() => {
         .seg__text,
         .seg__count {
             color: var(--c-active-fg);
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .seg__item {
+        transition: none;
+
+        &.is-pressed {
+            transform: none;
         }
     }
 }
@@ -816,17 +873,13 @@ onUnload(() => {
     }
 }
 
-/* 置顶：深墨黑金电子票根卡 */
+/* 置顶：深墨黑金电子票根卡（同心圆角：32 − 24 = --r-xs） */
 .next {
     margin: 0 var(--page-gutter) var(--sp-3);
     border-radius: var(--r-md);
-    background: linear-gradient(
-        152deg,
-        var(--c-dark-1) 0%,
-        var(--c-dark-2) 58%,
-        var(--c-dark-3) 100%
-    );
-    border: 1rpx solid var(--c-primary-border);
+    background: linear-gradient(145deg, var(--c-dark-1) 0%, var(--c-dark-2) 100%);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
     overflow: hidden;
 
     &__top {
@@ -850,8 +903,8 @@ onUnload(() => {
     &__cd-pill {
         padding: 4rpx 16rpx;
         border-radius: var(--r-pill);
-        background: rgba(217, 190, 130, 0.14);
-        border: 1rpx solid rgba(217, 190, 130, 0.3);
+        background: var(--c-on-dark-fill-2);
+        border: 1rpx solid var(--c-primary-border);
     }
 
     &__cd {
@@ -872,13 +925,13 @@ onUnload(() => {
         height: 112rpx;
         border-radius: var(--r-sm);
         flex: none;
-        border: 1rpx solid rgba(217, 190, 130, 0.35);
+        border: 1rpx solid var(--c-primary-border);
 
         &--monogram {
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(217, 190, 130, 0.12);
+            background: var(--c-on-dark-fill-1);
         }
     }
 
@@ -937,7 +990,7 @@ onUnload(() => {
     &__dash {
         width: calc(100% - 36rpx);
         margin: 0 auto;
-        border-top: 1rpx dashed rgba(217, 190, 130, 0.32);
+        border-top: 1rpx dashed var(--c-primary-border);
     }
 
     &__foot {
@@ -982,11 +1035,11 @@ onUnload(() => {
     &__cta-text {
         font-size: var(--fs-23);
         font-weight: var(--fw-semibold);
-        color: var(--c-ink);
+        color: var(--c-on-brand);
     }
 
     &__cta-ic {
-        color: var(--c-ink);
+        color: var(--c-on-brand);
     }
 }
 
@@ -996,7 +1049,8 @@ onUnload(() => {
     padding: var(--sp-3);
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__h {
         display: flex;
@@ -1004,26 +1058,29 @@ onUnload(() => {
         gap: 18rpx;
     }
 
+    /* 深墨日期徽标：从浅色卡上落下的票根日期块 */
     &__dt {
-        width: 92rpx;
+        width: 96rpx;
         flex: none;
         text-align: center;
-        border-right: 1rpx solid var(--c-line);
-        padding-right: 14rpx;
+        padding: var(--sp-2) var(--sp-1);
+        border-radius: var(--r-sm);
+        background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
+        border: 1rpx solid var(--c-primary-border);
     }
 
     &__dt-d {
         display: block;
         font-family: var(--font-serif);
         font-size: var(--fs-md);
-        color: var(--c-ink);
+        color: var(--c-on-dark);
     }
 
     &__dt-w {
         display: block;
         margin-top: 4rpx;
         font-size: var(--fs-18);
-        color: var(--c-ink-3);
+        color: var(--c-brand-soft);
     }
 
     &__tt {
@@ -1123,6 +1180,7 @@ onUnload(() => {
     &.is-done {
         background: var(--c-bg);
         border-style: dashed;
+        border-color: var(--c-line-strong);
 
         .card__title {
             color: var(--c-ink-2);

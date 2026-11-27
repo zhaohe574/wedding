@@ -9,9 +9,9 @@
                         hover-class="is-pressed"
                         v-for="t in PAUSE_TYPES"
                         :key="t.value"
-                        class="chips__item"
+                        class="chips__item hit-88"
                         :class="{ 'is-active': form.pause_type === t.value }"
-                        @tap="form.pause_type = t.value"
+                        @tap="pickType(t.value)"
                     >
                         <text class="chips__text">{{ t.label }}</text>
                     </view>
@@ -23,7 +23,9 @@
                 <picker mode="date" :value="form.start_date" :start="today" @change="onStartDate">
                     <view class="date-row">
                         <text class="date-row__label">开始</text>
-                        <text :class="form.start_date ? 'date-row__text' : 'date-row__ph'">
+                        <text
+                            :class="form.start_date ? 'date-row__text t-num' : 'date-row__ph t-num'"
+                        >
                             {{ form.start_date || '请选择' }}
                         </text>
                     </view>
@@ -36,7 +38,9 @@
                 >
                     <view class="date-row date-row--last">
                         <text class="date-row__label">结束</text>
-                        <text :class="form.end_date ? 'date-row__text' : 'date-row__ph'">
+                        <text
+                            :class="form.end_date ? 'date-row__text t-num' : 'date-row__ph t-num'"
+                        >
                             {{ form.end_date || '请选择' }}
                         </text>
                     </view>
@@ -81,8 +85,9 @@
                 <tn-icon name="tips" :size="24" class="ic-ink-3" />
                 <text class="tips__text">暂停需审核，期间档期将释放</text>
             </view>
-
-            <view class="submit">
+        </view>
+        <template #bottom>
+            <bottom-bar>
                 <base-button
                     text="提交申请"
                     variant="ink"
@@ -90,8 +95,8 @@
                     :loading="submitting"
                     @click="handleSubmit"
                 />
-            </view>
-        </view>
+            </bottom-bar>
+        </template>
         <app-toast />
     </page-shell>
 </template>
@@ -107,6 +112,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import { ORDER_PAUSE_TYPE_NAME_MAP, OrderPauseType } from '@shared/contracts'
 import { applyPause } from '@/api/change'
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
+import { haptic } from '@/utils/haptics'
 
 const PAUSE_TYPE_ORDER = [
     OrderPauseType.EPIDEMIC,
@@ -151,7 +157,13 @@ const today = (() => {
     return `${d.getFullYear()}-${m}-${day}`
 })()
 
+function pickType(v: number) {
+    form.pause_type = v
+    haptic('light', 'pause-type')
+}
+
 function onStartDate(e: any) {
+    haptic('light', 'pause-date')
     form.start_date = String(e?.detail?.value || '')
     // 原来这里静默清空 end_date —— 用户只看到结束变回「请选择」，不知道为什么。
     // 现补一句就地说明：既不丢失数据（清空是对的），也解释了原因。
@@ -164,6 +176,7 @@ function onStartDate(e: any) {
 }
 
 function onEndDate(e: any) {
+    haptic('light', 'pause-date')
     form.end_date = String(e?.detail?.value || '')
     rangeError.value = ''
 }
@@ -181,6 +194,7 @@ async function handleSubmit() {
     // 原因校验走字段下方红字，不再用 toast（01 §6.0：错误反馈落在字段下方）
     if (!validateReason()) return
     submitting.value = true
+    haptic('medium', 'pause-submit')
     try {
         // 服务号提醒：表单校验已通过，只在提交前弹一次；
         // 暂停时直接退出，submitting 由 finally 释放
@@ -243,8 +257,11 @@ onLoad((options: any) => {
         padding: 0 var(--sp-3);
         border-radius: var(--r-pill);
         background: var(--c-surface-2);
-        border: 1rpx solid var(--c-line);
+        border: 1rpx solid var(--c-control-border);
         box-sizing: border-box;
+        transition:
+            background-color var(--dur-base) var(--ease-out),
+            border-color var(--dur-base) var(--ease-out);
 
         &.is-active {
             background: var(--c-active-bg);
@@ -326,21 +343,16 @@ onLoad((options: any) => {
     }
 }
 
-.submit {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 50;
-    padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + var(--safe-bottom));
-    border-top: 1rpx solid var(--c-line);
-    background: var(--c-surface);
-    box-sizing: border-box;
-}
-
 /* tn-icon 颜色工具类（本地 scoped 版）：tn-icon 的 color prop 不认 var()，
    颜色必须靠 CSS 落在图标根节点上再由内部 <text> 继承。 */
 .ic-ink-3 {
     color: var(--c-ink-3);
+}
+
+/* v10 §3.13：减弱动效下芯片直接换色，不做过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .chips__item {
+        transition: none;
+    }
 }
 </style>

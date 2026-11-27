@@ -41,8 +41,8 @@
                 <view v-if="requiredTotal > 0" class="progress-card">
                     <view class="progress-card__top">
                         <text class="progress-card__label">必填进度</text>
-                        <text class="progress-card__count"
-                            >{{ requiredDone }} / {{ requiredTotal }}</text
+                        <text class="progress-card__count t-num"
+                            >{{ requiredDone }} / {{ requiredTotal }} · {{ progressPercent }}%</text
                         >
                     </view>
                     <view class="progress-card__track">
@@ -64,7 +64,9 @@
                             class="q"
                         >
                             <view class="q__title">
-                                <text class="q__index">{{ String(qi + 1).padStart(2, '0') }}</text>
+                                <text class="q__index t-num">{{
+                                    String(qi + 1).padStart(2, '0')
+                                }}</text>
                                 <text class="q__text">{{ q.title }}</text>
                                 <text v-if="Number(q.required) === 1" class="q__required">*</text>
                             </view>
@@ -95,7 +97,7 @@
                                     :key="oi"
                                     class="opt"
                                     :class="{ 'is-active': answers[keyOf(q)] === optValue(opt) }"
-                                    @tap="answers[keyOf(q)] = optValue(opt)"
+                                    @tap="pickSingle(q, optValue(opt))"
                                 >
                                     <view
                                         class="opt__radio"
@@ -134,8 +136,8 @@
                                         :hover-stop-propagation="true"
                                         v-for="n in 5"
                                         :key="n"
-                                        class="q__rating-item"
-                                        @tap="answers[keyOf(q)] = n"
+                                        class="q__rating-item hit-88"
+                                        @tap="pickRating(q, n)"
                                     >
                                         <!-- v1 u-icon → v2 tn-icon：评分星形保留（star-fill / star） -->
                                         <tn-icon
@@ -194,6 +196,7 @@ import { toast } from '@/composables/useToast'
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { haptic } from '@/utils/haptics'
 import { getCallbackQuestionnaire, submitCallbackQuestionnaire } from '@/api/aftersale'
 
 const id = ref(0)
@@ -254,6 +257,18 @@ function toggleMulti(q: any, val: any) {
     if (i >= 0) cur.splice(i, 1)
     else cur.push(val)
     answers[k] = cur
+    haptic('light', 'cb-option')
+}
+
+/** 单选：只换答案，卡片反色与圆点由模板的 is-active / is-on 表达 */
+function pickSingle(q: any, val: any) {
+    answers[keyOf(q)] = val
+    haptic('light', 'cb-option')
+}
+
+function pickRating(q: any, n: number) {
+    answers[keyOf(q)] = n
+    haptic('light', 'cb-star')
 }
 
 async function load() {
@@ -343,6 +358,7 @@ async function handleSubmit() {
     }
 
     submitting.value = true
+    haptic('medium', 'cb-submit')
     try {
         const payload = questions.value.map((q) => ({ key: keyOf(q), value: answers[keyOf(q)] }))
         await submitCallbackQuestionnaire({
@@ -393,6 +409,8 @@ onLoad((options: any) => {
     border-radius: var(--r-md);
     background: linear-gradient(135deg, var(--c-dark-1), var(--c-dark-2));
     color: var(--c-on-dark);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__eyebrow {
         display: block;
@@ -426,7 +444,8 @@ onLoad((options: any) => {
     padding: var(--sp-3) var(--sp-4);
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__top {
         display: flex;
@@ -527,7 +546,7 @@ onLoad((options: any) => {
     height: 88rpx;
     padding: 0 var(--sp-3);
     background: var(--c-surface-2);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);
     border-radius: var(--r-md);
     box-sizing: border-box;
     font-size: var(--fs-md);
@@ -538,7 +557,7 @@ onLoad((options: any) => {
     width: 100%;
     min-height: 200rpx;
     background: var(--c-surface-2);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);
     border-radius: var(--r-md);
     padding: var(--sp-3);
     box-sizing: border-box;
@@ -592,6 +611,9 @@ onLoad((options: any) => {
     /* 批 1.5 E：未选中边框原 --c-line 在白底 1.13:1（等于没有边框） */
     border: 1rpx solid var(--c-control-border);
     box-sizing: border-box;
+    transition:
+        background-color var(--dur-base) var(--ease-out),
+        border-color var(--dur-base) var(--ease-out);
 
     &.is-active {
         background: var(--c-brand-bg);
@@ -651,5 +673,12 @@ onLoad((options: any) => {
 }
 .ic-star.is-on {
     color: var(--c-warning);
+}
+
+/* v10 §3.13：减弱动效下选项直接换色，不做过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .opt {
+        transition: none;
+    }
 }
 </style>

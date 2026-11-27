@@ -1,7 +1,7 @@
 <template>
     <view class="panel">
         <view v-if="reviewCount" class="rsum">
-            <text class="rsum__num">{{ scoreText }}</text>
+            <text class="rsum__num t-num">{{ scoreText }}</text>
             <view class="rsum__mid">
                 <view class="stars" :aria-label="`评分 ${scoreText} 分，满分 5 分`">
                     <tn-icon
@@ -24,7 +24,7 @@
                 <view class="review__head">
                     <text class="review__avatar">{{ firstChar(r.user?.nickname) }}</text>
                     <text class="review__name ellipsis">{{ r.user?.nickname || '匿名用户' }}</text>
-                    <text v-if="r.create_time" class="review__date">{{
+                    <text v-if="r.create_time" class="review__date t-num">{{
                         formatDay(r.create_time)
                     }}</text>
                     <view class="stars stars--sm" :aria-label="`${r.score} 分`">
@@ -37,7 +37,7 @@
                         />
                     </view>
                 </view>
-                <text v-if="r.content" class="review__text">{{ r.content }}</text>
+                <text v-if="r.content" class="review__text t-quote-hang">{{ r.content }}</text>
             </view>
             <load-more :status="loadStatus" @retry="emit('loadMore')" />
         </view>
@@ -199,9 +199,16 @@ function formatDay(v: any) {
     &__text {
         display: block;
         margin-top: 16rpx;
+        /* 引言层级：正文左缘与姓名对齐，左双引号悬挂到面板留白里（.t-quote-hang） */
+        padding-left: 4rpx;
         font-size: var(--fs-22);
         line-height: var(--lh-body);
         color: var(--c-ink-2);
+
+        /* 引号用衬线体，弱化装饰不抢正文；深浅两套都取品牌文字色 */
+        &::before {
+            font-family: var(--font-serif);
+        }
     }
 }
 

@@ -46,7 +46,7 @@
                                 <tn-icon name="tips" :size="24" class="result-card__ic" />
                                 <text class="result-card__title">平台处理结果</text>
                             </view>
-                            <text v-if="data.handle_time" class="result-card__time">{{
+                            <text v-if="data.handle_time" class="result-card__time t-num">{{
                                 data.handle_time
                             }}</text>
                         </view>
@@ -93,15 +93,15 @@
                         </view>
                         <view class="kv">
                             <text class="kv__k">提交时间</text>
-                            <text class="kv__v">{{ data.create_time || '—' }}</text>
+                            <text class="kv__v t-num">{{ data.create_time || '—' }}</text>
                         </view>
                         <view v-if="data.handle_time" class="kv">
                             <text class="kv__k">处理时间</text>
-                            <text class="kv__v">{{ data.handle_time }}</text>
+                            <text class="kv__v t-num">{{ data.handle_time }}</text>
                         </view>
                         <view v-if="ratedScore > 0" class="kv">
                             <text class="kv__k">满意度评分</text>
-                            <text class="kv__v kv__v--brand">{{
+                            <text class="kv__v kv__v--brand t-num">{{
                                 SCORE_LABELS[ratedScore] || `${ratedScore} 分`
                             }}</text>
                         </view>
@@ -120,8 +120,8 @@
                                 :hover-stop-propagation="true"
                                 v-for="n in 5"
                                 :key="n"
-                                class="stars__item"
-                                @tap="score = n"
+                                class="stars__item hit-88"
+                                @tap="pickStar(n)"
                             >
                                 <!-- v1 u-icon → v2 tn-icon：评分星形保留（star-fill / star） -->
                                 <!-- 批 1.5 C：未选星原 --c-line-strong 仅 1.60:1（看不见有几颗星可选）→ --c-ink-3 -->
@@ -175,6 +175,7 @@ import {
 } from '@shared/contracts'
 import { getComplaintDetail, rateComplaint } from '@/api/aftersale'
 import { useAppStore } from '@/stores/app'
+import { haptic } from '@/utils/haptics'
 
 const appStore = useAppStore()
 
@@ -276,9 +277,15 @@ async function load() {
     }
 }
 
+function pickStar(n: number) {
+    score.value = n
+    haptic('light', 'complaint-star')
+}
+
 async function handleRate() {
     if (rating.value) return
     rating.value = true
+    haptic('medium', 'complaint-rate')
     try {
         await rateComplaint({
             id: id.value,
@@ -332,6 +339,8 @@ function onRefresh(done: () => void) {
     border-radius: var(--r-md);
     background: linear-gradient(135deg, var(--c-dark-1), var(--c-dark-2));
     color: var(--c-on-dark);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__top {
         display: flex;
@@ -381,6 +390,7 @@ function onRefresh(done: () => void) {
     border-radius: var(--r-md);
     background: var(--c-brand-bg);
     border: 1rpx solid var(--c-primary-border);
+    box-shadow: var(--shadow-card);
 
     &__head {
         display: flex;
@@ -533,7 +543,7 @@ function onRefresh(done: () => void) {
     width: 100%;
     min-height: 180rpx;
     background: var(--c-surface-2);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);
     border-radius: var(--r-md);
     padding: var(--sp-3);
     font-size: var(--fs-md);

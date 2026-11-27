@@ -17,33 +17,55 @@
         <view v-if="summaryReady" class="hero">
             <view class="hero__top">
                 <view
-                    class="hero__month"
+                    class="hero__month hit-88"
                     hover-class="is-pressed"
                     aria-role="button"
                     aria-label="选择月份"
-                    @tap="monthSheetOpen = true"
+                    @tap="openMonthSheet"
                 >
                     <text class="hero__month-text">{{ monthPillText }}</text>
                     <tn-icon name="down" :size="20" class="hero__month-ic" />
                 </view>
-                <text class="hero__count">共 {{ summary.total_count }} 笔</text>
+                <text class="hero__count t-num">共 {{ summary.total_count }} 笔</text>
             </view>
 
             <view class="hero__main">
                 <text class="hero__label">{{ selectedMonth ? '本月净支出' : '净支出' }}</text>
-                <text class="hero__net">{{ netText }}</text>
+                <view class="hero__net">
+                    <rolling-number
+                        :value="netAmount"
+                        :prefix="netNegative ? '-¥' : '¥'"
+                        :decimals="2"
+                        :thousands="true"
+                        :min-chars="5"
+                    />
+                </view>
             </view>
 
             <view class="hero__stats">
                 <view class="hero-stat">
-                    <text class="hero-stat__label">支出</text>
-                    <text class="hero-stat__value">¥{{ money(summary.total_paid) }}</text>
-                    <text class="hero-stat__sub">{{ summary.paid_count }} 笔</text>
+                    <text class="hero-stat__label">累计已付</text>
+                    <rolling-number
+                        class="hero-stat__value"
+                        :value="paidAmount"
+                        prefix="¥"
+                        :decimals="2"
+                        :thousands="true"
+                        :min-chars="4"
+                    />
+                    <text class="hero-stat__sub t-num">{{ summary.paid_count }} 笔</text>
                 </view>
                 <view class="hero-stat">
-                    <text class="hero-stat__label">退款</text>
-                    <text class="hero-stat__value">¥{{ money(summary.total_refunded) }}</text>
-                    <text class="hero-stat__sub">{{ summary.refunded_count }} 笔</text>
+                    <text class="hero-stat__label">累计退款</text>
+                    <rolling-number
+                        class="hero-stat__value"
+                        :value="refundedAmount"
+                        prefix="¥"
+                        :decimals="2"
+                        :thousands="true"
+                        :min-chars="4"
+                    />
+                    <text class="hero-stat__sub t-num">{{ summary.refunded_count }} 笔</text>
                 </view>
             </view>
 
@@ -55,7 +77,7 @@
                 aria-label="查看退款中的流水"
                 @tap="switchToRefund"
             >
-                <text class="hero__refunding-text">
+                <text class="hero__refunding-text t-num">
                     退款中 ¥{{ money(summary.refunding_amount) }} ·
                     {{ summary.refunding_count }} 笔
                 </text>
@@ -75,7 +97,7 @@
 
         <!-- 四态：加载 -->
         <view v-if="loading" class="pad">
-            <base-skeleton :rows="4" />
+            <base-skeleton :rows="4" variant="card" />
         </view>
 
         <!-- 四态：错误 -->
@@ -103,102 +125,93 @@
 
         <!-- 四态：就绪（分月流水） -->
         <view v-else class="mv">
-            <template v-for="group in groups" :key="group.key">
-                <view v-if="group.label" class="mv__month">
-                    <text class="mv__month-text">{{ group.label }}</text>
-                </view>
-                <view
-                    v-for="item in group.items"
-                    :key="item.flow_key"
-                    class="flow"
-                    hover-class="is-pressed"
-                    aria-role="button"
-                    :aria-label="item.title"
-                    @tap="openDetail(item)"
-                >
-                    <view class="flow__ic" :class="`flow__ic--${iconTone(item)}`">
-                        <tn-icon :name="flowIcon(item.biz_category)" :size="34" />
+            <view class="mv__list" :class="{ stagger: staggerOn, 'is-in': staggerIn }">
+                <template v-for="group in groups" :key="group.key">
+                    <view v-if="group.label" class="mv__month">
+                        <text class="mv__month-text t-num">{{ group.label }}</text>
                     </view>
+                    <view
+                        v-for="item in group.items"
+                        :key="item.flow_key"
+                        class="flow"
+                        hover-class="is-pressed"
+                        aria-role="button"
+                        :aria-label="item.title"
+                        :style="{ '--i': flowIndex[item.flow_key] ?? 0 }"
+                        @tap="openDetail(item)"
+                    >
+                        <view class="flow__ic" :class="`flow__ic--${iconTone(item)}`">
+                            <tn-icon :name="flowIcon(item.biz_category)" :size="34" />
+                        </view>
 
-                    <view class="flow__main">
-                        <text class="flow__title ellipsis">{{ item.title }}</text>
-                        <text class="flow__meta ellipsis">{{ flowMeta(item) }}</text>
-                    </view>
+                        <view class="flow__main">
+                            <text class="flow__title ellipsis">{{ item.title }}</text>
+                            <text class="flow__meta ellipsis t-num">{{ flowMeta(item) }}</text>
+                        </view>
 
-                    <view class="flow__right">
-                        <text class="flow__amount" :class="`flow__amount--${amountTone(item)}`">
-                            {{ flowAmount(item) }}
-                        </text>
-                        <status-tag
-                            v-if="item.status !== 'completed'"
-                            :label="item.status_label"
-                            :tone="item.status_tone"
-                            size="sm"
-                        />
-                        <text
-                            v-else-if="item.direction === 'out' && item.refunded_amount > 0"
-                            class="flow__refunded"
-                        >
-                            已退 ¥{{ money(item.refunded_amount) }}
-                        </text>
+                        <view class="flow__right">
+                            <text
+                                class="flow__amount t-num"
+                                :class="`flow__amount--${amountTone(item)}`"
+                            >
+                                {{ flowAmount(item) }}
+                            </text>
+                            <status-tag
+                                v-if="item.status !== 'completed'"
+                                :label="item.status_label"
+                                :tone="item.status_tone"
+                                size="sm"
+                            />
+                            <text
+                                v-else-if="item.direction === 'out' && item.refunded_amount > 0"
+                                class="flow__refunded t-num"
+                            >
+                                已退 ¥{{ money(item.refunded_amount) }}
+                            </text>
+                        </view>
                     </view>
-                </view>
-            </template>
+                </template>
+            </view>
 
             <load-more :status="loadMoreStatus" @retry="loadMore" />
         </view>
 
         <template #bottom>
-            <!-- 月份选择半屏抽屉 -->
-            <tn-popup v-model="monthSheetOpen" open-direction="bottom" :radius="40">
+            <!-- 月份选择半屏抽屉：标题 / 关闭 / 拖拽由 snap-sheet 承担 -->
+            <snap-sheet v-model="monthSheetOpen" title="选择月份">
                 <view class="months">
-                    <view class="months__head">
-                        <text class="months__title">选择月份</text>
-                        <view
-                            class="months__close"
-                            hover-class="is-pressed"
-                            aria-role="button"
-                            aria-label="关闭月份选择"
-                            @tap="monthSheetOpen = false"
-                        >
-                            <tn-icon name="close" :size="30" class="months__close-ic" />
-                        </view>
+                    <view
+                        class="months__item"
+                        :class="{ 'is-on': selectedMonth === '' }"
+                        hover-class="is-pressed"
+                        @tap="pickMonth('')"
+                    >
+                        <text class="months__label">全部时间</text>
+                        <tn-icon
+                            v-if="selectedMonth === ''"
+                            name="check"
+                            :size="28"
+                            class="months__check"
+                        />
                     </view>
-
-                    <scroll-view scroll-y class="months__body">
-                        <view
-                            class="months__item"
-                            :class="{ 'is-on': selectedMonth === '' }"
-                            hover-class="is-pressed"
-                            @tap="pickMonth('')"
-                        >
-                            <text class="months__label">全部时间</text>
-                            <tn-icon
-                                v-if="selectedMonth === ''"
-                                name="check"
-                                :size="28"
-                                class="months__check"
-                            />
-                        </view>
-                        <view
-                            v-for="m in months"
-                            :key="m"
-                            class="months__item"
-                            :class="{ 'is-on': selectedMonth === m }"
-                            hover-class="is-pressed"
-                            @tap="pickMonth(m)"
-                        >
-                            <text class="months__label">{{ formatMonth(m) }}</text>
-                            <tn-icon
-                                v-if="selectedMonth === m"
-                                name="check"
-                                :size="28"
-                                class="months__check"
-                            />
-                        </view>
-                    </scroll-view>
+                    <view
+                        v-for="m in months"
+                        :key="m"
+                        class="months__item"
+                        :class="{ 'is-on': selectedMonth === m }"
+                        hover-class="is-pressed"
+                        @tap="pickMonth(m)"
+                    >
+                        <text class="months__label t-num">{{ formatMonth(m) }}</text>
+                        <tn-icon
+                            v-if="selectedMonth === m"
+                            name="check"
+                            :size="28"
+                            class="months__check"
+                        />
+                    </view>
                 </view>
-            </tn-popup>
+            </snap-sheet>
 
             <!-- 对账详情半屏抽屉 -->
             <wallet-detail-sheet v-model:show="detailOpen" :item="activeFlow" />
@@ -209,7 +222,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { formatDateTime, formatMoney } from '@shared/utils/format'
 import { getWalletFlows } from '@/api/wallet'
@@ -221,6 +234,7 @@ import type {
 } from '@/api/types/wallet'
 import { FB } from '@/constants/feedback'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 import { navigate } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import WalletDetailSheet from './components/wallet-detail-sheet.vue'
@@ -278,10 +292,17 @@ const monthPillText = computed(() =>
     selectedMonth.value ? formatMonth(selectedMonth.value) : '全部时间'
 )
 
-const netText = computed(() => {
-    const net = Number(summary.value.net_expense) || 0
-    return `${net < 0 ? '-' : ''}¥${money(Math.abs(net))}`
-})
+/** 汇总金额统一过一遍有限数：接口可能回字符串 / null，rolling-number 不能收到 NaN */
+function amountNumber(value: number | string | null | undefined): number {
+    const num = Number(value)
+    return Number.isFinite(num) ? num : 0
+}
+
+const netValue = computed(() => amountNumber(summary.value.net_expense))
+const netAmount = computed(() => Math.abs(netValue.value))
+const netNegative = computed(() => netValue.value < 0)
+const paidAmount = computed(() => amountNumber(summary.value.total_paid))
+const refundedAmount = computed(() => amountNumber(summary.value.total_refunded))
 
 const hasFilter = computed(() => activeFilter.value !== 'all' || selectedMonth.value !== '')
 const emptyHint = computed(() =>
@@ -314,6 +335,42 @@ const groups = computed<MonthGroup[]>(() => {
         label: month ? formatMonth(month) : '',
         items
     }))
+})
+
+/** 跨月份分组的扁平序号：错峰入场用 --i，第 7 项起由 CSS 封顶 */
+const flowIndex = computed<Record<string, number>>(() => {
+    const map: Record<string, number> = {}
+    let index = 0
+    for (const group of groups.value) {
+        for (const item of group.items) map[item.flow_key] = ++index
+    }
+    return map
+})
+
+/* ---- 首屏错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerOn = ref(false)
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger() {
+    if (!list.value.length || staggerIn.value) return
+    staggerOn.value = true
+    if (staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
 })
 
 function emptySummary(): WalletSummaryVO {
@@ -444,11 +501,18 @@ function switchFilter(value: string | number) {
 /** 点「退款中」提示条：直接切到退款筛选 */
 function switchToRefund() {
     if (activeFilter.value === 'in') return
+    haptic('light', 'wallet-refunding')
     activeFilter.value = 'in'
     void load(true)
 }
 
+function openMonthSheet() {
+    haptic('light', 'wallet-month')
+    monthSheetOpen.value = true
+}
+
 function pickMonth(month: string) {
+    haptic('light', 'wallet-month-pick')
     monthSheetOpen.value = false
     if (selectedMonth.value === month) return
     selectedMonth.value = month
@@ -456,6 +520,7 @@ function pickMonth(month: string) {
 }
 
 function openDetail(item: WalletFlowItemVO) {
+    haptic('light', 'wallet-flow')
     activeFlow.value = item
     detailOpen.value = true
 }
@@ -499,13 +564,14 @@ onLoad(() => {
     padding: var(--sp-4) var(--page-gutter);
 }
 
-/* ---------------- 深墨黑金汇总卡 ---------------- */
+/* ---------------- 深墨黑金汇总卡（同心圆角：40 − 内边距 24 = 16） ---------------- */
 .hero {
     margin: var(--sp-3) var(--page-gutter) 0;
-    padding: var(--sp-4);
+    padding: var(--sp-3);
     border-radius: var(--r-lg);
     background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
-    border: 1rpx solid var(--c-brand-text);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__top {
         display: flex;
@@ -525,6 +591,11 @@ onLoad(() => {
         border: 1rpx solid var(--c-brand-text);
         /* 图标与文字同色 */
         color: var(--c-brand-soft);
+        transition: transform var(--dur-press) var(--ease-out);
+
+        &.is-pressed {
+            transform: scale(0.96);
+        }
     }
 
     &__month-text {
@@ -543,7 +614,7 @@ onLoad(() => {
     }
 
     &__main {
-        margin-top: var(--sp-4);
+        margin-top: var(--sp-3);
         display: flex;
         flex-direction: column;
         gap: var(--sp-1);
@@ -559,19 +630,17 @@ onLoad(() => {
         max-width: 100%;
         overflow: hidden;
         white-space: nowrap;
-        text-overflow: ellipsis;
         font-family: var(--font-serif);
         font-size: var(--fs-number);
         font-weight: var(--fw-medium);
         line-height: var(--lh-none);
         color: var(--c-on-dark);
-        font-variant-numeric: tabular-nums;
     }
 
     &__stats {
         display: flex;
         gap: var(--sp-2);
-        margin-top: var(--sp-4);
+        margin-top: var(--sp-3);
     }
 
     &__refunding {
@@ -608,7 +677,7 @@ onLoad(() => {
     flex-direction: column;
     gap: var(--sp-1);
     padding: var(--sp-2) var(--sp-3);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-16);
     background: var(--c-dark-3);
 
     &__label {
@@ -622,12 +691,21 @@ onLoad(() => {
         font-weight: var(--fw-medium);
         line-height: var(--lh-tight);
         color: var(--c-on-dark);
-        font-variant-numeric: tabular-nums;
     }
 
     &__sub {
         font-size: var(--fs-20);
         color: var(--c-on-dark-2);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero__month {
+        transition: none;
+
+        &.is-pressed {
+            transform: none;
+        }
     }
 }
 
@@ -642,6 +720,10 @@ onLoad(() => {
 
     &__month {
         padding: var(--sp-3) var(--page-gutter) var(--sp-1);
+        /* 月份标头不参与错峰：它是分组标签，不是列表项 */
+        opacity: 1;
+        transform: none;
+        animation: none;
     }
 
     &__month-text {
@@ -659,7 +741,8 @@ onLoad(() => {
     padding: var(--sp-3);
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__ic {
         flex: none;
@@ -746,43 +829,11 @@ onLoad(() => {
     }
 }
 
-/* ---------------- 月份选择抽屉 ---------------- */
+/* ---------------- 月份选择抽屉（脚部由 snap-sheet 承担） ---------------- */
 .months {
     display: flex;
     flex-direction: column;
-    background: var(--c-surface);
-
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: var(--sp-4) var(--page-gutter) var(--sp-3);
-        border-bottom: 1rpx solid var(--c-line);
-    }
-
-    &__title {
-        font-size: var(--fs-lg);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__close {
-        width: 56rpx;
-        height: 56rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--r-pill);
-    }
-
-    &__close-ic {
-        color: var(--c-ink-3);
-    }
-
-    &__body {
-        max-height: 56vh;
-        padding-bottom: var(--safe-bottom);
-    }
+    padding-top: var(--sp-1);
 
     &__item {
         display: flex;
@@ -790,11 +841,16 @@ onLoad(() => {
         justify-content: space-between;
         gap: var(--sp-2);
         min-height: 96rpx;
-        padding: 0 var(--page-gutter);
+        padding: 0 var(--sp-2);
         border-bottom: 1rpx solid var(--c-line);
+        transition: background-color var(--dur-fast) var(--ease-out);
 
         &:last-child {
             border-bottom: 0;
+        }
+
+        &.is-pressed {
+            background: var(--c-surface-2);
         }
     }
 
@@ -810,6 +866,12 @@ onLoad(() => {
     &__item.is-on &__label {
         color: var(--c-brand-text);
         font-weight: var(--fw-semibold);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .months__item {
+        transition: none;
     }
 }
 </style>

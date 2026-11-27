@@ -86,7 +86,11 @@
                         <text class="anon__label">匿名评价</text>
                         <text class="anon__hint">开启后其他用户看不到你的昵称</text>
                     </view>
-                    <switch :checked="anonymous" color="#C6A15B" @change="onAnonChange" />
+                    <elastic-switch
+                        :model-value="anonymous"
+                        aria-label="匿名评价"
+                        @change="onAnonToggle"
+                    />
                 </view>
             </base-card>
 
@@ -119,6 +123,7 @@ import { toast } from '@/composables/useToast'
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { publishReview, getReviewTags } from '@/api/content'
+import { haptic } from '@/utils/haptics'
 import { useAppStore } from '@/stores/app'
 
 /** 星级档位文案：星级只表达"几颗"，文字才表达"这意味着什么" ——
@@ -171,6 +176,7 @@ const canReview = computed(() => {
 const form = reactive({ staffName: '', packageName: '' })
 
 function toggleTag(id: number) {
+    haptic('light', 'review-tag')
     const i = selectedTags.value.indexOf(id)
     if (i >= 0) selectedTags.value.splice(i, 1)
     else selectedTags.value.push(id)
@@ -181,8 +187,12 @@ function onImagesChange(v: string[]) {
     images.value = v
 }
 
-function onAnonChange(e: any) {
-    anonymous.value = !!e?.detail?.value
+/**
+ * elastic-switch 的 change 直接给布尔值（不再是原生 e.detail.value）；
+ * 组件内部已发 light 触觉，这里只回写状态。
+ */
+function onAnonToggle(val: boolean) {
+    anonymous.value = !!val
 }
 
 async function handleSubmit() {
@@ -248,7 +258,7 @@ onLoad(async (options: any) => {
 
     &__title {
         font-size: var(--fs-md);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
         line-height: var(--lh-body);
         color: var(--c-ink);
         overflow-wrap: anywhere;
@@ -266,7 +276,7 @@ onLoad(async (options: any) => {
     display: block;
     margin-bottom: var(--sp-3);
     font-size: var(--fs-md);
-    font-weight: 500;
+    font-weight: var(--fw-medium);
     color: var(--c-ink);
 }
 
@@ -280,7 +290,8 @@ onLoad(async (options: any) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 64rpx;
+    /* 88rpx 最小热区：标签是这一屏最高频的点击目标，不做伪元素扩展（行间会重叠） */
+    min-height: 88rpx;
     padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
     background: var(--c-surface-2);
@@ -307,6 +318,8 @@ onLoad(async (options: any) => {
     display: flex;
     align-items: center;
     gap: var(--sp-3);
+    /* 整行 88rpx：与 elastic-switch 自身的 88rpx 热区对齐，视觉基线不塌 */
+    min-height: 88rpx;
 
     &__body {
         flex: 1;
@@ -348,8 +361,10 @@ onLoad(async (options: any) => {
     z-index: 50;
     margin: 0;
     padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + var(--safe-bottom));
-    border-top: 1rpx solid var(--c-line);
-    background: var(--c-surface);
+    border-top: 1rpx solid var(--c-card-border);
+    /* 底部提交条属于浮层第三层，与抽屉/输入条同底色同阴影 */
+    background: var(--c-surface-float);
+    box-shadow: var(--shadow-sheet);
     box-sizing: border-box;
 }
 </style>

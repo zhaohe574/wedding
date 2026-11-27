@@ -1,105 +1,89 @@
 <template>
-    <!-- 日期 + 地区选择：弹层内一次选完，内容整块可滚，不会被裁切 -->
-    <tn-popup
+    <!-- 日期 + 地区选择：抽屉内一次选完，内容整块可滚（snap-sheet 自带 body 滚动区） -->
+    <snap-sheet
         :model-value="modelValue"
-        open-direction="bottom"
-        :safe-area-inset-bottom="true"
-        :radius="28"
+        title="服务日期与地区"
+        :enable-full="true"
+        :has-foot="true"
         @update:model-value="emit('update:modelValue', $event)"
     >
-        <view class="pop pop--picker">
-            <view class="pop__head">
-                <text class="pop__title">服务日期与地区</text>
+        <!-- 日历：自绘月历，块高固定，不依赖组件测量 -->
+        <view class="dcal">
+            <view class="dcal__nav">
                 <view
-                    class="pop__close"
+                    class="dcal__nav-btn press-spring"
+                    :class="{ 'is-disabled': !canShiftMonth(-1) }"
                     hover-class="is-pressed"
-                    aria-label="关闭"
-                    @tap="emit('update:modelValue', false)"
+                    aria-role="button"
+                    aria-label="上个月"
+                    @tap="shiftMonth(-1)"
                 >
-                    <tn-icon name="close" :size="32" />
+                    <tn-icon name="left" :size="28" />
+                </view>
+                <text class="dcal__nav-title t-num">{{ pickerMonthLabel }}</text>
+                <view
+                    class="dcal__nav-btn press-spring"
+                    :class="{ 'is-disabled': !canShiftMonth(1) }"
+                    hover-class="is-pressed"
+                    aria-role="button"
+                    aria-label="下个月"
+                    @tap="shiftMonth(1)"
+                >
+                    <tn-icon name="right" :size="28" />
                 </view>
             </view>
 
-            <scroll-view scroll-y class="pop__scroll">
-                <!-- 日历：自绘月历，块高固定，不依赖组件测量 -->
-                <view class="dcal">
-                    <view class="dcal__nav">
-                        <view
-                            class="dcal__nav-btn"
-                            :class="{ 'is-disabled': !canShiftMonth(-1) }"
-                            hover-class="is-pressed"
-                            aria-role="button"
-                            aria-label="上个月"
-                            @tap="shiftMonth(-1)"
-                        >
-                            <tn-icon name="left" :size="28" />
-                        </view>
-                        <text class="dcal__nav-title">{{ pickerMonthLabel }}</text>
-                        <view
-                            class="dcal__nav-btn"
-                            :class="{ 'is-disabled': !canShiftMonth(1) }"
-                            hover-class="is-pressed"
-                            aria-role="button"
-                            aria-label="下个月"
-                            @tap="shiftMonth(1)"
-                        >
-                            <tn-icon name="right" :size="28" />
-                        </view>
-                    </view>
+            <view class="dcal__week">
+                <text v-for="w in WEEK_LABELS" :key="w" class="dcal__week-item">{{ w }}</text>
+            </view>
 
-                    <view class="dcal__week">
-                        <text v-for="w in WEEK_LABELS" :key="w" class="dcal__week-item">{{
-                            w
-                        }}</text>
-                    </view>
-
-                    <view class="dcal__grid">
-                        <view
-                            v-for="cell in calendarCells"
-                            :key="cell.key"
-                            class="dcal__cell"
-                            :class="{
-                                'is-blank': !cell.day,
-                                'is-disabled': cell.disabled,
-                                'is-on': cell.selected,
-                                'is-today': cell.today
-                            }"
-                            @tap="pickDay(cell)"
-                        >
-                            <text v-if="cell.day" class="dcal__day">{{ cell.day }}</text>
-                        </view>
-                    </view>
+            <view class="dcal__grid">
+                <view
+                    v-for="cell in calendarCells"
+                    :key="cell.key"
+                    class="dcal__cell"
+                    :class="{
+                        'is-blank': !cell.day,
+                        'is-disabled': cell.disabled,
+                        'is-on': cell.selected,
+                        'is-today': cell.today
+                    }"
+                    hover-class="is-pressed"
+                    @tap="pickDay(cell)"
+                >
+                    <text v-if="cell.day" class="dcal__day">{{ cell.day }}</text>
                 </view>
-
-                <!-- 地区：与查档期页共用 components/region-columns（三栏联动、同一套选中态） -->
-                <view class="pop__region">
-                    <region-columns
-                        :key="pickerKey"
-                        v-model="pickerRegion"
-                        height="288rpx"
-                        title="服务地区"
-                    />
-                </view>
-            </scroll-view>
-
-            <view class="pop__foot">
-                <text v-if="pickerTip" class="pop__tip">{{ pickerTip }}</text>
-                <base-button
-                    :text="pickerConfirmText"
-                    variant="ink"
-                    size="md"
-                    :disabled="!pickerConfirmable"
-                    @click="confirmPicker"
-                />
             </view>
         </view>
-    </tn-popup>
+
+        <!-- 地区：与查档期页共用 components/region-columns（三栏联动、同一套选中态） -->
+        <view class="region-block">
+            <region-columns
+                :key="pickerKey"
+                v-model="pickerRegion"
+                height="288rpx"
+                title="服务地区"
+            />
+        </view>
+
+        <template #foot>
+            <text v-if="pickerTip" class="picker-tip">{{ pickerTip }}</text>
+            <base-button
+                :text="pickerConfirmText"
+                variant="ink"
+                size="md"
+                :disabled="!pickerConfirmable"
+                @click="confirmPicker"
+            />
+        </template>
+    </snap-sheet>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { parseDateValue } from '@shared/utils/format'
 import { hasRegionContext, type RegionContext } from '@/utils/region'
+import { haptic } from '@/utils/haptics'
 import { dateKeyOf } from '../booking-helpers'
 
 const WEEK_LABELS = ['日', '一', '二', '三', '四', '五', '六']
@@ -165,6 +149,7 @@ function canShiftMonth(delta: number) {
 
 function shiftMonth(delta: number) {
     if (!canShiftMonth(delta)) return
+    haptic('light', 'booking-month')
     const target = new Date(pickerMonth.year, pickerMonth.month - 1 + delta, 1)
     pickerMonth.year = target.getFullYear()
     pickerMonth.month = target.getMonth() + 1
@@ -172,6 +157,7 @@ function shiftMonth(delta: number) {
 
 function pickDay(cell: any) {
     if (!cell?.day || cell.disabled) return
+    if (cell.date !== pickerDate.value) haptic('light', 'booking-day')
     pickerDate.value = String(cell.date || '')
 }
 
@@ -217,67 +203,22 @@ function confirmPicker() {
 </script>
 
 <style lang="scss" scoped>
-.pop {
-    background: var(--c-surface);
-    border-radius: var(--r-md) var(--r-md) 0 0;
-    overflow: hidden;
-
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        height: 104rpx;
-        padding: 0 var(--sp-2) 0 var(--sp-4);
-        border-bottom: 1rpx solid var(--c-line);
-        flex: none;
-    }
-
-    &__title {
-        flex: 1;
-        min-width: 0;
-        font-size: var(--fs-lg);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__close {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 88rpx;
-        height: 88rpx;
-        color: var(--c-ink-3);
-    }
-
-    &__foot {
-        display: flex;
-        flex-direction: column;
-        gap: 12rpx;
-        padding: var(--sp-2) var(--sp-4) var(--sp-4);
-        border-top: 1rpx solid var(--c-line);
-        flex: none;
-    }
-
-    &__tip {
-        font-size: var(--fs-18);
-        line-height: var(--lh-body);
-        color: var(--c-ink-3);
-    }
+/* 模板里已没有 .pop 包裹节点：以下类直接挂在 snap-sheet 的 body / foot 插槽内，
+   选择器必须平铺为顶层完整类名，不能再嵌在 .pop { &__x } 里。 */
+.region-block {
+    padding: var(--sp-2) 0;
 }
 
-.pop--picker {
-    display: flex;
-    flex-direction: column;
-    max-height: 82vh;
-}
-
-.pop__scroll {
-    flex: none;
-    max-height: 62vh;
+.picker-tip {
+    display: block;
+    font-size: var(--fs-xs);
+    line-height: var(--lh-body);
+    color: var(--c-ink-3);
+    padding-bottom: 12rpx;
 }
 
 .dcal {
-    padding: var(--sp-3) var(--sp-4) 0;
+    padding: var(--sp-1) 0 0;
 }
 
 .dcal__nav {
@@ -287,12 +228,13 @@ function confirmPicker() {
     gap: var(--sp-2);
 }
 
+/* 翻月热区 88rpx（§2.5），视觉圆形不再单独收窄，避免横向热区死区 */
 .dcal__nav-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 72rpx;
-    height: 72rpx;
+    width: 88rpx;
+    height: 88rpx;
     border-radius: var(--r-pill);
     color: var(--c-ink-2);
 
@@ -304,20 +246,20 @@ function confirmPicker() {
 .dcal__nav-title {
     flex: 1;
     text-align: center;
-    font-size: var(--fs-24);
+    font-size: var(--fs-md);
     font-weight: var(--fw-semibold);
     color: var(--c-ink);
 }
 
 .dcal__week {
     display: flex;
-    margin-top: var(--sp-2);
+    margin-top: var(--sp-1);
 }
 
 .dcal__week-item {
     flex: 1;
     text-align: center;
-    font-size: var(--fs-18);
+    font-size: var(--fs-xs);
     color: var(--c-ink-3);
 }
 
@@ -329,7 +271,7 @@ function confirmPicker() {
 
 .dcal__cell {
     width: calc(100% / 7);
-    height: 64rpx;
+    height: 72rpx;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -356,6 +298,8 @@ function confirmPicker() {
             background: var(--c-active-bg);
             color: var(--c-active-fg);
             box-shadow: inset 0 0 0 1rpx var(--c-active-border);
+            /* 选中日弹性微缩→放大（§3.1），落点跟手指 */
+            animation: dayPop var(--dur-release) var(--ease-spring);
         }
     }
 }
@@ -366,11 +310,25 @@ function confirmPicker() {
     height: 56rpx;
     line-height: 56rpx;
     text-align: center;
-    font-size: var(--fs-22);
+    font-size: var(--fs-md);
     color: var(--c-ink);
 }
 
-.pop__region {
-    padding: var(--sp-3) var(--sp-4) var(--sp-4);
+@keyframes dayPop {
+    0% {
+        transform: scale(0.82);
+    }
+    55% {
+        transform: scale(1.06);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dcal__cell.is-on .dcal__day {
+        animation: none;
+    }
 }
 </style>

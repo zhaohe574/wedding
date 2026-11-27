@@ -12,7 +12,7 @@
             <view class="cf-sum__top">
                 <view class="cf-sum__datewrap">
                     <text class="cf-sum__eyebrow">ORDER REVIEW</text>
-                    <text class="cf-sum__date">{{ dateDay }}</text>
+                    <text class="cf-sum__date t-num">{{ dateDay }}</text>
                     <text class="cf-sum__week">{{ dateYearWeek }}</text>
                 </view>
                 <status-tag :label="orderBadge.label" :tone="orderBadge.tone" />
@@ -29,7 +29,7 @@
                     :size="22"
                     class="cf-sum__lock-ic"
                 />
-                <text class="cf-sum__lock-text">{{ lockSummaryText }}</text>
+                <text class="cf-sum__lock-text t-num">{{ lockSummaryText }}</text>
                 <text
                     v-if="!orderId"
                     class="cf-sum__edit"
@@ -94,7 +94,7 @@
             <view class="cf-row">
                 <text class="cf-row__k">套餐</text>
                 <text class="cf-row__v ellipsis">{{ currentPackageName || '服务套餐' }}</text>
-                <text v-if="packagePriceText" class="cf-row__m">{{ packagePriceText }}</text>
+                <text v-if="packagePriceText" class="cf-row__m t-num">{{ packagePriceText }}</text>
             </view>
             <view v-if="packageDurationText" class="cf-row">
                 <text class="cf-row__k">服务时长</text>
@@ -134,11 +134,11 @@
             <template v-if="selectedAddonList.length">
                 <view v-for="a in selectedAddonList" :key="addonId(a)" class="cf-line">
                     <text class="cf-line__n ellipsis">{{ a.name }}</text>
-                    <text class="cf-line__m">+¥{{ money(addonPrice(a)) }}</text>
+                    <text class="cf-line__m t-num">+¥{{ money(addonPrice(a)) }}</text>
                 </view>
                 <view v-if="selectedAddonList.length > 1" class="cf-line cf-line--sub">
                     <text class="cf-line__n">小计</text>
-                    <text class="cf-line__m">{{ addonSumText }}</text>
+                    <text class="cf-line__m t-num">{{ addonSumText }}</text>
                 </view>
             </template>
             <text v-else class="cf-empty-line">未加购附加项，可直接提交</text>
@@ -213,19 +213,19 @@
             <template v-else-if="quoteState === 'ready'">
                 <view class="cf-line">
                     <text class="cf-line__n">套餐金额</text>
-                    <text class="cf-line__m">{{ quoteText('service_amount') }}</text>
+                    <text class="cf-line__m t-num">{{ quoteText('service_amount') }}</text>
                 </view>
                 <view class="cf-line">
                     <text class="cf-line__n">附加项（{{ selectedAddonList.length }} 项）</text>
-                    <text class="cf-line__m">¥{{ money(addonOnlyAmount) }}</text>
+                    <text class="cf-line__m t-num">¥{{ money(addonOnlyAmount) }}</text>
                 </view>
                 <view v-if="rolePriceSum > 0" class="cf-line">
                     <text class="cf-line__n">管家 / 督导</text>
-                    <text class="cf-line__m">¥{{ money(rolePriceSum) }}</text>
+                    <text class="cf-line__m t-num">¥{{ money(rolePriceSum) }}</text>
                 </view>
                 <view class="cf-total">
                     <text class="cf-total__k">合计</text>
-                    <text class="cf-total__m">{{ quoteText('total_amount') }}</text>
+                    <text class="cf-total__m t-num">{{ quoteText('total_amount') }}</text>
                 </view>
                 <text class="cf-note">价格由系统按服务日期与地区计算，以提交时为准。</text>
             </template>
@@ -270,7 +270,7 @@
                         <text class="cf-pay__label">{{
                             isFullPayment ? '确认后 · 支付全款' : '确认后 · 支付定金'
                         }}</text>
-                        <text class="cf-pay__amt">{{
+                        <text class="cf-pay__amt t-num">{{
                             isFullPayment ? quoteText('total_amount') : depositText
                         }}</text>
                     </view>
@@ -280,7 +280,7 @@
                     <view class="cf-pay__dot" aria-hidden="true" />
                     <view class="cf-pay__top">
                         <text class="cf-pay__label">尾款</text>
-                        <text class="cf-pay__amt">{{ balanceText }}</text>
+                        <text class="cf-pay__amt t-num">{{ balanceText }}</text>
                     </view>
                     <text class="cf-pay__sub">{{ balanceDueText }}</text>
                 </view>
@@ -488,6 +488,7 @@ defineExpose({ scrollToBlock })
     border-radius: var(--r-lg);
     background: linear-gradient(135deg, var(--c-dark-1) 0%, var(--c-dark-2) 100%);
     color: var(--c-on-dark);
+    box-shadow: var(--shadow-card);
     overflow: hidden;
 
     &::after {

@@ -56,6 +56,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { haptic } from '@/utils/haptics'
 
 const props = defineProps<{
     works: any[]
@@ -118,11 +119,13 @@ const filteredWorks = computed(() => {
 })
 
 function onWorkFilter() {
+    haptic('light', 'works-filter')
     // 筛选不重新请求：本地按分类字段过滤，避免空分类反复打接口
     if (workCategory.value !== 'all' && props.hasMore) emit('loadMore')
 }
 
 function onSelect(w: any) {
+    haptic('light', 'works-open')
     emit('select', w)
 }
 </script>
@@ -148,8 +151,11 @@ function onSelect(w: any) {
     position: relative;
     height: 242rpx;
     border-radius: var(--r-md);
+    border: 1rpx solid var(--c-card-border);
     overflow: hidden;
     background: var(--c-hero-bg);
+    /* v10 §2.1：作品缩略块与卡片同一套落地规则，暗色由 1rpx 描边分层 */
+    box-shadow: var(--shadow-card);
 
     &__img {
         display: block;

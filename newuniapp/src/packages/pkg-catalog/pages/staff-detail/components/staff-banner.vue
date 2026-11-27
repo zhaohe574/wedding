@@ -7,83 +7,86 @@
             aria-role="img"
             :aria-label="ariaText"
         >
-            <swiper
-                v-if="visibleItems.length"
-                class="banner__swiper"
-                :current="current"
-                :autoplay="autoPlay"
-                :interval="config.interval"
-                :duration="420"
-                :circular="visibleItems.length > 1"
-                @change="onChange"
-            >
-                <swiper-item v-for="(item, i) in visibleItems" :key="item.key">
-                    <view class="banner__slide" @tap="onSlideTap(i)">
-                        <image
-                            v-if="item.type === 'image'"
-                            class="banner__media"
-                            :src="item.src"
-                            mode="aspectFill"
-                            @error="onImageError(item.key)"
-                        />
-                        <template v-else>
-                            <!-- 点播放后在轮播位内直接播：不再弹全屏遮罩。
-                                 不要给 video 挂 catchtap —— 会截走原生控制条的点击 -->
-                            <video
-                                v-if="playingKey === item.key"
-                                class="banner__video"
+            <!-- 视差层：只包媒体本体，指示器/展开键留在层外，不跟着位移 -->
+            <view class="banner__parallax" :style="parallaxStyle">
+                <swiper
+                    v-if="visibleItems.length"
+                    class="banner__swiper"
+                    :current="current"
+                    :autoplay="autoPlay"
+                    :interval="config.interval"
+                    :duration="420"
+                    :circular="visibleItems.length > 1"
+                    @change="onChange"
+                >
+                    <swiper-item v-for="(item, i) in visibleItems" :key="item.key">
+                        <view class="banner__slide" @tap="onSlideTap(i)">
+                            <image
+                                v-if="item.type === 'image'"
+                                class="banner__media"
                                 :src="item.src"
-                                :poster="item.poster"
-                                :autoplay="true"
-                                :controls="true"
-                                :show-fullscreen-btn="false"
-                                :show-center-play-btn="false"
-                                object-fit="contain"
-                                @ended="stopVideo"
-                                @error="onVideoError"
+                                mode="aspectFill"
+                                @error="onImageError(item.key)"
                             />
                             <template v-else>
-                                <image
-                                    v-if="item.poster"
-                                    class="banner__media"
-                                    :src="item.poster"
-                                    mode="aspectFill"
-                                    @error="onPosterError(item.key)"
+                                <!-- 点播放后在轮播位内直接播：不再弹全屏遮罩。
+                                     不要给 video 挂 catchtap —— 会截走原生控制条的点击 -->
+                                <video
+                                    v-if="playingKey === item.key"
+                                    class="banner__video"
+                                    :src="item.src"
+                                    :poster="item.poster"
+                                    :autoplay="true"
+                                    :controls="true"
+                                    :show-fullscreen-btn="false"
+                                    :show-center-play-btn="false"
+                                    object-fit="contain"
+                                    @ended="stopVideo"
+                                    @error="onVideoError"
                                 />
-                                <view v-else class="banner__media banner__media--blank" />
-                                <view class="banner__play" aria-hidden="true">
-                                    <view class="banner__play-tri" />
-                                </view>
+                                <template v-else>
+                                    <image
+                                        v-if="item.poster"
+                                        class="banner__media"
+                                        :src="item.poster"
+                                        mode="aspectFill"
+                                        @error="onPosterError(item.key)"
+                                    />
+                                    <view v-else class="banner__media banner__media--blank" />
+                                    <view class="banner__play" aria-hidden="true">
+                                        <view class="banner__play-tri" />
+                                    </view>
+                                </template>
                             </template>
-                        </template>
-                    </view>
-                </swiper-item>
-            </swiper>
+                        </view>
+                    </swiper-item>
+                </swiper>
 
-            <!-- 无轮播时：cover 全宽铺；只有 avatar 时居中放，避免方图被裁成胸口 -->
-            <view
-                v-else-if="fallback && !fallbackFailed"
-                class="banner__fallback"
-                :class="{ 'banner__fallback--avatar': fallbackKind === 'avatar' }"
-            >
-                <image
-                    v-if="fallbackKind === 'avatar'"
-                    class="banner__avatar"
-                    :src="fallback"
-                    mode="aspectFill"
-                    @error="fallbackFailed = true"
-                />
-                <image
-                    v-else
-                    class="banner__media"
-                    :src="fallback"
-                    mode="aspectFill"
-                    @error="fallbackFailed = true"
-                />
-            </view>
-            <view v-else class="banner__blank">
-                <text class="banner__initial">{{ initial }}</text>
-                <text class="banner__blank-note">暂未上传照片</text>
+                <!-- 无轮播时：cover 全宽铺；只有 avatar 时居中放，避免方图被裁成胸口 -->
+                <view
+                    v-else-if="fallback && !fallbackFailed"
+                    class="banner__fallback"
+                    :class="{ 'banner__fallback--avatar': fallbackKind === 'avatar' }"
+                >
+                    <image
+                        v-if="fallbackKind === 'avatar'"
+                        class="banner__avatar"
+                        :src="fallback"
+                        mode="aspectFill"
+                        @error="fallbackFailed = true"
+                    />
+                    <image
+                        v-else
+                        class="banner__media"
+                        :src="fallback"
+                        mode="aspectFill"
+                        @error="fallbackFailed = true"
+                    />
+                </view>
+                <view v-else class="banner__blank">
+                    <text class="banner__initial">{{ initial }}</text>
+                    <text class="banner__blank-note">暂未上传照片</text>
+                </view>
             </view>
 
             <template v-if="!isAvatarFallback">
@@ -181,6 +184,7 @@
  */
 import { computed, ref, watch } from 'vue'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 import {
     bannerStageHeight,
     canExpandBanner,
@@ -196,12 +200,15 @@ const props = withDefaults(
         /** cover=全宽铺；avatar=居中方图（方头像直接 aspectFill 会只剩胸口） */
         fallbackKind?: 'cover' | 'avatar'
         name?: string
+        /** 页面滚动距离（px，已由页面节流）：驱动轻视差，位移锁在放大裁剪余量内 */
+        scrollTop?: number
     }>(),
     {
         items: () => [],
         fallback: '',
         fallbackKind: 'cover',
-        name: ''
+        name: '',
+        scrollTop: 0
     }
 )
 
@@ -217,9 +224,58 @@ const fallbackFailed = ref(false)
 /** 正在轮播位内播放的视频 key；空串=没有视频在播 */
 const playingKey = ref('')
 
+/* ---- 轻视差（v10 §3.2）----
+   媒体层按 0.22 倍滚动向上跟手位移，位移上限 = 放大裁剪余量的一半，
+   保证任何时刻都不会露出容器底色；prefers-reduced-motion 与低端安卓机自动关闭。 */
+const PARALLAX_RATE = 0.22
+const PARALLAX_SCALE = 1.08
+
+function readReducedMotion(): boolean {
+    try {
+        const matchMedia = (globalThis as any).matchMedia
+        return typeof matchMedia === 'function'
+            ? !!matchMedia('(prefers-reduced-motion: reduce)').matches
+            : false
+    } catch {
+        return false
+    }
+}
+
+function readLowEnd(): boolean {
+    try {
+        const api: any = uni as any
+        const info = typeof api.getDeviceInfo === 'function' ? api.getDeviceInfo() : {}
+        const level = Number(info?.benchmarkLevel)
+        // 微信只在安卓上报 benchmarkLevel（-1=未知）；<10 视为低端机，关掉视差省 GPU
+        return Number.isFinite(level) && level > 0 && level < 10
+    } catch {
+        return false
+    }
+}
+
+const reducedMotion = ref(readReducedMotion())
+const lowEnd = ref(readLowEnd())
+
 const visibleItems = computed(() => props.items.filter((item) => !failedKeys.value.includes(item.key)))
 
 const stageHeight = computed(() => bannerStageHeight(props.config, expanded.value))
+
+/**
+ * 视差位移：静止时不放大（不吃画幅），随滚动同步放大到 1.08 并下移，
+ * 位移上限 = 当时的放大裁剪余量一半 → 任何时刻都不会露底。
+ */
+const parallaxStyle = computed(() => {
+    if (reducedMotion.value || lowEnd.value) return {}
+    const stage = stageHeight.value
+    if (!stage) return {}
+    const scrolled = Math.min(Math.max(0, props.scrollTop), stage)
+    const scale = 1 + (PARALLAX_SCALE - 1) * (scrolled / stage)
+    const overscan = (stage * (scale - 1)) / 2
+    const shift = Math.min(scrolled * PARALLAX_RATE, overscan)
+    return {
+        transform: `translate3d(0, ${shift.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`
+    }
+})
 // 无轮播（仅 cover/avatar 兜底）时不出现展开按钮；只有真实轮播条目才允许展开
 const canExpand = computed(() => visibleItems.value.length > 0 && canExpandBanner(props.config))
 const showIndicator = computed(
@@ -305,6 +361,7 @@ function onChange(e: any) {
 
 function toggleExpand() {
     if (!canExpand.value) return
+    haptic('light', 'banner-expand')
     expanded.value = !expanded.value
     emit('expand', expanded.value)
 }
@@ -358,6 +415,14 @@ function onVideoError() {
     overflow: hidden;
     background: var(--c-dark-2);
     transition: height 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+
+    /* 视差层：满铺媒体，transform 由内联样式驱动；不写 transition，避免跟手迟滞 */
+    &__parallax {
+        width: 100%;
+        height: 100%;
+        transform-origin: center center;
+        will-change: transform;
+    }
 
     &__swiper {
         width: 100%;

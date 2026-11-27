@@ -40,11 +40,11 @@
             <view class="done__card">
                 <view class="done__row">
                     <text class="done__k">问卷版本</text>
-                    <text class="done__v">第 {{ detail.version_no || 1 }} 版</text>
+                    <text class="done__v t-num">第 {{ detail.version_no || 1 }} 版</text>
                 </view>
                 <view class="done__row">
                     <text class="done__k">已答题目</text>
-                    <text class="done__v">{{ questions.length }} 题</text>
+                    <text class="done__v t-num">{{ questions.length }} 题</text>
                 </view>
                 <view v-if="detail.staff?.name || detail.staff_name" class="done__row done__row--last">
                     <text class="done__k">策划师</text>
@@ -67,8 +67,8 @@
             <!-- 进度条 + 草稿状态 -->
             <view class="qbar">
                 <view class="qbar__top">
-                    <text class="qbar__text">
-                        已完成 <text class="qbar__num">{{ answeredCount }}</text> /
+                    <text class="qbar__text t-num">
+                        已完成 <text class="qbar__num t-num">{{ answeredCount }}</text> /
                         {{ questions.length }} 题
                     </text>
                     <view class="qbar__draft">
@@ -103,7 +103,7 @@
                     <view
                         v-for="opt in q.options || []"
                         :key="opt"
-                        class="chip"
+                        class="chip hit-88"
                         :class="{ 'is-on': answers[keyOf(q)] === opt, 'is-lock': !editable }"
                         hover-class="is-pressed"
                         @tap="pickSingle(q, opt)"
@@ -117,7 +117,7 @@
                     <view
                         v-for="opt in q.options || []"
                         :key="opt"
-                        class="chip"
+                        class="chip hit-88"
                         :class="{ 'is-on': isPicked(q, opt), 'is-lock': !editable }"
                         hover-class="is-pressed"
                         @tap="toggleMulti(q, opt)"
@@ -132,7 +132,7 @@
                         <view
                             v-for="n in ratingMax(q)"
                             :key="n"
-                            class="score__item"
+                            class="score__item hit-88"
                             :class="{ 'is-on': Number(answers[keyOf(q)] || 0) >= n }"
                             hover-class="is-pressed"
                             @tap="pickRating(q, n)"
@@ -184,7 +184,9 @@
                 <view class="bar__in">
                     <view class="bar__left">
                         <text class="bar__label">进度</text>
-                        <text class="bar__value">{{ answeredCount }} / {{ questions.length }}</text>
+                        <text class="bar__value t-num"
+                            >{{ answeredCount }} / {{ questions.length }}</text
+                        >
                     </view>
                     <view
                         class="bar__btn"
@@ -225,6 +227,7 @@ import { resolveErrorView } from '@/utils/resolveErrorView'
 import { report } from '@/platform/report'
 import { preloadSubscribeTemplates, requestSubscribe } from '@/platform/subscribe'
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
+import { haptic } from '@/utils/haptics'
 
 const id = ref(0)
 const detail = ref<any>({})
@@ -331,6 +334,7 @@ function onPrimary() {
 function pickSingle(q: any, opt: string) {
     if (!editable.value) return
     answers[keyOf(q)] = answers[keyOf(q)] === opt ? '' : opt
+    haptic('light', 'q-option')
     onInput()
 }
 
@@ -354,12 +358,14 @@ function toggleMulti(q: any, opt: string) {
         cur.push(opt)
     }
     answers[k] = cur
+    haptic('light', 'q-option')
     onInput()
 }
 
 function pickRating(q: any, n: number) {
     if (!editable.value) return
     answers[keyOf(q)] = answers[keyOf(q)] === n ? 0 : n
+    haptic('light', 'q-star')
     onInput()
 }
 
@@ -455,6 +461,7 @@ function onSubmitTap() {
 async function doSubmit() {
     if (submitting.value) return
     submitting.value = true
+    haptic('medium', 'q-submit')
     if (!idemKey) idemKey = `q-${id.value}-${Date.now()}`
     try {
         // 必填校验已在 onSubmitTap 通过：先同步拉起订阅授权（缓存由 onLoad 预热），
@@ -596,7 +603,8 @@ watch(answeredCount, () => {
     padding: 26rpx;
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__h {
         display: flex;
@@ -658,6 +666,11 @@ watch(answeredCount, () => {
        注：此处在视觉侧清单之外，按主理人"可点块残留应归零"这条验收标准一并处理。 */
     border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
+    box-sizing: border-box;
+    transition:
+        background-color var(--dur-base) var(--ease-out),
+        border-color var(--dur-base) var(--ease-out),
+        color var(--dur-base) var(--ease-out);
 
     &__text {
         font-size: var(--fs-23);
@@ -713,9 +726,11 @@ watch(answeredCount, () => {
     padding: 20rpx;
     border-radius: var(--r-sm);
     background: var(--c-surface-2);
+    border: 1rpx solid var(--c-control-border);
     font-size: var(--fs-25);
-    line-height: 1.7;
+    line-height: var(--lh-loose);
     color: var(--c-ink);
+    box-sizing: border-box;
 
     &__ph {
         color: var(--c-ink-3);
@@ -747,8 +762,12 @@ watch(answeredCount, () => {
     bottom: 0;
     z-index: 90;
     padding: 16rpx 42rpx calc(16rpx + var(--safe-bottom));
-    background: var(--c-surface);
-    border-top: 1rpx solid var(--c-line);
+    /* 浮层第三层表面 + 抽屉投影：底部操作区压在滚动内容之上仍能分层 */
+    background: rgba(var(--c-surface-float-rgb), 0.94);
+    backdrop-filter: blur(20px);
+    border-top: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-sheet);
+    box-sizing: border-box;
 
     &__in {
         display: flex;
@@ -774,7 +793,7 @@ watch(answeredCount, () => {
     }
 
     &__btn {
-        height: 84rpx;
+        height: 88rpx;
         padding: 0 44rpx;
         border-radius: var(--r-pill);
         background: var(--c-action-bg);
@@ -782,6 +801,7 @@ watch(answeredCount, () => {
         display: flex;
         align-items: center;
         justify-content: center;
+        box-sizing: border-box;
 
         &-text {
             font-size: var(--fs-26);
@@ -819,7 +839,7 @@ watch(answeredCount, () => {
         margin-top: 14rpx;
         text-align: center;
         font-size: var(--fs-22);
-        line-height: 1.7;
+        line-height: var(--lh-loose);
         color: var(--c-ink-3);
     }
 
@@ -829,7 +849,8 @@ watch(answeredCount, () => {
         padding: 8rpx 26rpx;
         border-radius: var(--r-md);
         background: var(--c-surface);
-        border: 1rpx solid var(--c-line);
+        border: 1rpx solid var(--c-card-border);
+        box-shadow: var(--shadow-card);
     }
 
     &__row {
@@ -875,5 +896,12 @@ watch(answeredCount, () => {
 }
 .ic-star.is-on {
     color: var(--c-warning);
+}
+
+/* v10 §3.13：减弱动效下选项直接换色，不做过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .chip {
+        transition: none;
+    }
 }
 </style>

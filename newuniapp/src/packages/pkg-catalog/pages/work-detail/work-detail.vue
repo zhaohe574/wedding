@@ -46,17 +46,22 @@
         <template v-else>
             <!-- ========== 多媒体展区 ========== -->
             <view class="hero">
-                <!-- 切换胶囊：视频与图集都有时才出现 -->
-                <view v-if="videoUrl && galleryImages.length" class="hero__tabs">
+                <!-- 切换胶囊：视频与图集都有时才出现；等宽两段 + 滑动底块给出「滑块感」 -->
+                <view v-if="videoUrl && galleryImages.length" class="hero__tabs" aria-role="tablist">
+                    <view
+                        class="hero__seg"
+                        :class="{ 'is-right': mediaMode !== 'video' }"
+                        aria-hidden="true"
+                    />
                     <view
                         class="hero__tab"
                         :class="{ 'is-on': mediaMode === 'video' }"
                         hover-class="is-pressed"
                         aria-role="tab"
                         :aria-selected="mediaMode === 'video'"
-                        @tap="mediaMode = 'video'"
+                        @tap="switchMedia('video')"
                     >
-                        <tn-icon name="play-fill" :size="20" />
+                        <tn-icon name="play-fill" :size="20" class="hero__tab-ic" />
                         <text>视频</text>
                     </view>
                     <view
@@ -65,9 +70,9 @@
                         hover-class="is-pressed"
                         aria-role="tab"
                         :aria-selected="mediaMode === 'gallery'"
-                        @tap="mediaMode = 'gallery'"
+                        @tap="switchMedia('gallery')"
                     >
-                        <tn-icon name="image" :size="20" />
+                        <tn-icon name="image" :size="20" class="hero__tab-ic" />
                         <text>图集({{ galleryImages.length }})</text>
                     </view>
                 </view>
@@ -234,6 +239,7 @@ import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
 import { getWorkDetail } from '@/api/catalog'
 import { report } from '@/platform/report'
 import { navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { buildShare } from '@/utils/share'
 import { useAppStore } from '@/stores/app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
@@ -318,6 +324,13 @@ const viewCount = computed(() => Number(work.value?.view_count || 0))
 
 function onSwiperChange(e: any) {
     currentIndex.value = Number(e?.detail?.current || 0)
+}
+
+/** 媒体切换：同一模式不重复触发，切换时给一次 light 触觉 */
+function switchMedia(mode: 'video' | 'gallery') {
+    if (mediaMode.value === mode) return
+    haptic('light', 'work-media')
+    mediaMode.value = mode
 }
 
 function previewImages(idx: number) {
@@ -416,31 +429,68 @@ onShareAppMessage(() =>
 
 /* ========== 多媒体展区 ========== */
 .hero {
+    /* 等宽两段式切换：底槽 + 滑动底块（v10 §3.5 滑块感），不用下划线 */
     &__tabs {
+        position: relative;
         display: flex;
-        justify-content: center;
-        gap: var(--sp-2);
-        padding: var(--sp-3) var(--page-gutter) 0;
+        width: 420rpx;
+        margin: var(--sp-3) auto 0;
+        padding: 4rpx;
+        box-sizing: border-box;
+        border-radius: var(--r-pill);
+        background: var(--c-surface-2);
+        border: 1rpx solid var(--c-control-border);
+    }
+
+    /* 底块：始终占一半宽度，靠 translateX 滑动，过渡走 spring-soft */
+    &__seg {
+        position: absolute;
+        top: 4rpx;
+        left: 4rpx;
+        width: calc(50% - 4rpx);
+        height: calc(100% - 8rpx);
+        border-radius: var(--r-pill);
+        background: var(--c-active-bg);
+        box-shadow: inset 0 0 0 1rpx var(--c-active-border);
+        transition: transform var(--dur-base) var(--ease-spring-soft);
+
+        &.is-right {
+            transform: translate3d(100%, 0, 0);
+        }
     }
 
     &__tab {
+        position: relative;
+        z-index: 1;
+        flex: 1;
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 6rpx;
-        height: 56rpx;
-        padding: 0 24rpx;
+        /* 视觉 60rpx，热区 88rpx：上下各扩 14rpx，与底槽留一点呼吸 */
+        height: 60rpx;
         border-radius: var(--r-pill);
-        border: 1rpx solid var(--c-line-strong);
-        background: var(--c-surface);
         color: var(--c-ink-3);
         font-size: var(--fs-22);
         line-height: var(--lh-none);
+        transition: color var(--dur-fast) var(--ease-out);
+
+        &::before {
+            content: "";
+            position: absolute;
+            top: -14rpx;
+            bottom: -14rpx;
+            left: 0;
+            right: 0;
+        }
 
         &.is-on {
-            background: var(--c-active-bg);
-            border-color: var(--c-active-border);
             color: var(--c-active-fg);
         }
+    }
+
+    &__tab-ic {
+        color: inherit;
     }
 
     &__stage {
@@ -533,7 +583,12 @@ onShareAppMessage(() =>
 
 /* ========== 作品信息卡 ========== */
 .card {
-    padding: 30rpx var(--page-gutter) 0;
+    margin: var(--sp-4) var(--page-gutter) 0;
+    padding: 28rpx;
+    border-radius: var(--r-lg);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__meta {
         display: flex;
@@ -591,7 +646,8 @@ onShareAppMessage(() =>
     padding: 24rpx;
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__av {
         flex: none;
@@ -700,15 +756,21 @@ onShareAppMessage(() =>
 }
 
 @media screen and (max-width: 359px) {
-    .ph,
-    .card {
+    .ph {
         padding-left: var(--sp-3);
         padding-right: var(--sp-3);
     }
 
+    .card,
     .creator {
         margin-left: var(--sp-3);
         margin-right: var(--sp-3);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero__seg {
+        transition: none;
     }
 }
 </style>

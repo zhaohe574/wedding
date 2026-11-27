@@ -19,7 +19,7 @@
                     :hover-start-time="20"
                     :hover-stay-time="70"
                     :hover-stop-propagation="true"
-                    class="filter-tab"
+                    class="filter-tab hit-88"
                     :class="{ 'is-active': activeTab === tab.key }"
                     aria-role="button"
                     :aria-label="`筛选${tab.label}投诉`"
@@ -30,7 +30,7 @@
             </view>
 
             <view v-if="loading" class="list-pad">
-                <base-skeleton :rows="3" />
+                <base-skeleton variant="card" :rows="3" />
             </view>
 
             <base-empty
@@ -56,10 +56,11 @@
                 @action="goCreate"
             />
 
-            <view v-else class="list-pad list">
+            <view v-else class="list-pad list" :class="{ stagger: staggerOn, 'is-in': staggerIn }">
                 <base-card
-                    v-for="item in list"
+                    v-for="(item, index) in list"
                     :key="item.id"
+                    :style="{ '--i': index }"
                     compact
                     clickable
                     @tap="goDetail(item)"
@@ -76,7 +77,7 @@
                     <text class="card-title ellipsis">{{ item.title || typeText(item) }}</text>
                     <text v-if="item.content" class="content ellipsis-2">{{ item.content }}</text>
                     <view class="foot">
-                        <text class="foot__time">{{ item.create_time }}</text>
+                        <text class="foot__time t-num">{{ item.create_time }}</text>
                         <view class="foot__go">
                             <text class="foot__go-text">查看进度</text>
                             <tn-icon name="right" :size="20" class="foot__arrow" />
@@ -98,8 +99,9 @@
 
 <script setup lang="ts">
 /** 投诉列表 */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
+import { haptic } from '@/utils/haptics'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { FB } from '@/constants/feedback'
 import {
@@ -188,6 +190,7 @@ function statusTone(item: any) {
 
 function selectTab(key: TabKey) {
     if (activeTab.value === key) return
+    haptic('light', 'complaint-tab')
     activeTab.value = key
     loading.value = true
     fetchPage(true)
@@ -229,7 +232,34 @@ function reload() {
     fetchPage(true)
 }
 
+/* ---- 首屏错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerOn = ref(false)
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger() {
+    if (!list.value.length || staggerIn.value) return
+    staggerOn.value = true
+    if (staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
+
 function goDetail(item: any) {
+    haptic('light', 'complaint-item')
     navigate({
         path: '/packages/pkg-service/pages/aftersale/complaint-detail',
         query: { id: item.id }
@@ -289,10 +319,14 @@ function onReachBottomLoad() {
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
+    transition:
+        background-color var(--dur-base) var(--ease-out),
+        border-color var(--dur-base) var(--ease-out);
 
     &__text {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
+        transition: color var(--dur-base) var(--ease-out);
     }
 
     &.is-active {
@@ -303,6 +337,14 @@ function onReachBottomLoad() {
             color: var(--c-active-fg);
             font-weight: var(--fw-medium);
         }
+    }
+}
+
+/* v10 §3.13：减弱动效下筛选态直接切换，不做过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .filter-tab,
+    .filter-tab__text {
+        transition: none;
     }
 }
 

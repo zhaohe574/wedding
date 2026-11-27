@@ -12,7 +12,7 @@
                 hover-class="is-pressed"
                 aria-role="radio"
                 :aria-checked="!needed"
-                @tap="emit('setNeeded', false)"
+                @tap="onSetNeeded(false)"
             >
                 <text class="rolechoice__title">不需要</text>
                 <text class="rolechoice__desc">不增加该项服务</text>
@@ -29,7 +29,7 @@
                 hover-class="is-pressed"
                 aria-role="radio"
                 :aria-checked="needed"
-                @tap="emit('setNeeded', true)"
+                @tap="onSetNeeded(true)"
             >
                 <text class="rolechoice__title">需要</text>
                 <text class="rolechoice__desc">{{ priceText }}</text>
@@ -58,7 +58,7 @@
                         hover-class="is-pressed"
                         aria-role="radio"
                         :aria-checked="isPicked(c)"
-                        @tap="emit('pick', c)"
+                        @tap="onPick(c)"
                     >
                         <view class="pcard__top">
                             <image
@@ -84,7 +84,7 @@
                         </view>
                         <view class="pcard__foot">
                             <price size="sm" :content="c.price" />
-                            <text class="pcard__detail" @tap.stop="emit('openDetail', c)">详情</text>
+                            <text class="pcard__detail" @tap.stop="onOpenDetail(c)">详情</text>
                         </view>
                     </view>
                 </view>
@@ -108,6 +108,7 @@
 
 <script setup lang="ts">
 import { candidateMeta, type RolePickedPerson } from '../booking-helpers'
+import { haptic } from '@/utils/haptics'
 
 const props = defineProps<{
     role: any
@@ -128,6 +129,22 @@ const emit = defineEmits<{
 
 function isPicked(candidate: any) {
     return !!props.picked && Number(props.picked.staff_id) === Number(candidate?.staff_id)
+}
+
+/** 三处点击共用 light 触觉：选择是否加入角色 / 选人 / 看详情，键位不同互不吞震 */
+function onSetNeeded(needed: boolean) {
+    haptic('light', 'role-needed')
+    emit('setNeeded', needed)
+}
+
+function onPick(candidate: any) {
+    haptic('light', 'role-pick')
+    emit('pick', candidate)
+}
+
+function onOpenDetail(candidate: any) {
+    haptic('light', 'role-detail')
+    emit('openDetail', candidate)
 }
 </script>
 
@@ -167,9 +184,13 @@ function isPicked(candidate: any) {
     position: relative;
     padding: 24rpx 22rpx;
     min-height: 150rpx;
-    border: 1rpx solid var(--c-line-strong);
-    border-radius: var(--r-sm);
+    border: 1rpx solid var(--c-card-border);
+    border-radius: var(--r-md);
     background: var(--c-surface);
+    box-shadow: var(--shadow-card);
+    transition:
+        border-color var(--dur-fast) var(--ease-out),
+        box-shadow var(--dur-base) var(--ease-out);
 
     &.is-disabled {
         opacity: 0.55;
@@ -177,6 +198,7 @@ function isPicked(candidate: any) {
 
     &.is-on {
         border-color: var(--c-brand-text);
+        box-shadow: var(--shadow-card-hover);
 
         .rolechoice__tick {
             opacity: 1;
@@ -260,13 +282,18 @@ function isPicked(candidate: any) {
     width: 320rpx;
     flex: none;
     padding: 20rpx;
-    border: 1rpx solid var(--c-line-strong);
-    border-radius: var(--r-sm);
+    border: 1rpx solid var(--c-card-border);
+    border-radius: var(--r-md);
     background: var(--c-surface);
+    box-shadow: var(--shadow-card);
+    transition:
+        border-color var(--dur-fast) var(--ease-out),
+        box-shadow var(--dur-base) var(--ease-out);
 
     &.is-on {
         border-color: var(--c-brand-text);
         background: var(--c-brand-bg);
+        box-shadow: var(--shadow-card-hover);
 
         .pcard__tick {
             opacity: 1;
@@ -353,8 +380,9 @@ function isPicked(candidate: any) {
         font-size: var(--fs-20);
         color: var(--c-brand-text);
         text-decoration: underline;
-        padding: 10rpx 0;
-        margin: -10rpx 0;
+        /* 视觉是一行文字，热区靠负外边距撑到 88rpx，不改变卡片高度 */
+        padding: 32rpx 24rpx;
+        margin: -32rpx -24rpx;
     }
 }
 

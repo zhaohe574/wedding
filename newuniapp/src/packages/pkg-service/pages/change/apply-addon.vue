@@ -13,7 +13,11 @@
                     >
                         <view class="picker-row">
                             <text
-                                :class="form.service_date ? 'picker-row__text' : 'picker-row__ph'"
+                                :class="
+                                    form.service_date
+                                        ? 'picker-row__text t-num'
+                                        : 'picker-row__ph t-num'
+                                "
                             >
                                 {{ form.service_date || '请选择日期' }}
                             </text>
@@ -77,16 +81,6 @@
                 <!-- v1 u-icon → v2 tn-icon：info-circle → tips -->
                 <tn-icon name="tips" :size="24" />
                 <text class="tips__text">加项需商家审核，审核通过后生成补充金额，需另行支付。</text>
-            </view>
-
-            <view class="submit">
-                <base-button
-                    text="提交申请"
-                    variant="ink"
-                    size="lg"
-                    :loading="submitting"
-                    @click="handleSubmit"
-                />
             </view>
 
             <!-- 人员选择 -->
@@ -158,6 +152,17 @@
                 </view>
             </view>
         </view>
+        <template #bottom>
+            <bottom-bar>
+                <base-button
+                    text="提交申请"
+                    variant="ink"
+                    size="lg"
+                    :loading="submitting"
+                    @click="handleSubmit"
+                />
+            </bottom-bar>
+        </template>
         <app-toast />
     </page-shell>
 </template>
@@ -171,6 +176,7 @@ import { applyAddItem } from '@/api/change'
 import { getStaffList, getStaffPackages } from '@/api/catalog'
 import { useAppStore } from '@/stores/app'
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
+import { haptic } from '@/utils/haptics'
 
 const appStore = useAppStore()
 
@@ -204,10 +210,12 @@ function imageUrl(url?: string) {
 }
 
 function onDateChange(e: any) {
+    haptic('light', 'addon-date')
     form.service_date = String(e?.detail?.value || '')
 }
 
 async function openStaffPicker() {
+    haptic('light', 'addon-staff')
     staffVisible.value = true
     if (!staffList.value.length) await searchStaff()
 }
@@ -230,6 +238,7 @@ async function searchStaff() {
 }
 
 function chooseStaff(s: any) {
+    haptic('light', 'addon-pick')
     selectedStaff.value = s
     selectedPackage.value = null
     staffVisible.value = false
@@ -239,6 +248,7 @@ function chooseStaff(s: any) {
 /** 套餐行点击：未选人员时直接返回 —— placeholder 已说明原因，再弹 toast 就是双反馈 */
 function onPackageRowTap() {
     if (!selectedStaff.value) return
+    haptic('light', 'addon-package')
     openPackagePicker()
 }
 
@@ -255,6 +265,7 @@ async function openPackagePicker() {
 }
 
 function choosePackage(p: any) {
+    haptic('light', 'addon-pick')
     selectedPackage.value = {
         id: p.package_id || p.id,
         name: p.package?.name || p.name,
@@ -275,6 +286,7 @@ async function handleSubmit() {
         return
     }
     submitting.value = true
+    haptic('medium', 'addon-submit')
     try {
         // 服务号提醒：表单校验已通过，只在提交前弹一次；
         // 暂停时直接退出，submitting 由 finally 释放
@@ -319,7 +331,7 @@ onLoad((options: any) => {
     display: block;
     margin-bottom: var(--sp-3);
     font-size: var(--fs-md);
-    font-weight: 500;
+    font-weight: var(--fw-medium);
     color: var(--c-ink);
 }
 
@@ -333,7 +345,7 @@ onLoad((options: any) => {
     min-height: 88rpx;
     padding: 0 var(--sp-3);
     background: var(--c-surface-2);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);
     border-radius: var(--r-md);
     box-sizing: border-box;
 
@@ -410,7 +422,7 @@ onLoad((options: any) => {
 
     &__name {
         font-size: var(--fs-md);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
         line-height: var(--lh-body);
         color: var(--c-ink);
         overflow-wrap: anywhere;
@@ -442,18 +454,6 @@ onLoad((options: any) => {
     }
 }
 
-.submit {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 50;
-    padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + var(--safe-bottom));
-    border-top: 1rpx solid var(--c-line);
-    background: var(--c-surface);
-    box-sizing: border-box;
-}
-
 .mask {
     position: fixed;
     top: 0;
@@ -470,8 +470,10 @@ onLoad((options: any) => {
     width: 100%;
     max-height: 80vh;
     padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
-    background: var(--c-surface);
+    border-radius: var(--r-48) var(--r-48) 0 0;
+    /* 浮层第三层表面 + 抽屉投影（--shadow-sheet 内含 1rpx 分隔线） */
+    background: var(--c-surface-float);
+    box-shadow: var(--shadow-sheet);
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
@@ -479,7 +481,7 @@ onLoad((options: any) => {
 
     &__title {
         font-size: var(--fs-lg);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
         color: var(--c-ink);
     }
 
@@ -500,10 +502,10 @@ onLoad((options: any) => {
 
 .search {
     width: 100%;
-    height: 80rpx;
+    height: 88rpx;
     padding: 0 var(--sp-3);
     background: var(--c-surface-2);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);
     border-radius: var(--r-md);
     box-sizing: border-box;
     font-size: var(--fs-xs);

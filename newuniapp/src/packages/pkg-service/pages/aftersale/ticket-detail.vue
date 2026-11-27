@@ -47,7 +47,7 @@
                         </view>
                         <view class="kv">
                             <text class="kv__k">提交时间</text>
-                            <text class="kv__v">{{ data.create_time || '—' }}</text>
+                            <text class="kv__v t-num">{{ data.create_time || '—' }}</text>
                         </view>
                         <view v-if="data.type" class="kv">
                             <text class="kv__k">工单类型</text>
@@ -55,7 +55,7 @@
                         </view>
                         <view v-if="data.order_sn" class="kv">
                             <text class="kv__k">关联订单</text>
-                            <text class="kv__v kv__v--serif">{{ data.order_sn }}</text>
+                            <text class="kv__v kv__v--serif t-num">{{ data.order_sn }}</text>
                         </view>
                     </base-card>
 
@@ -107,7 +107,7 @@
                                     <text class="log__text">{{
                                         l.content || l.remark || l.action_desc
                                     }}</text>
-                                    <text class="log__time">{{ l.create_time }}</text>
+                                    <text class="log__time t-num">{{ l.create_time }}</text>
                                 </view>
                             </view>
                         </view>
@@ -129,8 +129,8 @@
                             :hover-stop-propagation="true"
                             v-for="n in 5"
                             :key="n"
-                            class="stars__item"
-                            @tap="satisfaction = n"
+                            class="stars__item hit-88"
+                            @tap="pickStar(n)"
                         >
                             <!-- v1 u-icon → v2 tn-icon：评分星形保留（star-fill / star） -->
                             <!-- 批 1.5 C：未选星原 --c-line-strong 仅 1.60:1 → --c-ink-3 -->
@@ -248,6 +248,7 @@ import {
     cancelTicket
 } from '@/api/aftersale'
 import { useAppStore } from '@/stores/app'
+import { haptic } from '@/utils/haptics'
 
 const appStore = useAppStore()
 
@@ -355,6 +356,11 @@ async function load() {
     }
 }
 
+function pickStar(n: number) {
+    satisfaction.value = n
+    haptic('light', 'ticket-star')
+}
+
 function openConfirm() {
     satisfaction.value = 5
     remark.value = ''
@@ -369,6 +375,7 @@ function openReject() {
 async function doConfirm() {
     if (acting.value) return
     acting.value = true
+    haptic('medium', 'ticket-confirm')
     try {
         await confirmTicketComplete({
             id: id.value,
@@ -405,6 +412,7 @@ async function doReject() {
 }
 
 async function handleCancel() {
+    /* 取消工单属不可逆操作：确认类二次弹窗保留居中形态，不做底部抽屉 */
     const confirmed = await new Promise<boolean>((resolve) => {
         uni.showModal({
             title: '取消工单',
@@ -414,6 +422,7 @@ async function handleCancel() {
         })
     })
     if (!confirmed) return
+    haptic('heavy', 'ticket-cancel')
     try {
         await cancelTicket({ id: id.value })
         toast.info('已取消')
@@ -461,6 +470,8 @@ function onRefresh(done: () => void) {
     border-radius: var(--r-md);
     background: linear-gradient(135deg, var(--c-dark-1), var(--c-dark-2));
     color: var(--c-on-dark);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__top {
         display: flex;
@@ -686,8 +697,10 @@ function onRefresh(done: () => void) {
 .sheet {
     width: 100%;
     max-height: 80vh;
-    background: var(--c-surface);
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    /* 浮层第三层表面：暖白 / 深咖 + 抽屉顶部投影（--shadow-sheet 内含 1rpx 分隔线） */
+    background: var(--c-surface-float);
+    border-radius: var(--r-48) var(--r-48) 0 0;
+    box-shadow: var(--shadow-sheet);
     padding: var(--sp-3) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
     display: flex;
     flex-direction: column;
@@ -717,7 +730,7 @@ function onRefresh(done: () => void) {
         width: 100%;
         min-height: 160rpx;
         background: var(--c-surface-2);
-        border: 1rpx solid var(--c-line);
+        border: 1rpx solid var(--c-control-border);
         border-radius: var(--r-md);
         padding: var(--sp-3);
         font-size: var(--fs-md);

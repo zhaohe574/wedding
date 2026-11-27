@@ -35,7 +35,7 @@
             </view>
 
             <view v-if="firstLoading" class="page-pad">
-                <base-skeleton :rows="3" />
+                <base-skeleton variant="card" :rows="3" />
             </view>
 
             <base-empty
@@ -65,8 +65,13 @@
                 @action="goQuery"
             />
 
-            <view v-else class="grid">
-                <view v-for="item in list" :key="item.id" class="cell">
+            <view v-else class="grid stagger" :class="{ 'is-in': !firstLoading }">
+                <view
+                    v-for="(item, index) in list"
+                    :key="item.id"
+                    class="cell"
+                    :style="{ '--i': index }"
+                >
                     <image
                         class="cell__img"
                         :src="imageUrl(item.cover || item.image)"
@@ -92,6 +97,7 @@ import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate, safeDecodeParam } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { FB } from '@/constants/feedback'
 import { getCaseList, getCaseHotTags } from '@/api/content'
 import { normalizePage } from '@/request'
@@ -181,6 +187,7 @@ function reload() {
 
 function switchTag(t: string) {
     if (t === tag.value) return
+    haptic('light', 'case-tag')
     tag.value = t
     list.value = []
     reload()
@@ -291,7 +298,9 @@ function onReachBottomLoad() {
     height: 420rpx;
     overflow: hidden;
     border-radius: var(--r-md);
+    border: 1rpx solid var(--c-card-border);
     background: var(--c-neutral-bg);
+    /* v10 §2.1：双列图卡与人员卡同一套落地规则（暖影 + 暗色描边） */
     box-shadow: var(--shadow-card);
 
     &__img {

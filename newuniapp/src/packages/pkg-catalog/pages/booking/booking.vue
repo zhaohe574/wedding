@@ -94,7 +94,8 @@
             </view>
 
             <!-- ============ 06 选择套餐 ============ -->
-            <view v-if="currentStepKey === 'package'" class="panel">
+            <!-- 步骤切换：每个分支带 key（同上一步不同即重建），入场做一次淡入上浮 -->
+            <view v-if="currentStepKey === 'package'" :key="currentStepKey" class="panel bstep">
                 <view class="stephead">
                     <text class="stephead__title">选择服务套餐</text>
                 </view>
@@ -165,7 +166,7 @@
             </view>
 
             <!-- ============ 07 选择附加项（仅当前套餐有绑定附加项时才成为一步） ============ -->
-            <view v-else-if="currentStepKey === 'addon'" class="panel">
+            <view v-else-if="currentStepKey === 'addon'" :key="currentStepKey" class="panel bstep">
                 <view class="stephead">
                     <text class="stephead__title">选择附加项</text>
                 </view>
@@ -236,6 +237,8 @@
             <!-- ============ 可选服务：婚礼管家 / 婚礼督导 ============ -->
             <booking-role-step
                 v-else-if="activeRoleSlot"
+                :key="currentStepKey"
+                class="bstep"
                 :role="activeRole"
                 :needed="activeRoleNeeded"
                 :picked="activeRolePicked"
@@ -252,6 +255,8 @@
             <!-- ============ 08 订单确认 ============ -->
             <booking-confirm-step
                 v-else
+                :key="currentStepKey"
+                class="bstep"
                 ref="confirmStepRef"
                 :date-day="dateDay"
                 :date-year-week="dateYearWeek"
@@ -393,6 +398,7 @@ import { report } from '@/platform/report'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { resolveBookingContext, saveBookingContext } from '@/utils/booking-context'
+import { haptic } from '@/utils/haptics'
 import { navigate } from '@/utils/link'
 import { EMPTY_REGION, hasRegionContext, regionParams, type RegionContext } from '@/utils/region'
 import { resolveErrorView } from '@/utils/resolveErrorView'
@@ -964,6 +970,7 @@ function selectPackage(p: any) {
 }
 
 function toggleAddon(id: number) {
+    haptic('light', 'booking-addon')
     const i = selectedAddons.value.indexOf(id)
     if (i >= 0) selectedAddons.value.splice(i, 1)
     else selectedAddons.value.push(id)
@@ -1102,6 +1109,7 @@ function nextStep() {
             return
         }
     }
+    haptic('light', 'booking-step')
     step.value = Math.min(step.value + 1, confirmStep.value)
     resetScrollAfterStepChange()
     if (isConfirm.value) {
@@ -1118,6 +1126,7 @@ function skipAddons() {
 
 function prevStep() {
     if (step.value > 1) {
+        haptic('light', 'booking-step')
         step.value -= 1
         resetScrollAfterStepChange()
     }
@@ -1420,6 +1429,28 @@ onLoad((options: any) => {
     padding: 24rpx 42rpx 0;
 }
 
+/* 步骤入场：新一步挂载时淡入 + 12rpx 上浮，只播一次，不改变步骤内部布局 */
+.bstep {
+    animation: stepIn var(--dur-base) var(--ease-out) both;
+}
+
+@keyframes stepIn {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 12rpx, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bstep {
+        animation: none;
+    }
+}
+
 .stephead {
     margin-bottom: 20rpx;
 
@@ -1478,12 +1509,16 @@ onLoad((options: any) => {
     min-width: 0;
     padding: 24rpx;
     border-radius: var(--r-md);
-    border: 1rpx solid var(--c-line-strong);
+    border: 1rpx solid var(--c-card-border);
     background: var(--c-surface);
-    transition: border-color var(--dur-fast) var(--ease-out);
+    box-shadow: var(--shadow-card);
+    transition:
+        border-color var(--dur-fast) var(--ease-out),
+        box-shadow var(--dur-base) var(--ease-out);
 
     &.is-on {
         border-color: var(--c-active-border);
+        box-shadow: var(--shadow-card-hover);
 
         .optcard__tick {
             opacity: 1;

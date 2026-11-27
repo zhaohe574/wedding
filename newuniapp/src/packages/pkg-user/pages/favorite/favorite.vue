@@ -12,7 +12,7 @@
     -->
     <page-shell title="我的收藏" bg="page" :show-back="true">
         <view v-if="loading" class="pad">
-            <base-skeleton :rows="4" />
+            <base-skeleton :rows="4" variant="card" />
         </view>
 
         <base-empty
@@ -45,55 +45,59 @@
                 <view
                     v-for="c in cats"
                     :key="c.key"
-                    class="chip"
+                    class="chip hit-88"
                     :class="{ 'is-on': activeCat === c.key }"
                     hover-class="is-pressed"
-                    @tap="activeCat = c.key"
+                    @tap="pickCat(c.key)"
                 >
-                    <text class="chip__text">{{ c.label }}</text>
+                    <text class="chip__text t-num">{{ c.label }}</text>
                 </view>
             </view>
 
-            <view
-                v-for="item in shown"
-                :key="item.id"
-                class="fcard"
-                hover-class="is-pressed"
-                @tap="goDetail(item)"
-            >
-                <view class="fcard__top">
-                    <image
-                        v-if="item.avatar"
-                        class="fcard__av"
-                        :src="imageUrl(item.avatar)"
-                        mode="aspectFill"
-                    />
-                    <view v-else class="fcard__av fcard__av--txt">
-                        <text class="fcard__av-text">{{ (item.name || '·').slice(0, 1) }}</text>
-                    </view>
-
-                    <view class="fcard__info">
-                        <view class="fcard__nm">
-                            <text class="fcard__name">{{ item.name || '未命名' }}</text>
-                        </view>
-                        <view v-if="item.rating" class="fcard__rate">
-                            <tn-icon name="star-fill" :size="20" />
-                            <text class="fcard__rate-num">{{ item.rating }}</text>
-                        </view>
-                        <text v-if="item.category_name" class="fcard__tg">
-                            {{ item.category_name }}
-                        </text>
-                    </view>
-                </view>
-
+            <view class="fcard-list" :class="{ stagger: staggerOn, 'is-in': staggerIn }">
                 <view
-                    class="fcard__heart"
+                    v-for="(item, index) in shown"
+                    :key="item.id"
+                    class="fcard"
+                    :style="{ '--i': index + 1 }"
                     hover-class="is-pressed"
-                    aria-role="button"
-                    :aria-label="`取消收藏${item.name || ''}`"
-                    @tap.stop="remove(item)"
+                    @tap="goDetail(item)"
                 >
-                    <tn-icon name="like-fill" :size="30" />
+                    <view class="fcard__top">
+                        <image
+                            v-if="item.avatar"
+                            class="fcard__av"
+                            :src="imageUrl(item.avatar)"
+                            mode="aspectFill"
+                        />
+                        <view v-else class="fcard__av fcard__av--txt">
+                            <text class="fcard__av-text">{{ (item.name || '·').slice(0, 1) }}</text>
+                        </view>
+
+                        <view class="fcard__info">
+                            <view class="fcard__nm">
+                                <text class="fcard__name">{{ item.name || '未命名' }}</text>
+                            </view>
+                            <view v-if="item.rating" class="fcard__rate">
+                                <tn-icon name="star-fill" :size="20" />
+                                <text class="fcard__rate-num t-num">{{ item.rating }}</text>
+                            </view>
+                            <text v-if="item.category_name" class="fcard__tg">
+                                {{ item.category_name }}
+                            </text>
+                        </view>
+                    </view>
+
+                    <view
+                        class="fcard__heart hit-88"
+                        :hover-stop-propagation="true"
+                        hover-class="is-pressed"
+                        aria-role="button"
+                        :aria-label="`取消收藏${item.name || ''}`"
+                        @tap.stop="remove(item)"
+                    >
+                        <tn-icon name="like-fill" :size="30" />
+                    </view>
                 </view>
             </view>
 
@@ -109,11 +113,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { getMyFavorites, toggleStaffFavorite } from '@/api/catalog'
 import { useAppStore } from '@/stores/app'
+import { haptic } from '@/utils/haptics'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import { report } from '@/platform/report'
@@ -144,6 +149,38 @@ const shown = computed(() => {
     if (activeCat.value === 'all') return list.value
     return list.value.filter((i) => (i.category_name || '').trim() === activeCat.value)
 })
+
+/* ---- 首屏错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerOn = ref(false)
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger() {
+    if (!shown.value.length || staggerIn.value) return
+    staggerOn.value = true
+    if (staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => shown.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
+
+function pickCat(key: string) {
+    if (activeCat.value === key) return
+    haptic('light', 'favorite-cat')
+    activeCat.value = key
+}
 
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
@@ -188,6 +225,7 @@ async function remove(item: any) {
     // 乐观移除 + 失败回滚：取消收藏是轻动作，不该等一个 loading
     const idx = list.value.findIndex((i) => i.id === item.id)
     if (idx < 0) return
+    haptic('light', 'favorite-remove')
     const backup = list.value.slice()
     list.value.splice(idx, 1)
     try {
@@ -247,7 +285,7 @@ onShow(() => load())
         display: block;
         margin-top: 8rpx;
         font-size: var(--fs-21);
-        line-height: 1.7;
+        line-height: var(--lh-loose);
         color: var(--c-ink-2);
     }
 }
@@ -257,14 +295,22 @@ onShow(() => load())
     height: 52rpx;
     padding: 0 22rpx;
     border-radius: var(--r-pill);
-    border: 1rpx solid var(--c-line-strong);
+    border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
     display: flex;
     align-items: center;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        transform var(--dur-press) var(--ease-out);
 
     &__text {
         font-size: var(--fs-22);
         color: var(--c-ink-2);
+    }
+
+    &.is-pressed {
+        transform: scale(0.97);
     }
 
     &.is-on {
@@ -277,13 +323,24 @@ onShow(() => load())
     }
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .chip {
+        transition: none;
+
+        &.is-pressed {
+            transform: none;
+        }
+    }
+}
+
+/* 同心圆角：外卡 40rpx − 内边距 24rpx = 头像 --r-16 */
 .fcard {
     position: relative;
     margin: 0 42rpx 18rpx;
     padding: 24rpx;
-    border-radius: var(--r-30);
+    border-radius: var(--r-lg);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
     box-shadow: var(--shadow-card);
 
     &__top {
@@ -294,7 +351,7 @@ onShow(() => load())
     &__av {
         width: 92rpx;
         height: 92rpx;
-        border-radius: var(--r-25);
+        border-radius: var(--r-16);
         background: var(--c-neutral-bg);
         flex: none;
 

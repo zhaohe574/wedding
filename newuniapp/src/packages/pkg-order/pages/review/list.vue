@@ -79,7 +79,7 @@
                     <base-card v-for="r in rows" :key="r.id">
                         <view class="rv">
                             <view class="rv__head">
-                                <text class="rv__score">★ {{ r.score }}</text>
+                                <text class="rv__score t-num">★ {{ r.score }}</text>
                                 <status-tag
                                     :label="reviewStatusLabel(r)"
                                     :tone="reviewStatusTone(r)"
@@ -90,7 +90,7 @@
                                 r.content || '（无文字评价）'
                             }}</text>
                             <view class="rv__foot">
-                                <text class="rv__time">{{ r.create_time }}</text>
+                                <text class="rv__time t-num">{{ r.create_time }}</text>
                                 <text v-if="r.staff_name" class="rv__staff">{{
                                     r.staff_name
                                 }}</text>
@@ -118,6 +118,7 @@ import {
 } from '@shared/contracts'
 import { getPendingReviews, getMyReviews } from '@/api/content'
 import { navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 
 const TABS = [
     { key: 'pending', label: '待评价' },
@@ -179,12 +180,14 @@ async function load() {
 
 function switchTab(key: string) {
     if (key === active.value) return
+    haptic('light', 'review-tab')
     active.value = key
     rows.value = []
     load()
 }
 
 function goPublish(item: any) {
+    haptic('light', 'review-publish')
     navigate({
         path: '/packages/pkg-order/pages/review/publish',
         query: {
@@ -228,7 +231,7 @@ function onRefresh(done: () => void) {
         height: 56rpx;
         padding: 0 var(--sp-3);
         box-sizing: border-box;
-        border: 1rpx solid var(--c-line-strong);
+        border: 1rpx solid var(--c-control-border);
         border-radius: var(--r-pill);
         background: var(--c-surface);
 
@@ -255,7 +258,7 @@ function onRefresh(done: () => void) {
 
     &__item.is-active &__text {
         color: var(--c-active-fg);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
     }
 }
 
@@ -312,7 +315,7 @@ function onRefresh(done: () => void) {
 
     &__title {
         font-size: var(--fs-md);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
         color: var(--c-ink);
     }
 
@@ -338,13 +341,13 @@ function onRefresh(done: () => void) {
     &__score {
         font-size: var(--fs-md);
         color: var(--c-warning);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
     }
 
     &__content {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: 1.7;
+        line-height: var(--lh-loose);
         overflow-wrap: anywhere;
     }
 

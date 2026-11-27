@@ -32,6 +32,8 @@ const qrSrc = computed(() => {
     border-radius: var(--r-sm);
     background: var(--c-surface);
     border: 1rpx solid var(--c-primary-border);
+    /* 浅色码片从深墨凭证卡上浮起；绘图尺寸与 API 行为保持不变 */
+    box-shadow: var(--shadow-card);
     display: flex;
     align-items: center;
     justify-content: center;

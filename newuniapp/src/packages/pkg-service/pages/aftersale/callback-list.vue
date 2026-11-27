@@ -3,7 +3,7 @@
     <page-shell title="服务回访" bg="page" :show-back="true">
         <view class="page-wrap list-page">
             <view v-if="loading" class="list-pad">
-                <base-skeleton :rows="3" />
+                <base-skeleton variant="card" :rows="3" />
             </view>
 
             <base-empty
@@ -29,7 +29,7 @@
                 fixed
             />
 
-            <view v-else class="list-pad list">
+            <view v-else class="list-pad list" :class="{ stagger: staggerOn, 'is-in': staggerIn }">
                 <!-- 顶部轻概览卡 -->
                 <view class="intro-card" :class="{ 'intro-card--highlight': pendingCount > 0 }">
                     <view class="intro-card__ic">
@@ -48,8 +48,9 @@
                 </view>
 
                 <base-card
-                    v-for="item in list"
+                    v-for="(item, index) in list"
                     :key="item.id"
+                    :style="{ '--i': index + 1 }"
                     compact
                     clickable
                     @tap="goDetail(item)"
@@ -70,9 +71,12 @@
                     </view>
 
                     <view v-if="metaItems(item).length" class="meta-list">
-                        <text v-for="(m, mi) in metaItems(item)" :key="mi" class="meta-row">{{
-                            m
-                        }}</text>
+                        <text
+                            v-for="(m, mi) in metaItems(item)"
+                            :key="mi"
+                            class="meta-row t-num"
+                            >{{ m }}</text
+                        >
                     </view>
 
                     <view v-if="canFill(item)" class="foot">
@@ -99,8 +103,9 @@
 
 <script setup lang="ts">
 /** 服务回访列表 */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { haptic } from '@/utils/haptics'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     SERVICE_CALLBACK_STATUS_NAME_MAP,
@@ -205,7 +210,34 @@ function reload() {
     fetchPage(true)
 }
 
+/* ---- 首屏错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerOn = ref(false)
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger() {
+    if (!list.value.length || staggerIn.value) return
+    staggerOn.value = true
+    if (staggerTimer) return
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
+
 function goDetail(item: any) {
+    haptic('light', 'callback-item')
     navigate({
         path: '/packages/pkg-service/pages/aftersale/callback-detail',
         query: { id: item.id }
@@ -244,7 +276,8 @@ onReachBottom(() => fetchPage(false))
     padding: var(--sp-3) var(--sp-4);
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &--highlight {
         background: var(--c-brand-bg);

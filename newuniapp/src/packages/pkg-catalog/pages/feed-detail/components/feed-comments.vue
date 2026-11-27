@@ -2,20 +2,26 @@
     <view class="com">
         <view class="com__head">
             <text class="com__title">评论</text>
-            <text v-if="commentCount > 0" class="com__num">{{ commentCount }}</text>
+            <text v-if="commentCount > 0" class="com__num t-num">{{ commentCount }}</text>
             <view class="com__sort">
-                <text
+                <view
                     class="com__sort-item"
                     :class="{ 'is-on': sort === 'hot' }"
-                    @tap="emit('switchSort', 'hot')"
-                    >最热</text
+                    hover-class="is-pressed"
+                    aria-role="button"
+                    @tap="onSwitchSort('hot')"
                 >
-                <text
+                    <text class="com__sort-text">最热</text>
+                </view>
+                <view
                     class="com__sort-item"
                     :class="{ 'is-on': sort === 'new' }"
-                    @tap="emit('switchSort', 'new')"
-                    >最新</text
+                    hover-class="is-pressed"
+                    aria-role="button"
+                    @tap="onSwitchSort('new')"
                 >
+                    <text class="com__sort-text">最新</text>
+                </view>
             </view>
         </view>
 
@@ -44,18 +50,22 @@
                     <view
                         class="cm__like"
                         :class="{ 'is-on': c.is_liked }"
-                        @tap="emit('like', c)"
+                        hover-class="is-pressed"
+                        aria-role="button"
+                        @tap="onLike(c)"
                     >
                         <tn-icon :name="c.is_liked ? 'like-fill' : 'like'" :size="22" />
-                        <text class="cm__like-num">{{ c.like_count || 0 }}</text>
+                        <text class="cm__like-num t-num">{{ c.like_count || 0 }}</text>
                     </view>
-                    <text
+                    <view
                         v-if="canComment"
                         class="cm__act"
                         hover-class="is-pressed"
-                        @tap="emit('reply', c, c.id)"
-                        >回复</text
+                        aria-role="button"
+                        @tap="onReply(c, c.id)"
                     >
+                        <text class="cm__act-text">回复</text>
+                    </view>
                 </view>
 
                 <!-- 二级回复：默认收起，展开时按 parent_id 拉取；新回复即时插到列表尾部 -->
@@ -63,7 +73,12 @@
                     v-if="Number(c.reply_count) > 0 || replyStates[c.id]?.expanded"
                     class="cm__replies"
                 >
-                    <view class="cm__replies-toggle" @tap="emit('toggleReplies', c)">
+                    <view
+                        class="cm__replies-toggle hit-88"
+                        hover-class="is-pressed"
+                        aria-role="button"
+                        @tap="onToggleReplies(c)"
+                    >
                         <text class="cm__replies-toggle-text">
                             {{
                                 replyStates[c.id]?.expanded
@@ -111,21 +126,27 @@
                                     <view
                                         class="cm__like"
                                         :class="{ 'is-on': r.is_liked }"
-                                        @tap="emit('like', r)"
+                                        hover-class="is-pressed"
+                                        aria-role="button"
+                                        @tap="onLike(r)"
                                     >
                                         <tn-icon
                                             :name="r.is_liked ? 'like-fill' : 'like'"
                                             :size="20"
                                         />
-                                        <text class="cm__like-num">{{ r.like_count || 0 }}</text>
+                                        <text class="cm__like-num t-num">{{
+                                            r.like_count || 0
+                                        }}</text>
                                     </view>
-                                    <text
+                                    <view
                                         v-if="canComment"
                                         class="cm__act"
                                         hover-class="is-pressed"
-                                        @tap="emit('reply', r, c.id)"
-                                        >回复</text
+                                        aria-role="button"
+                                        @tap="onReply(r, c.id)"
                                     >
+                                        <text class="cm__act-text">回复</text>
+                                    </view>
                                 </view>
                             </view>
                         </view>
@@ -135,14 +156,16 @@
                         </view>
                         <view
                             v-else-if="replyStates[c.id]?.error"
-                            class="cm__reply-tip"
-                            @tap="emit('loadReplies', c.id, true)"
+                            class="cm__reply-tip hit-88"
+                            hover-class="is-pressed"
+                            @tap="onLoadReplies(c.id, true)"
                             >加载失败，点击重试</view
                         >
                         <view
                             v-else-if="replyStates[c.id]?.hasMore"
-                            class="cm__reply-tip"
-                            @tap="emit('loadReplies', c.id, false)"
+                            class="cm__reply-tip hit-88"
+                            hover-class="is-pressed"
+                            @tap="onLoadReplies(c.id, false)"
                             >查看更多回复</view
                         >
                     </view>
@@ -163,6 +186,7 @@
 
 <script setup lang="ts">
 import { useAppStore } from '@/stores/app'
+import { haptic } from '@/utils/haptics'
 import type { CommentRow, ReplyState } from '../useFeedComments'
 
 defineProps<{
@@ -185,6 +209,32 @@ const emit = defineEmits<{
 }>()
 
 const appStore = useAppStore()
+
+/* 评论区四个动作统一走 light 触觉：排序 / 点赞 / 回复 / 展开回复，键位互不吞震 */
+function onSwitchSort(next: 'hot' | 'new') {
+    haptic('light', 'feed-comment-sort')
+    emit('switchSort', next)
+}
+
+function onLike(row: CommentRow) {
+    haptic('light', 'feed-comment-like')
+    emit('like', row)
+}
+
+function onReply(target: CommentRow, rootId: number) {
+    haptic('light', 'feed-comment-reply')
+    emit('reply', target, rootId)
+}
+
+function onToggleReplies(row: CommentRow) {
+    haptic('light', 'feed-comment-toggle')
+    emit('toggleReplies', row)
+}
+
+function onLoadReplies(parentId: number, reset: boolean) {
+    haptic('light', 'feed-comment-load')
+    emit('loadReplies', parentId, reset)
+}
 
 function imgUrl(url?: string) {
     if (!url) return ''
@@ -223,14 +273,26 @@ function imgUrl(url?: string) {
         gap: 20rpx;
     }
 
+    /* 排序胶囊：视觉是文字，热区靠 min-size 撑到 88rpx（间距 20rpx，横向不重叠） */
     &__sort-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 88rpx;
+        min-height: 88rpx;
+        margin: -26rpx -10rpx;
+        padding: 0 10rpx;
+        box-sizing: border-box;
+    }
+
+    &__sort-text {
         font-size: var(--fs-21);
         color: var(--c-ink-3);
+    }
 
-        &.is-on {
-            color: var(--c-ink);
-            font-weight: var(--fw-medium);
-        }
+    &__sort-item.is-on &__sort-text {
+        color: var(--c-ink);
+        font-weight: var(--fw-medium);
     }
 
     &__empty {
@@ -250,10 +312,12 @@ function imgUrl(url?: string) {
     }
 }
 
+/* 评论行：一级评论之间用发丝线分组，二级回复挂在同一条左侧引线里 */
 .cm {
     display: flex;
     gap: 16rpx;
-    padding: 18rpx 42rpx;
+    padding: 22rpx 42rpx;
+    border-bottom: 1rpx solid var(--c-line);
 
     &__av {
         width: 60rpx;
@@ -296,7 +360,7 @@ function imgUrl(url?: string) {
         display: block;
         margin-top: 8rpx;
         font-size: var(--fs-25);
-        line-height: 1.7;
+        line-height: var(--lh-loose);
         color: var(--c-ink);
     }
 
@@ -311,7 +375,18 @@ function imgUrl(url?: string) {
         line-height: var(--lh-tight);
     }
 
+    /* 点赞 / 回复：88rpx 热区，用负外边距抵消，不撑高评论区 */
     &__act {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        min-height: 88rpx;
+        min-width: 88rpx;
+        padding-left: var(--sp-3);
+        box-sizing: border-box;
+    }
+
+    &__act-text {
         font-size: var(--fs-20);
         color: var(--c-ink-3);
     }
@@ -323,7 +398,8 @@ function imgUrl(url?: string) {
     &__replies-toggle {
         display: inline-flex;
         align-items: center;
-        padding: 4rpx 0;
+        min-height: 88rpx;
+        padding: 0 var(--sp-1);
     }
 
     &__replies-toggle-text {
@@ -411,7 +487,9 @@ function imgUrl(url?: string) {
     }
 
     &__reply-tip {
-        padding: 10rpx 0;
+        display: flex;
+        align-items: center;
+        min-height: 88rpx;
         font-size: var(--fs-21);
         color: var(--c-brand-text);
     }
@@ -432,6 +510,9 @@ function imgUrl(url?: string) {
         display: flex;
         align-items: center;
         gap: 6rpx;
+        min-height: 88rpx;
+        min-width: 88rpx;
+        box-sizing: border-box;
         color: var(--c-ink-3);
 
         &.is-on {

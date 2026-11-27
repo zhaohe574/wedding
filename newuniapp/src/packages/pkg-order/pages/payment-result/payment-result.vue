@@ -86,15 +86,15 @@
                     <view v-if="showMetrics" class="receipt__metrics">
                         <view class="metric">
                             <text class="metric__k">已付金额</text>
-                            <text class="metric__v">{{ paidMetric }}</text>
+                            <text class="metric__v t-num">{{ paidMetric }}</text>
                         </view>
                         <view class="metric">
                             <text class="metric__k">待付尾款</text>
-                            <text class="metric__v">{{ dueMetric }}</text>
+                            <text class="metric__v t-num">{{ dueMetric }}</text>
                         </view>
                         <view class="metric">
                             <text class="metric__k">订单总额</text>
-                            <text class="metric__v">{{ totalMetric }}</text>
+                            <text class="metric__v t-num">{{ totalMetric }}</text>
                         </view>
                     </view>
 
@@ -121,7 +121,7 @@
                             <view class="rcpt__row">
                                 <text class="rcpt__k">订单编号</text>
                                 <view class="rcpt__vwrap">
-                                    <text class="rcpt__v">{{ orderSnText || '—' }}</text>
+                                    <text class="rcpt__v t-num">{{ orderSnText || '—' }}</text>
                                     <view
                                         v-if="orderSnText"
                                         class="copy"
@@ -137,7 +137,7 @@
 
                             <view v-if="serviceDateText" class="rcpt__row">
                                 <text class="rcpt__k">服务档期</text>
-                                <text class="rcpt__v">{{ serviceDateText }}</text>
+                                <text class="rcpt__v t-num">{{ serviceDateText }}</text>
                             </view>
 
                             <view v-if="teamText" class="rcpt__row">
@@ -152,7 +152,7 @@
 
                             <view class="rcpt__row">
                                 <text class="rcpt__k">支付时间</text>
-                                <text class="rcpt__v">{{ payTimeText || '—' }}</text>
+                                <text class="rcpt__v t-num">{{ payTimeText || '—' }}</text>
                             </view>
                         </view>
                     </view>
@@ -380,6 +380,7 @@ import { getOrderDetailV2 } from '@/api/order'
 import { formatDate, formatMoney, parseDateValue } from '@shared/utils/format'
 import { FB, fbPollText } from '@/constants/feedback'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 import { report } from '@/platform/report'
 import { useBadgeStore } from '@/stores/badge'
 
@@ -691,6 +692,7 @@ function onStepTap(step: StepView) {
 
 function copyOrderSn() {
     if (!orderSnText.value) return
+    haptic('light', 'pay-copy')
     uni.setClipboardData({
         data: orderSnText.value,
         success: () => toast.info('已复制订单号')
@@ -699,6 +701,7 @@ function copyOrderSn() {
 
 function copyPaymentSn() {
     if (!paymentSnText.value) return
+    haptic('light', 'pay-copy')
     uni.setClipboardData({
         data: paymentSnText.value,
         success: () => toast.info('已复制支付流水号')
@@ -825,8 +828,10 @@ onUnload(() => {
 
 /* ========== 主礼笺：深墨黑金仪式头 + 撕口 + 暖白收据 ========== */
 .receipt {
-    border: 1rpx solid var(--c-line-strong);
+    /* v10 §2.1：卡片描边与暖影统一走变量（浅色透明、暗色 --c-line） */
+    border: 1rpx solid var(--c-card-border);
     border-radius: var(--r-lg);
+    box-shadow: var(--shadow-card);
     overflow: hidden;
     background: var(--c-surface);
 
@@ -1194,8 +1199,9 @@ onUnload(() => {
     margin-top: var(--sp-3);
     padding: var(--sp-4);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line-strong);
+    border: 1rpx solid var(--c-card-border);
     border-radius: var(--r-md);
+    box-shadow: var(--shadow-card);
 
     &__head {
         display: flex;
@@ -1320,8 +1326,9 @@ onUnload(() => {
     margin: var(--sp-4) var(--page-gutter) 0;
     padding: var(--sp-6) var(--sp-4) var(--sp-5);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line-strong);
+    border: 1rpx solid var(--c-card-border);
     border-radius: var(--r-lg);
+    box-shadow: var(--shadow-card);
     text-align: center;
 
     &__title {
@@ -1441,7 +1448,7 @@ onUnload(() => {
         align-items: center;
         gap: var(--sp-2);
         padding: var(--sp-2) var(--sp-3);
-        border: 1rpx solid var(--c-line);
+        border: 1rpx solid var(--c-card-border);
         border-radius: var(--r-md);
     }
 

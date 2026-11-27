@@ -10,7 +10,7 @@
     >
         <view class="page-wrap change-detail">
             <view v-if="loading" class="page-pad">
-                <base-skeleton :rows="4" />
+                <base-skeleton variant="card" :rows="4" />
             </view>
 
             <base-empty
@@ -31,30 +31,36 @@
                         <text class="status-head__title">{{ titleText }}</text>
                         <status-tag :label="statusLabel" :tone="statusTone" size="md" />
                     </view>
-                    <text class="status-head__sub">{{ data.create_time }}</text>
+                    <text class="status-head__sub t-num">{{ data.create_time }}</text>
                 </view>
 
                 <view class="page-pad body">
                     <base-card>
                         <view class="kv">
                             <text class="kv__k">关联订单</text>
-                            <text class="kv__v">{{ data.order_sn || data.order_id || '-' }}</text>
+                            <text class="kv__v t-num"
+                                >{{ data.order_sn || data.order_id || '-' }}</text
+                            >
                         </view>
                         <view v-if="isPause" class="kv">
                             <text class="kv__k">暂停区间</text>
-                            <text class="kv__v">{{ data.start_date }} ~ {{ data.end_date }}</text>
+                            <text class="kv__v t-num"
+                                >{{ data.start_date }} ~ {{ data.end_date }}</text
+                            >
                         </view>
                         <view v-else-if="data.new_date" class="kv">
                             <text class="kv__k">新服务日期</text>
-                            <text class="kv__v">{{ data.new_date }}</text>
+                            <text class="kv__v t-num">{{ data.new_date }}</text>
                         </view>
                         <view v-else-if="data.service_date" class="kv">
                             <text class="kv__k">服务日期</text>
-                            <text class="kv__v">{{ data.service_date }}</text>
+                            <text class="kv__v t-num">{{ data.service_date }}</text>
                         </view>
                         <view v-if="data.add_price" class="kv">
                             <text class="kv__k">新增金额</text>
-                            <text class="kv__v kv__v--brand">¥{{ money(data.add_price) }}</text>
+                            <text class="kv__v kv__v--brand t-num"
+                                >¥{{ money(data.add_price) }}</text
+                            >
                         </view>
                         <view v-if="data.audit_remark" class="kv">
                             <text class="kv__k">审核说明</text>
@@ -96,13 +102,14 @@
 
                     <view class="body__space" />
                 </view>
-
-                <view v-if="canCancel" class="action-bar">
-                    <!-- P1 §3-9：危险操作不宜页内实心 —— 降 ghost；二次确认由 handleCancel 里的 uni.showModal 承担 -->
-                    <base-button text="撤销申请" variant="ghost" size="md" @click="handleCancel" />
-                </view>
             </template>
         </view>
+        <template #bottom>
+            <!-- P1 §3-9：危险操作不宜页内实心 —— 降 ghost；二次确认由 handleCancel 里的居中弹窗承担 -->
+            <bottom-bar v-if="canCancel && !loading && !error">
+                <base-button text="撤销申请" variant="ghost" size="md" @click="handleCancel" />
+            </bottom-bar>
+        </template>
         <app-toast />
     </page-shell>
 </template>
@@ -128,6 +135,7 @@ import {
 import { getChangeDetail, getPauseDetail, cancelChange, cancelPause } from '@/api/change'
 import { useAppStore } from '@/stores/app'
 import { formatMoney } from '@shared/utils/format'
+import { haptic } from '@/utils/haptics'
 
 const appStore = useAppStore()
 
@@ -234,6 +242,7 @@ async function load() {
 }
 
 async function handleCancel() {
+    /* 撤销申请属不可逆操作：确认类二次弹窗保留居中形态，不做底部抽屉 */
     const confirmed = await new Promise<boolean>((resolve) => {
         uni.showModal({
             title: '撤销申请',
@@ -243,6 +252,7 @@ async function handleCancel() {
         })
     })
     if (!confirmed) return
+    haptic('medium', 'change-detail-cancel')
     try {
         if (isPause.value) await cancelPause({ id: id.value })
         else await cancelChange({ id: id.value })
@@ -281,6 +291,7 @@ function onRefresh(done: () => void) {
 .status-head {
     background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
     padding: var(--sp-5) var(--sp-4);
+    box-shadow: var(--shadow-card);
 
     &__row {
         display: flex;
@@ -292,7 +303,7 @@ function onRefresh(done: () => void) {
         flex: 1;
         min-width: 0;
         font-size: var(--fs-xl);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
         line-height: var(--lh-tight);
         color: var(--c-on-dark);
         overflow-wrap: anywhere;
@@ -353,7 +364,7 @@ function onRefresh(done: () => void) {
 
     &__v--brand {
         color: var(--c-brand-text);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
     }
 }
 
@@ -361,7 +372,7 @@ function onRefresh(done: () => void) {
     display: block;
     margin-bottom: var(--sp-3);
     font-size: var(--fs-md);
-    font-weight: 500;
+    font-weight: var(--fw-medium);
     color: var(--c-ink);
 }
 
@@ -369,7 +380,7 @@ function onRefresh(done: () => void) {
     display: block;
     font-size: var(--fs-md);
     color: var(--c-ink-2);
-    line-height: 1.7;
+    line-height: var(--lh-loose);
     overflow-wrap: anywhere;
 }
 
@@ -430,18 +441,5 @@ function onRefresh(done: () => void) {
         color: var(--c-ink-3);
         overflow-wrap: anywhere;
     }
-}
-
-.action-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 50;
-    display: flex;
-    padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + var(--safe-bottom));
-    background: var(--c-surface);
-    border-top: 1rpx solid var(--c-line);
-    box-sizing: border-box;
 }
 </style>

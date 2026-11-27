@@ -43,7 +43,7 @@
                         <view class="rel__badge-dot" />
                         <text class="rel__badge-text">档期已释放</text>
                     </view>
-                    <text class="rel__time">{{ banner.remainText }}</text>
+                    <text class="rel__time t-num">{{ banner.remainText }}</text>
                 </view>
                 <text class="rel__desc">
                     <text class="rel__desc-b">{{ banner.title }}</text>
@@ -78,7 +78,9 @@
                     <text class="prog__s">待锁定</text>
                 </view>
 
-                <text class="meta"> 提交于 {{ item.create_time }} · 已释放，请在倒计时内锁定 </text>
+                <text class="meta"
+                    >提交于 <text class="t-num">{{ item.create_time }}</text> · 已释放，请在倒计时内锁定</text
+                >
 
                 <view class="acts">
                     <base-button
@@ -133,7 +135,7 @@
                 </view>
 
                 <!-- 副文案取后端 status_hint，没有就只写提交时间；不编位次 -->
-                <text class="meta">提交于 {{ item.create_time }}{{ hintOf(item) }}</text>
+                <text class="meta t-num">提交于 {{ item.create_time }}{{ hintOf(item) }}</text>
 
                 <view v-if="canCancel(item)" class="acts">
                     <base-button
@@ -199,6 +201,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { getMyWaitlist, cancelWaitlist } from '@/api/catalog'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { WaitlistNotifyStatus } from '@shared/contracts'
 
@@ -426,6 +429,7 @@ function onPrimary() {
 }
 
 function askCancel(item: WlItem) {
+    haptic('light', 'waitlist-cancel')
     modalRef.value?.showModal({
         title: '取消候补',
         content: '取消后你在这个档期的排队位次不再保留。',
@@ -452,6 +456,7 @@ async function doCancel(item: WlItem) {
 
 function bookNow(item: WlItem) {
     if (!canBook(item)) return
+    haptic('medium', 'waitlist-book')
     navigate({
         path: '/packages/pkg-catalog/pages/booking/booking',
         query: {
@@ -464,6 +469,7 @@ function bookNow(item: WlItem) {
 }
 
 function goQuery() {
+    haptic('light', 'waitlist-query')
     navigate({ path: '/pages/query/query' })
 }
 
@@ -603,7 +609,8 @@ onUnmounted(() => stopTimer())
     }
 }
 
-/* ---------- 三段进度 ---------- */
+/* ---------- 三段进度 ----------
+   只用后端真实阶段（已排队 / 等待释放 / 已释放 / 待锁定），不出现「第 N 位」这类前端编造位次 */
 .prog {
     display: flex;
     align-items: center;

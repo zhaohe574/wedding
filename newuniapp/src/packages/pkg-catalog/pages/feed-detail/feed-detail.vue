@@ -178,12 +178,30 @@
                         <text class="bar__off-text">评论暂不可用</text>
                     </view>
 
-                    <view class="bar__act" :class="{ 'is-on': post.is_liked }" @tap="onLikePost">
-                        <tn-icon :name="post.is_liked ? 'like-fill' : 'like'" :size="30" />
-                        <text class="bar__act-text">{{ post.like_count || 0 }}</text>
+                    <view
+                        class="bar__act hit-88"
+                        :class="{ 'is-on': post.is_liked }"
+                        hover-class="is-pressed"
+                        hover-stop-propagation="true"
+                        aria-role="button"
+                        :aria-label="post.is_liked ? '取消点赞' : '点赞'"
+                        @touchstart.stop
+                        @tap.stop="onLikePost"
+                    >
+                        <view class="bar__act-icon">
+                            <tn-icon :name="post.is_liked ? 'like-fill' : 'like'" :size="30" />
+                            <like-burst :active="!!post.is_liked" />
+                        </view>
+                        <view class="bar__act-text">
+                            <rolling-number :value="likeCount" />
+                        </view>
                     </view>
 
-                    <button class="bar__act bar__act--btn" open-type="share">
+                    <button
+                        class="bar__act bar__act--btn hit-88"
+                        open-type="share"
+                        hover-stop-propagation="true"
+                    >
                         <tn-icon name="share" :size="28" class="ic-ink-2" />
                         <text class="bar__act-text">分享</text>
                     </button>
@@ -208,6 +226,7 @@ import { computed, ref } from 'vue'
 import { onLoad, onReachBottom, onShareAppMessage } from '@dcloudio/uni-app'
 import { getCaseDetail, toggleCaseLike } from '@/api/content'
 import { navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { toast } from '@/composables/useToast'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
@@ -291,6 +310,7 @@ const galleryLayout = computed(() => {
 
 const authorAvatar = computed(() => imgUrl(post.value?.user_avatar || ''))
 const viewCount = computed(() => Number(post.value?.view_count || post.value?.views || 0))
+const likeCount = computed(() => Math.max(0, Number(post.value?.like_count || 0)))
 
 const dateText = computed(() => {
     const t = String(post.value?.create_time || '')
@@ -407,6 +427,7 @@ async function onLikePost() {
     }
     const p = post.value
     if (!p) return
+    haptic('medium', 'feed-like')
     const liked = !p.is_liked
     p.is_liked = liked
     p.like_count = Math.max(0, Number(p.like_count || 0) + (liked ? 1 : -1))
@@ -473,7 +494,8 @@ onShareAppMessage(() =>
 
 .media-video {
     margin-top: var(--sp-3);
-    border-radius: var(--r-27);
+    border-radius: var(--r-16);
+    border: 1rpx solid var(--c-card-border);
     overflow: hidden;
     background: var(--c-dark-2);
 
@@ -495,7 +517,8 @@ onShareAppMessage(() =>
         position: relative;
         flex: none;
         overflow: hidden;
-        border-radius: var(--r-sm);
+        border-radius: var(--r-16);
+        border: 1rpx solid var(--c-card-border);
         background: var(--c-neutral-bg);
     }
 
@@ -668,7 +691,8 @@ onShareAppMessage(() =>
     padding: 20rpx;
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__cal {
         width: 84rpx;
@@ -731,8 +755,10 @@ onShareAppMessage(() =>
     bottom: 0;
     z-index: 90;
     padding: 12rpx 24rpx calc(12rpx + var(--safe-bottom));
-    background: var(--c-surface);
-    border-top: 1rpx solid var(--c-line);
+    /* 浮层表面：底部输入条属于第三层，与抽屉同一套底色 */
+    background: var(--c-surface-float);
+    border-top: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-sheet);
 
     &__in {
         display: flex;
@@ -810,8 +836,15 @@ onShareAppMessage(() =>
         }
     }
 
+    &__act-icon {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     &__act-text {
-        font-size: var(--fs-18);
+        font-size: var(--fs-20);
         color: inherit;
     }
 }

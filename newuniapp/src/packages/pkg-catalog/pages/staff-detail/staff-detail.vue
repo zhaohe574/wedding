@@ -45,6 +45,7 @@
                 :fallback="fallbackImage"
                 :fallback-kind="fallbackKind"
                 :name="staff.name"
+                :scroll-top="bannerScrollTop"
                 @expand="onBannerExpand"
                 @visual="bannerHasWideVisual = $event"
             />
@@ -57,11 +58,11 @@
                     <view v-if="!pickMode" class="idcard__actions">
                         <view
                             hover-class="is-pressed"
-                            class="idcard__act"
+                            class="idcard__act hit-88"
                             :class="{ 'is-on': isFavorite }"
                             aria-role="button"
                             :aria-label="isFavorite ? '取消收藏' : '收藏这位主持人'"
-                            @tap="toggleFavorite"
+                            @tap="onFavoriteTap"
                         >
                             <tn-icon
                                 :name="isFavorite ? 'like-fill' : 'like'"
@@ -73,7 +74,12 @@
                             }}</text>
                         </view>
                         <!-- open-type=share 的 button 必须自己抹掉默认样式 -->
-                        <button class="idcard__act" open-type="share" aria-label="分享这位主持人">
+                        <button
+                            class="idcard__act hit-88"
+                            open-type="share"
+                            aria-label="分享这位主持人"
+                            @tap="onShareTap"
+                        >
                             <tn-icon name="share" :size="26" class="idcard__act-ic" />
                             <text class="idcard__act-text">分享</text>
                         </button>
@@ -175,7 +181,7 @@
                         <template v-for="(f, i) in facts" :key="f.key">
                             <text v-if="i > 0" class="facts__sep" aria-hidden="true" />
                             <view class="facts__item">
-                                <text class="facts__num">{{ f.value }}</text>
+                                <text class="facts__num t-num">{{ f.value }}</text>
                                 <text class="facts__unit">{{ f.unit }}</text>
                             </view>
                         </template>
@@ -193,7 +199,7 @@
                     <view v-if="packages.length" class="pkgpick">
                         <view class="pkgpick__head">
                             <text class="pkgpick__title">服务套餐</text>
-                            <text class="pkgpick__count">{{ packages.length }} 档</text>
+                            <text class="pkgpick__count t-num">{{ packages.length }} 档</text>
                         </view>
                         <view class="pkglist">
                             <view
@@ -393,6 +399,7 @@ import { toast } from '@/composables/useToast'
 import { getNavBarHeight } from '@/platform/device'
 import { resolveBookingContext, saveBookingContext } from '@/utils/booking-context'
 import cache from '@/utils/cache'
+import { haptic } from '@/utils/haptics'
 import { navigate, resolveLink } from '@/utils/link'
 import { EMPTY_REGION, regionParams, type RegionContext } from '@/utils/region'
 import { buildShare } from '@/utils/share'
@@ -426,7 +433,19 @@ const region = ref<RegionContext>({ ...EMPTY_REGION })
 const schedVisible = ref(false)
 const tab = ref<StaffDetailTabKey>('about')
 const scrollTop = ref(0)
+/** 视差专用：节流后的滚动值，避免每个 scroll 事件都穿透到 banner 触发重排 */
+const bannerScrollTop = ref(0)
+let parallaxTimer: ReturnType<typeof setTimeout> | null = null
 const stickyRef = ref<any>(null)
+
+/** 40ms 节流：首个事件立即记下，尾部再补一次最新值（不掉最后一帧） */
+function syncBannerScroll() {
+    if (parallaxTimer) return
+    parallaxTimer = setTimeout(() => {
+        parallaxTimer = null
+        bannerScrollTop.value = scrollTop.value
+    }, 40)
+}
 
 const {
     loading,
@@ -558,12 +577,14 @@ function confirmPick() {
 
 /** 套餐卡点击：选人模式同步 pick_package_id，避免下方「选择 TA」沿用旧套餐价 */
 function onSelectPackage(id: number) {
+    if (Number(id) !== Number(selectedPackageId.value)) haptic('light', 'staff-package')
     selectPackage(id)
     if (pickMode.value) pickPackageId.value = Number(id || 0)
 }
 
 function switchTab(key: StaffDetailTabKey) {
     if (tab.value === key) return
+    haptic('light', 'staff-tab')
     tab.value = key
     nextTick(() => stickyRef.value?.scrollIntoView?.())
     if (key === 'works' && !works.value.length) loadWorks(true)
@@ -573,6 +594,16 @@ function switchTab(key: StaffDetailTabKey) {
 function onBannerExpand(expanded: boolean) {
     bannerExpanded.value = expanded
     setTimeout(() => stickyRef.value?.remeasure?.(), 300)
+}
+
+/** 收藏/分享：动作在身份卡内，按压态由各自节点承担，不带动整块卡片 */
+function onFavoriteTap() {
+    haptic('light', 'staff-detail-fav')
+    toggleFavorite()
+}
+
+function onShareTap() {
+    haptic('light', 'staff-detail-share')
 }
 
 function onPrimary() {
@@ -663,8 +694,13 @@ onShow(() => {
     refreshActiveOrder()
 })
 
+/**
+ * page-shell 默认不接管滚动（只有 pullRefresh / lockViewport 才接管并 emit('scroll')），
+ * 本页是页面级滚动，所以视差数据源用 onPageScroll + 40ms 节流，避免每帧 setData。
+ */
 onPageScroll((e: any) => {
     scrollTop.value = Number(e?.scrollTop || 0)
+    syncBannerScroll()
 })
 
 onShareAppMessage(() =>
@@ -741,6 +777,8 @@ onLoad((options: any) => {
     padding: 36rpx 42rpx 28rpx;
     background: var(--c-surface);
     border-radius: var(--r-lg) var(--r-lg) 0 0;
+    /* 身份卡压在头图上：暖影负责与照片分层，深浅两套同一条变量 */
+    box-shadow: var(--shadow-card);
 
     &__top {
         display: flex;
@@ -1107,13 +1145,18 @@ onLoad((options: any) => {
 
 .pkgcard {
     padding: 20rpx;
-    border-radius: var(--r-sm);
-    border: 1rpx solid var(--c-line);
+    /* 同心圆角：外 32rpx − 内边距 20rpx ≈ 12rpx（--r-sm）→ 外卡统一 --r-md */
+    border-radius: var(--r-md);
+    border: 1rpx solid var(--c-card-border);
     background: var(--c-surface);
-    transition: border-color var(--dur-fast) var(--ease-out);
+    box-shadow: var(--shadow-card);
+    transition:
+        border-color var(--dur-fast) var(--ease-out),
+        box-shadow var(--dur-base) var(--ease-out);
 
     &.is-on {
         border-color: var(--c-active-border);
+        box-shadow: var(--shadow-card-hover);
 
         .pkgcard__tick {
             opacity: 1;

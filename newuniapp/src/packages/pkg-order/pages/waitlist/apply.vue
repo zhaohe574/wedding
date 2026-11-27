@@ -167,77 +167,53 @@
                 </template>
             </bottom-bar>
 
-            <!-- 套餐选择（接口必填，不能没有） -->
-            <tn-popup
-                v-model="packagePopup"
-                open-direction="bottom"
-                bg-color="transparent"
-                radius="0"
-                :safe-area-inset-bottom="true"
-            >
-                <view class="sheet">
-                    <view class="sheet__head">
-                        <text class="sheet__title">选择套餐</text>
-                        <view class="sheet__close" @tap="packagePopup = false">
-                            <tn-icon name="close" :size="28" />
-                        </view>
-                    </view>
-                    <text class="sheet__desc"
-                        >候补需要指定套餐才能排队，顾问会按这个套餐为你协调档期。</text
+            <!-- 套餐选择（接口必填，不能没有）：磁吸抽屉，标题/关闭由 snap-sheet 承担 -->
+            <snap-sheet v-model="packagePopup" title="选择套餐">
+                <text class="sheet-desc"
+                    >候补需要指定套餐才能排队，顾问会按这个套餐为你协调档期。</text
+                >
+                <view class="opt-list">
+                    <view
+                        v-for="p in packages"
+                        :key="p.id"
+                        hover-class="is-pressed"
+                        class="opt"
+                        :class="{ 'opt--on': packageId === p.id }"
+                        @tap="pickPackage(p)"
                     >
-                    <scroll-view class="sheet__body" scroll-y>
-                        <view
-                            v-for="p in packages"
-                            :key="p.id"
-                            hover-class="is-pressed"
-                            class="opt"
-                            :class="{ 'opt--on': packageId === p.id }"
-                            @tap="pickPackage(p)"
-                        >
-                            <view class="opt__l">
-                                <text class="opt__name">{{ p.name }}</text>
-                                <text v-if="p.duration_desc" class="opt__desc">{{ p.duration_desc }}</text>
-                            </view>
-                            <text class="opt__price">¥{{ p.price }}</text>
-                            <tn-icon v-if="packageId === p.id" name="check" :size="24" />
+                        <view class="opt__l">
+                            <text class="opt__name">{{ p.name }}</text>
+                            <text v-if="p.duration_desc" class="opt__desc">{{
+                                p.duration_desc
+                            }}</text>
                         </view>
-                        <view v-if="!packages.length" class="sheet__empty">
-                            <text class="sheet__empty-text">暂时没有可选套餐，请回到主持人页重新选择</text>
-                        </view>
-                    </scroll-view>
+                        <price size="sm" :content="p.price" :trim-zeros="true" />
+                        <tn-icon v-if="packageId === p.id" name="check" :size="24" />
+                    </view>
                 </view>
-            </tn-popup>
+                <view v-if="!packages.length" class="sheet-empty">
+                    <text class="sheet-empty-text"
+                        >暂时没有可选套餐，请回到主持人页重新选择</text
+                    >
+                </view>
+            </snap-sheet>
 
             <!-- 更换手机号（joinWaitlist 支持 mobile，改这里就是真的改接收通知的号码） -->
-            <tn-popup
-                v-model="mobilePopup"
-                open-direction="bottom"
-                bg-color="transparent"
-                radius="0"
-                :safe-area-inset-bottom="true"
-            >
-                <view class="sheet">
-                    <view class="sheet__head">
-                        <text class="sheet__title">更换手机号</text>
-                        <view class="sheet__close" @tap="mobilePopup = false">
-                            <tn-icon name="close" :size="28" />
-                        </view>
-                    </view>
-                    <text class="sheet__desc">档期释放时会同时发服务号与短信到这个号码。</text>
-                    <input
-                        v-model="mobileDraft"
-                        class="sheet__input"
-                        type="number"
-                        :maxlength="11"
-                        placeholder="请输入 11 位手机号"
-                        placeholder-class="field__ph"
-                    />
-                    <text v-if="mobileErr" class="err err--pad">{{ mobileErr }}</text>
-                    <view class="sheet__foot">
-                        <base-button text="保存" variant="ink" size="lg" @click="saveMobile" />
-                    </view>
-                </view>
-            </tn-popup>
+            <snap-sheet v-model="mobilePopup" title="更换手机号" :has-foot="true">
+                <text class="sheet-desc">档期释放时会同时发服务号与短信到这个号码。</text>
+                <input
+                    v-model="mobileDraft"
+                    class="sheet-input"
+                    type="number"
+                    :maxlength="11"
+                    placeholder="请输入 11 位手机号"
+                    placeholder-class="field__ph"
+                />
+                <text v-if="mobileErr" class="err err--pad">{{ mobileErr }}</text>
+                <template #foot>
+                    <base-button text="保存" variant="ink" size="lg" @click="saveMobile" />
+                </template>
+            </snap-sheet>
 
             <app-toast />
         </template>
@@ -251,6 +227,7 @@ import { getStaffDetailV2, getStaffDetail, getStaffPackages } from '@/api/catalo
 import { joinWaitlist } from '@/api/catalog'
 import { getMe } from '@/api/user'
 import { navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { resolveBookingContext } from '@/utils/booking-context'
 import {
     EMPTY_REGION,
@@ -413,6 +390,7 @@ function openPackage() {
 }
 
 function pickPackage(p: PkgOption) {
+    haptic('light', 'waitlist-package')
     packageId.value = p.id
     errors.package = ''
     packagePopup.value = false
@@ -427,9 +405,11 @@ function openMobile() {
 function saveMobile() {
     const v = mobileDraft.value.trim()
     if (!/^1\d{10}$/.test(v)) {
+        haptic('heavy', 'waitlist-mobile')
         mobileErr.value = '请输入 11 位手机号'
         return
     }
+    haptic('light', 'waitlist-mobile')
     mobile.value = v
     mobilePopup.value = false
 }
@@ -901,74 +881,44 @@ onLoad((options: any) => {
     color: var(--c-ink-3);
 }
 
-/* ---------- 弹层 ---------- */
-.sheet {
+/* ---------- 抽屉内容（snap-sheet 的 body / foot 插槽） ----------
+   模板里已没有 .sheet 包裹节点，以下类必须是顶层完整类名。 */
+.sheet-desc {
+    display: block;
+    font-size: var(--fs-xs);
+    line-height: var(--lh-body);
+    color: var(--c-ink-3);
+}
+
+.sheet-empty {
+    padding: var(--sp-5) 0;
+    text-align: center;
+}
+
+.sheet-empty-text {
+    font-size: var(--fs-xs);
+    color: var(--c-ink-3);
+}
+
+/* 输入框：88rpx 行高 + --c-control-border 描边，深浅两套都保持 3:1 可辨识 */
+.sheet-input {
+    width: 100%;
+    height: 88rpx;
+    margin-top: var(--sp-3);
+    padding: 0 var(--sp-3);
+    border-radius: var(--r-sm);
+    border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
-    padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    font-size: var(--fs-md);
+    color: var(--c-ink);
+    box-sizing: border-box;
+}
 
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--sp-2);
-    }
-
-    &__title {
-        font-size: var(--fs-lg);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__close {
-        /* 弹层关闭图标，此容器只放图标 */
-        color: var(--c-ink-3);
-        width: 56rpx;
-        height: 56rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    &__desc {
-        display: block;
-        margin-top: var(--sp-1);
-        font-size: var(--fs-xs);
-        line-height: var(--lh-loose);
-        color: var(--c-ink-3);
-    }
-
-    &__body {
-        max-height: 640rpx;
-        margin-top: var(--sp-3);
-    }
-
-    &__empty {
-        padding: var(--sp-5) 0;
-        text-align: center;
-    }
-
-    &__empty-text {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
-
-    &__input {
-        width: 100%;
-        height: 88rpx;
-        margin-top: var(--sp-3);
-        padding: 0 var(--sp-3);
-        border-radius: var(--r-sm);
-        border: 1rpx solid var(--c-control-border);
-        background: var(--c-surface);
-        font-size: var(--fs-md);
-        color: var(--c-ink);
-        box-sizing: border-box;
-    }
-
-    &__foot {
-        margin-top: var(--sp-4);
-    }
+.opt-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    margin-top: var(--sp-3);
 }
 
 .opt {
@@ -977,11 +927,12 @@ onLoad((options: any) => {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
+    /* 行高 ≥ 96rpx（§2.5 的 88rpx 下限之上留出一档） */
     min-height: 96rpx;
     padding: var(--sp-2) var(--sp-3);
     border-radius: var(--r-sm);
-    border: 1rpx solid var(--c-line);
-    margin-bottom: var(--sp-2);
+    border: 1rpx solid var(--c-card-border);
+    background: var(--c-surface);
 
     &--on {
         border-color: var(--c-brand-text);

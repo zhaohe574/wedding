@@ -1,66 +1,60 @@
 <template>
-    <tn-popup v-model="visible" open-direction="bottom" :radius="40">
-        <view v-if="item" class="cancel-sheet">
-            <view class="cancel-sheet__head">
-                <text class="cancel-sheet__title">{{ sheetTitle }}</text>
-                <view
-                    class="cancel-sheet__close"
-                    hover-class="is-pressed"
-                    aria-role="button"
-                    aria-label="关闭弹窗"
-                    @tap="close"
-                >
-                    <tn-icon name="close" :size="30" class="cancel-sheet__close-ic" />
+    <!-- 取消报名：磁吸半屏抽屉。标题 / 关闭 / 脚部安全区由 snap-sheet 统一承担；
+         原 .cancel-sheet 包裹层已去掉，样式全部扁平化到插槽内容上 -->
+    <snap-sheet v-model="visible" :title="sheetTitle" :has-foot="true">
+        <view v-if="item" class="cancel-body">
+            <view class="summary">
+                <view class="summary__row">
+                    <text class="summary__k">活动主题</text>
+                    <text class="summary__v ellipsis">{{ titleText }}</text>
+                </view>
+                <view class="summary__row">
+                    <text class="summary__k">票种规格</text>
+                    <text class="summary__v t-num"
+                        >{{ item.ticket_name || '活动门票' }} ·
+                        {{ item.ticket_price_label || '免费' }}</text
+                    >
+                </view>
+                <view v-if="!isDirect" class="summary__row">
+                    <text class="summary__k">预计退款</text>
+                    <text class="summary__v summary__v--brand t-num"
+                        >{{ item.ticket_price_label || '¥0.00' }}（审核通过后原路退回）</text
+                    >
                 </view>
             </view>
 
-            <view class="cancel-sheet__body">
-                <view class="summary">
-                    <view class="summary__row">
-                        <text class="summary__k">活动主题</text>
-                        <text class="summary__v ellipsis">{{ titleText }}</text>
-                    </view>
-                    <view class="summary__row">
-                        <text class="summary__k">票种规格</text>
-                        <text class="summary__v">{{ item.ticket_name || '活动门票' }} · {{ item.ticket_price_label || '免费' }}</text>
-                    </view>
-                    <view v-if="!isDirect" class="summary__row">
-                        <text class="summary__k">预计退款</text>
-                        <text class="summary__v summary__v--brand">{{ item.ticket_price_label || '¥0.00' }}（审核通过后原路退回）</text>
-                    </view>
-                </view>
-
-                <view v-if="isDirect" class="direct-tip">
-                    <text class="direct-tip__text">
-                        确认取消后将立即释放您占用的活动名额，取消后如需参加需重新报名。
-                    </text>
-                </view>
-
-                <template v-else>
-                    <text class="section-label">选择取消原因</text>
-                    <view class="chips">
-                        <view
-                            v-for="preset in PRESET_REASONS"
-                            :key="preset"
-                            class="chip"
-                            :class="{ 'is-on': selectedPreset === preset }"
-                            hover-class="is-pressed"
-                            @tap="pickPreset(preset)"
-                        >
-                            <text class="chip__text">{{ preset }}</text>
-                        </view>
-                    </view>
-                    <textarea
-                        v-model="extraNote"
-                        class="note-input"
-                        placeholder="可补充具体原因（选填，最多 200 字）"
-                        placeholder-class="note-input__ph"
-                        :maxlength="200"
-                    />
-                </template>
+            <view v-if="isDirect" class="direct-tip">
+                <text class="direct-tip__text">
+                    确认取消后将立即释放您占用的活动名额，取消后如需参加需重新报名。
+                </text>
             </view>
 
-            <view class="cancel-sheet__foot">
+            <template v-else>
+                <text class="section-label">选择取消原因</text>
+                <view class="chips">
+                    <view
+                        v-for="preset in PRESET_REASONS"
+                        :key="preset"
+                        class="chip"
+                        :class="{ 'is-on': selectedPreset === preset }"
+                        hover-class="is-pressed"
+                        @tap="pickPreset(preset)"
+                    >
+                        <text class="chip__text">{{ preset }}</text>
+                    </view>
+                </view>
+                <textarea
+                    v-model="extraNote"
+                    class="note-input"
+                    placeholder="可补充具体原因（选填，最多 200 字）"
+                    placeholder-class="field__ph"
+                    :maxlength="200"
+                />
+            </template>
+        </view>
+
+        <template #foot>
+            <view v-if="item" class="foot">
                 <view class="foot-btn">
                     <base-button text="先不取消" variant="ghost" size="md" @click="close" />
                 </view>
@@ -74,8 +68,8 @@
                     />
                 </view>
             </view>
-        </view>
-    </tn-popup>
+        </template>
+    </snap-sheet>
 </template>
 
 <script setup lang="ts">
@@ -83,6 +77,7 @@ import { computed, ref, watch } from 'vue'
 import type { ActivityRegistrationVO } from '@/api/types/activity'
 import { cancelActivityRegistration } from '@/api/activity'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 import { activityTitle } from '@/utils/activityFormat'
 
 const PRESET_REASONS = ['临时行程变动', '选错票种或时间', '同行人无法参加', '其他原因']
@@ -99,10 +94,7 @@ const emit = defineEmits<{
 
 const visible = computed({
     get: () => props.show,
-    set: (val: boolean) => {
-        if (!val && submitting.value) return
-        emit('update:show', val)
-    }
+    set: (val: boolean) => emit('update:show', val)
 })
 
 const selectedPreset = ref(PRESET_REASONS[0])
@@ -124,6 +116,8 @@ const titleText = computed(() => (props.item ? activityTitle(props.item) : ''))
 const sheetTitle = computed(() => (isDirect.value ? '确认取消报名' : '申请取消并退款'))
 
 function pickPreset(preset: string) {
+    if (selectedPreset.value === preset) return
+    haptic('light', 'activity-cancel-reason')
     selectedPreset.value = preset
 }
 
@@ -162,48 +156,17 @@ async function submit() {
 </script>
 
 <style lang="scss" scoped>
-.cancel-sheet {
+/* 原 .cancel-sheet / __head / __body / __foot 已由 snap-sheet 承担，
+   以下类直接挂在 body / foot 插槽内容上 */
+.cancel-body {
     display: flex;
     flex-direction: column;
-    background: var(--c-surface);
+    padding-top: var(--sp-1);
+}
 
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: var(--sp-4) var(--page-gutter) var(--sp-3);
-        border-bottom: 1rpx solid var(--c-line);
-    }
-
-    &__title {
-        font-size: var(--fs-lg);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__close {
-        width: 56rpx;
-        height: 56rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--r-pill);
-    }
-
-    &__close-ic {
-        color: var(--c-ink-3);
-    }
-
-    &__body {
-        padding: var(--sp-3) var(--page-gutter) var(--sp-4);
-    }
-
-    &__foot {
-        display: flex;
-        gap: var(--sp-2);
-        padding: var(--sp-3) var(--page-gutter) calc(var(--sp-4) + var(--safe-bottom));
-        border-top: 1rpx solid var(--c-line);
-    }
+.foot {
+    display: flex;
+    gap: var(--sp-2);
 }
 
 .foot-btn {
@@ -215,7 +178,7 @@ async function submit() {
     padding: var(--sp-3);
     border-radius: var(--r-md);
     background: var(--c-bg);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
 
     &__row {
         display: flex;
@@ -274,20 +237,32 @@ async function submit() {
     margin-top: var(--sp-2);
 }
 
+/* 原因胶囊：视觉仍是小胶囊，热区直接给足 88rpx（换行容器不用伪元素外扩，避免相邻项抢点击） */
 .chip {
-    padding: 12rpx 24rpx;
+    display: inline-flex;
+    align-items: center;
+    min-height: 88rpx;
+    padding: 0 var(--sp-3);
     border-radius: var(--r-pill);
-    border: 1rpx solid var(--c-line-strong);
-    background: var(--c-bg);
+    border: 1rpx solid var(--c-control-border);
+    background: var(--c-surface);
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        transform var(--dur-press) var(--ease-out);
 
     &__text {
         font-size: var(--fs-23);
         color: var(--c-ink-2);
     }
 
+    &.is-pressed {
+        transform: scale(0.97);
+    }
+
     &.is-on {
         background: var(--c-brand-bg);
-        border-color: var(--c-brand);
+        border-color: var(--c-brand-text);
 
         .chip__text {
             color: var(--c-brand-text);
@@ -302,15 +277,21 @@ async function submit() {
     margin-top: var(--sp-3);
     padding: var(--sp-2) var(--sp-3);
     border-radius: var(--r-sm);
-    background: var(--c-bg);
+    background: var(--c-surface-2);
     border: 1rpx solid var(--c-control-border);
     box-sizing: border-box;
     font-size: var(--fs-23);
     line-height: var(--lh-body);
     color: var(--c-ink);
+}
 
-    &__ph {
-        color: var(--c-ink-3);
+@media (prefers-reduced-motion: reduce) {
+    .chip {
+        transition: none;
+
+        &.is-pressed {
+            transform: none;
+        }
     }
 }
 </style>

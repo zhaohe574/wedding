@@ -20,9 +20,9 @@
             />
 
             <view v-else class="page-pad">
-                <text class="article__title">{{ data.title }}</text>
+                <text class="article__title t-balance">{{ data.title }}</text>
                 <!-- 样板页：作者 · 时间 · 阅读量，用「 · 」分隔并降到 --fs-20（原三 span + gap） -->
-                <text v-if="metaText" class="article__meta">{{ metaText }}</text>
+                <text v-if="metaText" class="article__meta t-num">{{ metaText }}</text>
 
                 <image
                     v-if="data.image"
@@ -213,6 +213,24 @@ onLoad((options: any) => {
         line-height: var(--lh-loose);
         overflow-wrap: anywhere;
         word-break: break-word;
+
+        /* u-parse 正文兼容（同 message/detail 的写法）：
+           mp-weixin 无 <p> 标签，段落渲染成 <rich-text class="_p __p">，
+           img 渲染成 <image class="_image">；两套选择器都要挂，缺一套就有一端失配。 */
+        :deep(p),
+        :deep(.__p) {
+            line-height: var(--lh-loose);
+        }
+
+        :deep(img),
+        :deep(._image) {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            margin: var(--sp-3) 0;
+            border-radius: var(--r-md);
+            background: var(--c-neutral-bg);
+        }
     }
 
     &__actions {

@@ -8,7 +8,7 @@
     -->
     <page-shell bg="page" title="售后与投诉">
         <view v-if="loading" class="pad sk">
-            <base-skeleton :rows="3" />
+            <base-skeleton variant="card" :rows="3" />
         </view>
 
         <base-empty
@@ -38,11 +38,11 @@
                     </view>
                     <view class="ord__m">
                         <text class="ord__title">{{ orderTitle }}</text>
-                        <text class="ord__sub">{{ orderSub }}</text>
+                        <text class="ord__sub t-num">{{ orderSub }}</text>
                     </view>
                     <view v-if="order.paidAmount !== ''" class="ord__r">
                         <text class="ord__r-label">已付</text>
-                        <text class="ord__r-amount">¥{{ order.paidAmount }}</text>
+                        <text class="ord__r-amount t-num">¥{{ order.paidAmount }}</text>
                     </view>
                 </view>
 
@@ -83,7 +83,7 @@
                             <tn-icon name="tips" :size="26" class="rec__ic" />
                             <text class="rec__title">{{ pending.title }}</text>
                         </view>
-                        <text class="rec__time">{{ pending.time }}</text>
+                        <text class="rec__time t-num">{{ pending.time }}</text>
                     </view>
                     <text class="rec__desc">{{ pending.desc }}</text>
                 </view>
@@ -118,7 +118,7 @@
                                 })
                             "
                         >
-                            <text class="hub__num">{{
+                            <text class="hub__num t-num">{{
                                 hubStatsLoaded ? hubStats.ticketUnfinished : '—'
                             }}</text>
                             <text class="hub__label">待办工单</text>
@@ -138,7 +138,7 @@
                                 })
                             "
                         >
-                            <text class="hub__num">{{
+                            <text class="hub__num t-num">{{
                                 hubStatsLoaded ? hubStats.complaintUnfinished : '—'
                             }}</text>
                             <text class="hub__label">处理中投诉</text>
@@ -154,7 +154,7 @@
                             aria-label="查看待填回访"
                             @tap="goPath('/packages/pkg-service/pages/aftersale/callback-list')"
                         >
-                            <text class="hub__num">{{
+                            <text class="hub__num t-num">{{
                                 hubStatsLoaded ? hubStats.callbackPending : '—'
                             }}</text>
                             <text class="hub__label">待填回访</text>
@@ -344,6 +344,7 @@ import { navigate } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { FB } from '@/constants/feedback'
 import { report } from '@/platform/report'
+import { haptic } from '@/utils/haptics'
 
 /** ✘ G-17：FAQ 无接口，三条按现有处理口径写，不含未定义的费用比例 */
 const FAQ: Array<{ q: string; a: string }> = [
@@ -697,14 +698,17 @@ async function loadPending() {
 }
 
 function toggleFaq(i: number) {
+    haptic('light', 'aftersale-faq')
     openFaq.value = openFaq.value === i ? -1 : i
 }
 
 function goPath(path: string, query?: Record<string, any>) {
+    haptic('light', 'aftersale-nav')
     navigate({ path, query })
 }
 
 function goCustomerService(query?: Record<string, any>) {
+    haptic('light', 'aftersale-support')
     const pages = getCurrentPages()
     const prevRoute = pages.length >= 2 ? String((pages[pages.length - 2] as any)?.route || '') : ''
     if (prevRoute === 'pages/customer-service/customer-service' && !query?.order_id) {
@@ -731,6 +735,7 @@ function onEntry(e: EntryItem) {
 }
 
 function goRule() {
+    haptic('light', 'aftersale-rule')
     navigate({ path: '/pages/agreement/agreement', query: { type: 'aftersale' } })
 }
 
@@ -793,6 +798,8 @@ onShow(() => {
     border-radius: var(--r-md);
     background: linear-gradient(135deg, var(--c-dark-1), var(--c-dark-2));
     color: var(--c-on-dark);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__top {
         display: flex;
@@ -855,11 +862,14 @@ onShow(() => {
     &__metric {
         flex: 1;
         min-width: 0;
+        min-height: 88rpx;
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center;
         gap: var(--sp-1);
         padding: var(--sp-1) 0;
+        border-radius: var(--r-sm);
     }
 
     &__divider {
@@ -916,7 +926,8 @@ onShow(() => {
     padding: var(--sp-3);
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
     box-sizing: border-box;
 
     &__top {
@@ -1013,6 +1024,7 @@ onShow(() => {
     border-radius: var(--r-md);
     background: var(--c-brand-bg);
     border: 1rpx solid var(--c-primary-border);
+    box-shadow: var(--shadow-card);
 
     &__ic {
         width: 64rpx;
@@ -1072,7 +1084,8 @@ onShow(() => {
     padding: var(--sp-3);
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__av {
         width: 72rpx;
@@ -1366,8 +1379,11 @@ onShow(() => {
     align-items: center;
     justify-content: center;
     gap: var(--sp-1);
+    min-height: 88rpx;
+    margin-top: var(--sp-1);
     padding-top: var(--sp-3);
     border-top: 1rpx solid var(--c-line);
+    box-sizing: border-box;
 
     &__text {
         font-size: var(--fs-xs);

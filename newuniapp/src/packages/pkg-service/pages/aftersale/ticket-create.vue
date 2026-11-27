@@ -55,7 +55,7 @@
                 </view>
                 <view v-if="paidDeposit > 0" class="ord__amt">
                     <text class="ord__amt-label">已付定金</text>
-                    <text class="ord__amt-value">¥{{ money(paidDeposit) }}</text>
+                    <text class="ord__amt-value t-num">¥{{ money(paidDeposit) }}</text>
                 </view>
             </view>
 
@@ -126,13 +126,13 @@
                         <view
                             v-for="r in CHANGE_REASONS"
                             :key="r"
-                            class="chip"
+                            class="chip hit-88"
                             :class="{ 'is-on': form.changeReason === r }"
                             hover-class="is-pressed"
                             :hover-start-time="20"
                             :hover-stay-time="70"
                             :hover-stop-propagation="true"
-                            @tap="form.changeReason = r"
+                            @tap="pickChangeReason(r)"
                         >
                             <text class="chip__text">{{ r }}</text>
                         </view>
@@ -147,13 +147,13 @@
                     <view
                         v-for="r in REFUND_REASONS"
                         :key="r"
-                        class="chip"
+                        class="chip hit-88"
                         :class="{ 'is-on': form.refundReason === r }"
                         hover-class="is-pressed"
                         :hover-start-time="20"
                         :hover-stay-time="70"
                         :hover-stop-propagation="true"
-                        @tap="form.refundReason = r"
+                        @tap="pickRefundReason(r)"
                     >
                         <text class="chip__text">{{ r }}</text>
                     </view>
@@ -161,7 +161,7 @@
 
                 <view v-if="refundable > 0" class="kv kv--last">
                     <text class="kv__k">可退金额</text>
-                    <text class="kv__v kv__v--strong">¥{{ money(refundable) }}</text>
+                    <text class="kv__v kv__v--strong t-num">¥{{ money(refundable) }}</text>
                 </view>
             </view>
 
@@ -219,7 +219,7 @@
             <bottom-bar v-if="showBottomBar">
                 <view class="bar__left">
                     <text class="bar__label">{{ mode === 'change' ? '改期后' : '退款金额' }}</text>
-                    <text class="bar__value">{{ barValue }}</text>
+                    <text class="bar__value t-num">{{ barValue }}</text>
                 </view>
                 <template #actions>
                     <view
@@ -263,6 +263,7 @@ import { resolveErrorView } from '@/utils/resolveErrorView'
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { useAppStore } from '@/stores/app'
 import { report } from '@/platform/report'
+import { haptic } from '@/utils/haptics'
 
 const appStore = useAppStore()
 
@@ -392,10 +393,22 @@ function switchMode(m: { key: 'change' | 'refund'; enabled: boolean }) {
         )
         return
     }
+    haptic('light', 'tc-mode')
     mode.value = m.key
 }
 
+function pickChangeReason(r: string) {
+    form.changeReason = r
+    haptic('light', 'tc-reason')
+}
+
+function pickRefundReason(r: string) {
+    form.refundReason = r
+    haptic('light', 'tc-reason')
+}
+
 function onPickDate(e: any) {
+    haptic('light', 'tc-date')
     const val = String(e?.detail?.value || '').trim()
     if (val) {
         form.newDate = val.slice(0, 10)
@@ -445,6 +458,7 @@ async function onSubmit() {
     }
 
     submitting.value = true
+    haptic('medium', 'tc-submit')
     try {
         // 服务号提醒：表单校验已通过，退款与改期共用同一个写请求前的检查；
         // 暂停时直接退出，submitting 由 finally 释放
@@ -518,7 +532,8 @@ onLoad((options: any) => {
     padding: 22rpx;
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__av {
         width: 72rpx;
@@ -586,7 +601,7 @@ onLoad((options: any) => {
 
     &__item {
         flex: 1;
-        height: 68rpx;
+        height: 88rpx;
         border-radius: var(--r-pill);
         /* 可点控件边界：--c-line-strong 对 --c-surface 1.60:1（未选中态几个选项几乎连成一片），
            按项目既有约定改 --c-control-border（3.77:1）。判定依据是模板里
@@ -596,6 +611,10 @@ onLoad((options: any) => {
         display: flex;
         align-items: center;
         justify-content: center;
+        box-sizing: border-box;
+        transition:
+            background-color var(--dur-base) var(--ease-out),
+            border-color var(--dur-base) var(--ease-out);
     }
 
     &__text {
@@ -652,7 +671,8 @@ onLoad((options: any) => {
     padding: 26rpx;
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__h {
         display: block;
@@ -721,11 +741,13 @@ onLoad((options: any) => {
     justify-content: space-between;
     /* 日历图标；&-text 自己声明了 --c-ink */
     color: var(--c-ink-3);
-    height: 84rpx;
+    height: 88rpx;
     margin-top: 14rpx;
     padding: 0 20rpx;
     border-radius: var(--r-sm);
     background: var(--c-surface-2);
+    border: 1rpx solid var(--c-control-border);
+    box-sizing: border-box;
 
     &__text {
         font-size: var(--fs-xs);
@@ -750,6 +772,10 @@ onLoad((options: any) => {
     /* 可点控件边界（模板 @tap + hover-class + is-on）：--c-line-strong 1.60:1 → --c-control-border 3.77:1 */
     border: 1rpx solid var(--c-control-border);
     background: var(--c-surface);
+    box-sizing: border-box;
+    transition:
+        background-color var(--dur-base) var(--ease-out),
+        border-color var(--dur-base) var(--ease-out);
 
     &__text {
         font-size: var(--fs-22);
@@ -792,7 +818,7 @@ onLoad((options: any) => {
 
     &__btn {
         flex: none;
-        height: 84rpx;
+        height: 88rpx;
         padding: 0 40rpx;
         border-radius: var(--r-pill);
         background: var(--c-action-bg);
@@ -800,6 +826,7 @@ onLoad((options: any) => {
         display: flex;
         align-items: center;
         justify-content: center;
+        box-sizing: border-box;
 
         &-text {
             font-size: var(--fs-md);
@@ -814,6 +841,14 @@ onLoad((options: any) => {
                 color: var(--c-ink-3);
             }
         }
+    }
+}
+
+/* v10 §3.13：减弱动效下分段与芯片直接换色，不做过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .seg__item,
+    .chip {
+        transition: none;
     }
 }
 </style>
