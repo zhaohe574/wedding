@@ -1,6 +1,13 @@
 <template>
     <view class="tabbar" :class="[`tabbar--${variant}`]" :style="tabbarStyle" aria-role="tablist">
         <view class="tabbar__pill">
+            <!-- 液态滑块（v10 §3.2）：高亮全靠这一层承托，tab 自身透明；
+                 放在 tab 之前 + z-index 分层，保证文字图标压在滑块之上。 -->
+            <view
+                class="tabbar__thumb"
+                :class="{ 'is-moving': thumbMoving }"
+                :style="thumbStyle"
+            />
             <view
                 v-for="item in list"
                 :key="item.path"
@@ -40,8 +47,9 @@
  * 角标：「我的」Tab 聚合展示待支付订单 + 未读消息 + 服务人员工作台待办（badgeStore.mineCount），
  * 其余三个 tab 不展示。数字超过 99 显示 99+，与订单格角标口径一致。
  */
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { getDeviceInfo } from '@/platform/device'
+import { haptic } from '@/utils/haptics'
 import { useBadgeStore } from '@/stores/badge'
 import { useUserStore } from '@/stores/user'
 
@@ -92,6 +100,35 @@ const list: TabItem[] = [
 const badgeStore = useBadgeStore()
 const userStore = useUserStore()
 
+/**
+ * 滑块索引（v10 §3.2）：--i 只写 0..3，位移交给 CSS 的 calc(var(--i) * 100%)，
+ * 这样 4 个 tab 等宽时不需要任何 JS 量尺寸；未匹配到路线（如二级页误挂）直接隐去滑块。
+ */
+const activeIndex = computed(() => list.findIndex((item) => item.path === props.current))
+const thumbStyle = computed<Record<string, string>>(() => {
+    const style: Record<string, string> = { '--i': String(Math.max(0, activeIndex.value)) }
+    if (activeIndex.value < 0) style.opacity = '0'
+    return style
+})
+
+/** 水滴拉长：与 keyframes thumb-stretch 等长，播完立即摘类 */
+const THUMB_MOVE_MS = 260
+const thumbMoving = ref(false)
+let thumbTimer: ReturnType<typeof setTimeout> | null = null
+
+function playThumbStretch() {
+    thumbMoving.value = true
+    if (thumbTimer) clearTimeout(thumbTimer)
+    thumbTimer = setTimeout(() => {
+        thumbMoving.value = false
+        thumbTimer = null
+    }, THUMB_MOVE_MS)
+}
+
+onUnmounted(() => {
+    if (thumbTimer) clearTimeout(thumbTimer)
+})
+
 /** tabbar 在每个 tab 页各挂一个；首帧先取一次，之后靠各页 onShow 的 refresh（带节流）维护 */
 onMounted(() => {
     if (userStore.isLogin) badgeStore.refresh()
@@ -124,6 +161,8 @@ function badgeOf(item: TabItem): number {
 
 function go(item: TabItem) {
     if (item.path === props.current) return
+    haptic('light', 'app-tabbar')
+    playThumbStretch()
     uni.switchTab({ url: item.path })
 }
 </script>
@@ -155,28 +194,59 @@ function go(item: TabItem) {
 
     /* 胶囊：112rpx 高、整圆角（设计稿 32px 半径对 58px 高，本质是 pill）、1rpx 描边 + 唯一允许的浮层阴影 */
     &__pill {
+        position: relative; /* 滑块（position:absolute）的定位基准 */
         height: 112rpx;
         border-radius: var(--r-pill);
-        background: rgba(var(--c-surface-rgb), 0.94);
+        /* 第三层最高亮表面：浅色暖白 / 暗色深咖，半透明 + 毛玻璃 */
+        background: rgba(var(--c-surface-float-rgb), 0.92);
+        backdrop-filter: blur(20px);
         border: 1rpx solid var(--c-line-strong);
         box-shadow: var(--shadow-float);
         display: flex;
         align-items: center;
         padding: 8rpx;
-        gap: 4rpx;
         box-sizing: border-box;
     }
 
+    /*
+     * 液态滑块：宽度 = 内容区 1/4（内容区 = 胶囊宽 - 两侧 8rpx 内边距 - 描边），
+     * 位移用 --i × 自身宽度，四等分与 tab 完全重合，不需要量像素。
+     * 高亮色与旧选中块同源（--c-tabbar-active-*），只是从「tab 自己的背景」挪到了滑块上。
+     */
+    &__thumb {
+        position: absolute;
+        top: 8rpx;
+        bottom: 8rpx;
+        left: 8rpx;
+        width: calc((100% - 16rpx) / 4);
+        border-radius: var(--r-pill);
+        background: var(--c-tabbar-active-bg);
+        border: 1rpx solid var(--c-tabbar-active-border);
+        box-sizing: border-box;
+        z-index: 0;
+        pointer-events: none;
+        transform: translateX(calc(var(--i, 0) * 100%));
+        transition: transform var(--dur-base) var(--ease-spring-soft);
+
+        &.is-moving {
+            animation: thumb-stretch 260ms var(--ease-out);
+        }
+    }
+
     &__tab {
+        position: relative;
+        z-index: 1; /* 压在滑块之上，图标文字不被承托层盖住 */
         flex: 1;
         height: 96rpx;
         border-radius: var(--r-pill); /* 设计稿 26px 半径对 50px 高，同样是 pill */
+        /* 高亮全靠底部滑块：tab 自身不铺底色、不描边 */
+        background: transparent;
+        border: 0;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         gap: 6rpx;
-        transition: background-color var(--dur-base) var(--ease-out);
 
         &--hover {
             opacity: 0.72;
@@ -189,6 +259,7 @@ function go(item: TabItem) {
         font-size: var(--fs-xl); /* 38rpx ≈ 设计稿 19px×1.923 */
         line-height: var(--lh-none);
         color: var(--c-ink-3);
+        transition: color 180ms var(--ease-out);
     }
 
     /* 角标：压在图标右上，左偏移 8rpx 让数字尽量落在图标外沿而不是压住字形。
@@ -214,7 +285,8 @@ function go(item: TabItem) {
     &__badge-text {
         font-size: var(--fs-20);
         font-weight: var(--fw-semibold);
-        color: var(--c-ink-inverse);
+        /* 危险底上的前景：浅色白 6.18:1 / 暗色暖墨黑 8.05:1，不能再用 --c-ink-inverse */
+        color: var(--c-on-danger);
         line-height: var(--lh-none);
     }
 
@@ -225,13 +297,11 @@ function go(item: TabItem) {
         letter-spacing: 0.04em;
         line-height: var(--lh-none);
         color: var(--c-ink-3);
+        transition: color 180ms var(--ease-out);
     }
 
-    /* 选中态：整块墨黑胶囊 + 香槟字（设计 .tab.is-active） */
+    /* 选中态：图标香槟金 + 文案暖白，底色由 .tabbar__thumb 承托 */
     &__tab.is-active {
-        background: var(--c-tabbar-active-bg);
-        border: 1rpx solid var(--c-tabbar-active-border);
-
         .tabbar__icon {
             color: var(--c-tabbar-active-icon);
         }
@@ -245,6 +315,34 @@ function go(item: TabItem) {
         .tabbar__badge {
             border-color: var(--c-tabbar-active-bg);
         }
+    }
+}
+
+/* 不支持毛玻璃的基础库：提高不透明度保住第三层表面的可读性（不退回纯实底，仍保留浮层质感） */
+@supports not (backdrop-filter: blur(20px)) {
+    .tabbar__pill {
+        background: rgba(var(--c-surface-float-rgb), 0.96);
+    }
+}
+
+/* 切换 Tab 的水滴拉长（v10 §3.2）：scaleX 1 → 1.08 → 1，位移保持当前 --i */
+@keyframes thumb-stretch {
+    0% {
+        transform: translateX(calc(var(--i, 0) * 100%)) scaleX(1);
+    }
+    45% {
+        transform: translateX(calc(var(--i, 0) * 100%)) scaleX(1.08);
+    }
+    100% {
+        transform: translateX(calc(var(--i, 0) * 100%)) scaleX(1);
+    }
+}
+
+/* v10 §3.13：减弱动效下滑块直接到位，不拉长 */
+@media (prefers-reduced-motion: reduce) {
+    .tabbar__thumb {
+        transition: none;
+        animation: none;
     }
 }
 </style>

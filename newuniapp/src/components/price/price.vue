@@ -1,6 +1,6 @@
 <template>
     <view
-        class="price"
+        class="price t-num"
         :class="[`price--${size}`, { 'price--through': lineThrough }]"
         :aria-label="ariaLabel"
     >
@@ -103,6 +103,7 @@ const minorStyle = computed(() => ({
     font-weight: var(--fw-semibold);
     letter-spacing: -0.01em;
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1; /* 价目列表竖排对齐：整数/小数/千分位同宽 */
     white-space: nowrap;
 
     &__prefix,

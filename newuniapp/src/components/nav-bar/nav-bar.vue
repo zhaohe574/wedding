@@ -70,6 +70,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { onHide, onShow, onUnload } from '@dcloudio/uni-app'
 import { getDeviceInfo } from '@/platform/device'
 import { useColorSchemeStore } from '@/stores/colorScheme'
+import { haptic } from '@/utils/haptics'
 
 const props = withDefaults(
     defineProps<{
@@ -248,7 +249,9 @@ const resolvedTitleColor = computed(
 
 const titleClass = computed(() => ({
     'nav__title--display': props.titleVariant === 'display',
-    'nav__title--left': props.titleAlign === 'left'
+    'nav__title--left': props.titleAlign === 'left',
+    // v10 §2.4：标题平衡换行，短标题不被硬切、长标题两端不孤字
+    't-balance': true
 }))
 
 const navStyle = computed(() => {
@@ -358,6 +361,7 @@ const titleStyle = computed<Record<string, string>>(() => ({
 }))
 
 function onBack() {
+    haptic('light', 'nav-back')
     emit('back')
     if (props.backMode === 'none') return
     const pages = getCurrentPages()
@@ -518,6 +522,13 @@ function onBack() {
         max-width: none;
         flex: 1;
         text-align: left;
+    }
+}
+
+/* v10 §3.13：减弱动效下实底切换不做渐变，直接换色（返回键、标题、描边同步到位） */
+@media (prefers-reduced-motion: reduce) {
+    .nav--scroll-solid {
+        transition: none;
     }
 }
 </style>

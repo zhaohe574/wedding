@@ -64,8 +64,11 @@ const barStyle = computed<Record<string, string> | undefined>(() =>
     right: 0;
     bottom: 0;
     z-index: 90; /* < nav-bar 的 99，> 内容；永远低于 toast(1000) 与弹层 */
-    background: var(--c-surface);
-    border-top: 1rpx solid var(--c-line-strong);
+    /* 浮起第三层表面：半透明暖白 / 深咖 + 毛玻璃，压在内容之上仍能透出滚动层次 */
+    background: rgba(var(--c-surface-float-rgb), 0.94);
+    backdrop-filter: blur(20px);
+    border-top: 1rpx solid var(--c-card-border); /* 浅色靠暖影分层，暗色落 1rpx --c-line */
+    box-shadow: var(--shadow-sheet);
     padding: var(--sp-2) var(--sp-4) var(--sp-2);
     padding-bottom: calc(var(--sp-2) + var(--safe-bottom));
     box-sizing: border-box;
@@ -73,6 +76,8 @@ const barStyle = computed<Record<string, string> | undefined>(() =>
     &--static {
         position: static;
         padding-bottom: var(--sp-2);
+        /* 静态栏不悬浮在内容上，阴影会把上一条内容「压出」一道假分割线 */
+        box-shadow: none;
     }
 
     &__note {
@@ -98,6 +103,13 @@ const barStyle = computed<Record<string, string> | undefined>(() =>
         align-items: center;
         gap: var(--sp-2);
         flex-shrink: 0;
+    }
+}
+
+/* 不支持毛玻璃的基础库：提高不透明度保住文字对比度，仍保留浮层质感 */
+@supports not (backdrop-filter: blur(20px)) {
+    .bbar {
+        background: rgba(var(--c-surface-float-rgb), 0.98);
     }
 }
 </style>

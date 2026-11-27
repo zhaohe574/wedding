@@ -19,9 +19,9 @@
             <view class="steps__dot" aria-hidden="true">
                 <!-- v1 u-icon → v2 tn-icon：checkmark → check -->
                 <tn-icon v-if="i < current" name="check" :size="24" />
-                <text v-else class="steps__no">{{ i + 1 }}</text>
+                <text v-else class="steps__no t-num">{{ i + 1 }}</text>
             </view>
-            <text class="steps__label">{{ s }}</text>
+            <text class="steps__label t-balance">{{ s }}</text>
             <view v-if="i < steps.length - 1" class="steps__line" aria-hidden="true" />
         </view>
     </view>
@@ -77,6 +77,10 @@ withDefaults(
            与 01:887「不得用 --c-line-strong 承载信息」自相矛盾；booking 的 .st__dot 基础态
            本来就用 --c-control-border（3.77:1），本条是让组件和规范跟上 booking 的现状。 */
         border: 1rpx solid var(--c-control-border);
+        transition:
+            background-color var(--dur-base) var(--ease-out),
+            border-color var(--dur-base) var(--ease-out),
+            box-shadow var(--dur-base) var(--ease-out);
     }
 
     &__no {
@@ -100,6 +104,7 @@ withDefaults(
         height: 2rpx;
         background: var(--c-line);
         z-index: -1;
+        transition: background-color var(--dur-base) var(--ease-out);
     }
 
     .is-done &__dot {
@@ -131,6 +136,14 @@ withDefaults(
     .is-failed &__dot {
         background: var(--c-danger);
         border-color: var(--c-danger);
+    }
+}
+
+/* v10 §3.13：减弱动效下状态色直接切换，不做过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .steps__dot,
+    .steps__line {
+        transition: none;
     }
 }
 </style>

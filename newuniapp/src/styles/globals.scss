@@ -209,3 +209,174 @@ scroll-view {
 .textarea__ph {
     color: var(--c-ink-3);
 }
+
+/* ============================================================
+ * v10 全局工具类（01 总方案 §2.4 / §3.1 / §3.3 / §3.12）
+ * 只放跨页面复用的单一职责类，不做组件样式。
+ * ============================================================ */
+
+/* 数字等宽：倒计时、价格、统计、百分比、计数全覆盖 */
+.t-num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+}
+
+/* 标题平衡换行：Hero / 区块标题 / 抽屉标题 / 空态标题 */
+.t-balance {
+    text-wrap: balance;
+}
+
+/* 引号悬挂：伪元素把左双引号推到左边界外侧，引用首字与正文严格对齐 */
+.t-quote-hang {
+    position: relative;
+    padding-left: 0;
+}
+.t-quote-hang::before {
+    content: "“";
+    position: absolute;
+    left: -0.68em;
+    top: -0.06em;
+    color: var(--c-brand-text);
+    font-size: 1.25em;
+}
+
+/* 视觉溢出补偿：圆形与方形/胶囊并排时给圆形 +6% */
+.t-optical-round {
+    transform: scale(1.06);
+}
+
+/* 图文按钮非对称内边距：图标侧小于纯文字侧，让图标视觉重心落在按钮内 */
+.btn--icon-l {
+    padding-left: 34rpx;
+    padding-right: 46rpx;
+}
+.btn--icon-r {
+    padding-left: 46rpx;
+    padding-right: 34rpx;
+}
+
+/* 88rpx（44px）最小热区：视觉尺寸可更小，热区四向扩展且不留死缝 */
+.hit-88 {
+    position: relative;
+}
+.hit-88::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 88rpx);
+    height: max(100%, 88rpx);
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+}
+
+/* 浮起卡片：浅色靠暖褐三层柔影，暗色补 1rpx 描边（§2.1 卡片落地规则）
+   描边由 --c-card-border 跨组件继承：浅色透明、暗色 --c-line，
+   不再依赖 .scheme-* 祖先后代选择器（组件 scoped 样式穿不透祖父节点）。 */
+.card-elevated {
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-card-border);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-card);
+}
+
+/* ---- 两段式按压回弹（§3.1）----
+   按下 90ms 压实；松手播 spring-release 440ms，先过冲到 103.2% 再收稳。 */
+.press-spring {
+    transform-origin: center center;
+    transition: transform var(--dur-press) var(--ease-out);
+}
+.press-spring.is-pressing {
+    transform: scale(0.96);
+}
+.press-spring.is-rebound {
+    animation: spring-release var(--dur-release) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes spring-release {
+    0% {
+        transform: scale(0.96);
+    }
+    42% {
+        transform: scale(1.032);
+    }
+    72% {
+        transform: scale(0.993);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* ---- 100ms 错峰入场（§3.3）：子项用 --i 递增，第 7 项起封顶 600ms ---- */
+.stagger > * {
+    opacity: 0;
+    transform: translate3d(0, 16rpx, 0);
+}
+.stagger.is-in > * {
+    animation: rise-in 420ms var(--ease-out) forwards;
+    animation-delay: min(calc(var(--i, 0) * var(--dur-stagger)), var(--stagger-max));
+}
+@keyframes rise-in {
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+/* ---- 落点跟手波纹（§3.12）：--rx / --ry 由调用方写入触摸点坐标 ---- */
+.ripple-origin {
+    position: relative;
+    overflow: hidden;
+}
+.ripple-wave {
+    position: absolute;
+    left: var(--rx, 50%);
+    top: var(--ry, 50%);
+    width: 240rpx;
+    height: 240rpx;
+    border-radius: var(--r-pill);
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    animation: ripple-spread 520ms var(--ease-out) forwards;
+}
+@keyframes ripple-spread {
+    0% {
+        opacity: 0.18;
+        transform: translate(-50%, -50%) scale(0.12);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(2.5);
+    }
+}
+
+/* ---- 动效降级总表（§3.13）：系统开启减弱动效时全部回到静态终态 ---- */
+@media (prefers-reduced-motion: reduce) {
+    .stagger > * {
+        opacity: 1;
+        transform: none;
+        animation: none;
+    }
+    .press-spring,
+    .press-spring.is-pressing,
+    .press-spring.is-rebound {
+        transform: none;
+        transition: none;
+        animation: none;
+    }
+    .eswitch__thumb,
+    .tabbar__thumb {
+        transition: none;
+        animation: none;
+    }
+    .skeleton__thumb,
+    .skeleton__line {
+        animation: none;
+        background: var(--c-neutral-bg);
+    }
+    .spark,
+    .ripple-wave {
+        display: none;
+    }
+}

@@ -17,6 +17,7 @@
         <view class="field__control">
             <input
                 class="field__input"
+                :class="{ 't-num': isNumeric }"
                 :value="modelValue"
                 :type="type"
                 :maxlength="maxlength"
@@ -51,7 +52,7 @@
  *   · 必填加星号；禁用态由显式色承担，不靠 opacity
  *   · row 布局用于「标签左、输入右」，stack 用于整行输入
  */
-import { ref, getCurrentInstance } from 'vue'
+import { ref, computed, getCurrentInstance } from 'vue'
 
 const props = withDefaults(
     defineProps<{
@@ -101,6 +102,9 @@ const descId = `field-desc-${getCurrentInstance()?.uid ?? 0}`
 
 const focused = ref(false)
 
+/** 数字类输入锁定等宽：金额/数量/身份证逐位对齐，退格时不左右抖 */
+const isNumeric = computed(() => ['number', 'digit', 'idcard'].includes(props.type))
+
 function onInput(e: any) {
     emit('update:modelValue', e?.detail?.value ?? '')
 }
@@ -124,6 +128,11 @@ function onFocus() {
     min-height: 88rpx;
     border-bottom: 1rpx solid var(--c-control-border); /* 保持：控件边界，非 --c-line */
     flex-wrap: wrap;
+    /* 聚焦线/错误色在深浅两态都平滑切换，不闪 */
+    transition:
+        box-shadow var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        background-color var(--dur-fast) var(--ease-out);
 
     &--stack {
         flex-direction: column;
@@ -201,6 +210,13 @@ function onFocus() {
     &--stack &__err,
     &--stack &__hint {
         padding-left: 0;
+    }
+}
+
+/* v10 §3.13：减弱动效下聚焦线直接到位，不做颜色过渡 */
+@media (prefers-reduced-motion: reduce) {
+    .field {
+        transition: none;
     }
 }
 </style>

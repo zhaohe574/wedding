@@ -1,9 +1,9 @@
 <template>
     <view class="tl" :aria-label="ariaLabel">
         <view v-for="(it, i) in items" :key="it.label + i" class="tl__row">
-            <text class="tl__label">{{ it.label }}</text>
+            <text class="tl__label t-num">{{ it.label }}</text>
             <view class="tl__body">
-                <text class="tl__title">{{ it.title }}</text>
+                <text class="tl__title t-balance">{{ it.title }}</text>
                 <text v-if="it.desc" class="tl__desc">{{ it.desc }}</text>
             </view>
         </view>
@@ -21,6 +21,8 @@
  * 契约：纯展示。数据由页面给（label 用 T-30 / T-01 / T-0 约定好的相对时间标记），
  * 组件不计算日期、不排序、不做完成态判断。
  */
+import { computed } from 'vue'
+
 interface TimelineItem {
     /** 左侧时间标记，如 T-30 / T-01 / T-0 */
     label: string
@@ -30,9 +32,13 @@ interface TimelineItem {
 
 const props = withDefaults(defineProps<{ items: TimelineItem[] }>(), { items: () => [] })
 
-const ariaLabel = `服务流程共 ${props.items.length} 个节点：${props.items
-    .map((i) => `${i.label}，${i.title}`)
-    .join('；')}`
+/** computed 而非一次性字符串：items 异步到达时读屏标签随之更新 */
+const ariaLabel = computed(
+    () =>
+        `服务流程共 ${props.items.length} 个节点：${props.items
+            .map((i) => `${i.label}，${i.title}`)
+            .join('；')}`
+)
 </script>
 
 <style lang="scss" scoped>

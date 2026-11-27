@@ -98,6 +98,7 @@ page {
     --r-10: 10rpx;
     --r-11: 11rpx;
     --r-14: 14rpx;
+    --r-16: 16rpx;   /* v10 §2.3 同心圆角：--r-lg 40rpx − --sp-3 24rpx = 16rpx（图标底块） */
     --r-20: 20rpx;
     --r-24: 24rpx;
     --r-25: 25rpx;
@@ -106,6 +107,7 @@ page {
     --r-30: 30rpx;
     --r-31: 31rpx;
     --r-36: 36rpx;
+    --r-48: 48rpx;   /* v10 §2.3：底部抽屉顶角（24px），落 --r-lg 档系 */
 
     /* ---- 动效 ---- */
     --dur-fast: 150ms;
@@ -114,6 +116,14 @@ page {
     --ease-out: cubic-bezier(0.2, 0, 0, 1);
     /* 退出缓动（与 --ease-out 配对） */
     --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    /* v10 §3.0 物理质感动效：过冲回弹 / 软回弹 / 长尾指数减速 */
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-spring-soft: cubic-bezier(0.22, 1.2, 0.36, 1);
+    --ease-decel: cubic-bezier(0.12, 0.96, 0.22, 1);
+    --dur-press: 90ms;      /* 按压压实（快速轻点保底 ≥75ms） */
+    --dur-release: 440ms;   /* 松手回弹 spring-release */
+    --dur-stagger: 100ms;   /* 错峰入场步进 */
+    --stagger-max: 600ms;   /* 错峰延迟上限（第 7 项及以后同值） */
 
     /* ---- 安全区 ----
        双写带回退：iOS < 11.2 / 部分安卓 WebView 只认 constant()，env() 缺省值兜底，
@@ -156,6 +166,9 @@ page {
     --c-surface: #fffdf8;     /* 设计稿 --surface（暖白是识别点） */
     --c-surface-rgb: 255, 253, 248;
     --c-surface-2: #f3ede1;   /* 设计稿 --ivory-2 */
+    /* v10 §2.1 / §2.2 第三层最高亮表面：底部抽屉、悬浮 Tabbar 等浮层 */
+    --c-surface-float: #fffdf8;
+    --c-surface-float-rgb: 255, 253, 248;
     --c-mask: rgba(24, 22, 20, 0.45);
 
     /* ---- 文字 ---- */
@@ -168,9 +181,18 @@ page {
     --c-on-dark: #ffffff;
     --c-on-dark-2: rgba(255, 255, 255, 0.72);
 
+    /* v10 §2.2：深底卡上的三档白色填充（原 index.vue 散写 0.06/0.08/0.12） */
+    --c-on-dark-fill-1: rgba(255, 255, 255, 0.06);
+    --c-on-dark-fill-2: rgba(255, 255, 255, 0.08);
+    --c-on-dark-fill-3: rgba(255, 255, 255, 0.12);
+
     /* ---- 线条 ---- */
     --c-line: #e7e0d3;        /* 设计稿 --border */
     --c-line-strong: #d8c9ad; /* 设计稿 --border-2 */
+    /* v10 §2.1 卡片描边：浅色靠暖影分层，描边透明；暗色反过来由 1rpx 描边承担分层。
+       组件只写 border: 1rpx solid var(--c-card-border)，不判断明暗、不依赖祖先 .scheme-*
+       （scoped 样式穿不透祖父节点，跨组件只能走变量继承）。 */
+    --c-card-border: transparent;
 
     /* ---- 深色卡渐变（设计稿 .darkcard / 我的活动置顶卡）----
        三档是从稿子取样的墨色，不是随手调的黑。只用于深底卡片渐变，不要拿来当正文底色。 */
@@ -187,6 +209,8 @@ page {
     --c-brand-soft: #d9be82;  /* 设计稿 --gold-2（深底上的香槟图标/描边） */
     --c-brand-bg: #f5eddd;
     --c-hero-bg: #f3ecdd;
+    /* 原生 <switch> / 自绘弹性开关的统一开启色（v10 §2.2 硬编码清零） */
+    --c-switch-active: #c6a15b;
     /* hero 上的主 CTA 底：浅色模式用暖白压在图片上，暗色模式反过来用浅墨 */
     --c-hero-cta-bg: #fffdf8;
 
@@ -206,6 +230,8 @@ page {
     --c-warning: #8a5a16;
     --c-warning-bg: #faf0dc;
     --c-danger: #a33b2c;
+    /* 危险底上的前景：浅色用白（6.18:1），暗色在提亮的 danger 上用墨黑（8.05:1） */
+    --c-on-danger: #ffffff;
     --c-danger-bg: #fbeae7;
     --c-info: #465f7a;
     --c-info-bg: #e9eef4;
@@ -237,10 +263,16 @@ page {
     --c-tabbar-active-label: #f5eddd;
     --c-tabbar-active-border: transparent;
 
-    /* ---- 阴影（卡片靠 1rpx 描边分层，阴影只留给浮层） ---- */
-    --shadow-card: none;
-    --shadow-float: 0 12rpx 32rpx rgba(24, 22, 20, 0.1);
-    --shadow-sheet: 0 -8rpx 32rpx rgba(24, 22, 20, 0.08);
+    /* ---- 骨架 shimmer 流光（v10 §3.4：浅色暖金 / 暗色暖白） ---- */
+    --sk-sheen: rgba(198, 161, 91, 0.10);
+
+    /* ---- 阴影（v10 §2.1：暖褐三层柔影，模拟纸片浮在象牙桌面上） ----
+       浅色卡片不再靠描边分层，1rpx 超低透明边界层已内置于 --shadow-card。 */
+    --shadow-card: 0 0 0 1rpx rgba(64, 48, 28, 0.055), 0 2rpx 5rpx -1rpx rgba(64, 48, 28, 0.07), 0 12rpx 28rpx -14rpx rgba(64, 48, 28, 0.12);
+    --shadow-card-hover: 0 0 0 1rpx rgba(64, 48, 28, 0.07), 0 10rpx 26rpx -10rpx rgba(64, 48, 28, 0.14), 0 26rpx 56rpx -28rpx rgba(64, 48, 28, 0.18);
+    --shadow-glass: inset 0 1rpx 0 rgba(255, 255, 255, 0.55), 0 0 0 1rpx rgba(64, 48, 28, 0.05), 0 8rpx 24rpx -10rpx rgba(64, 48, 28, 0.12), 0 2rpx 6rpx rgba(64, 48, 28, 0.05);
+    --shadow-float: 0 0 0 1rpx rgba(64, 48, 28, 0.06), 0 16rpx 40rpx -12rpx rgba(64, 48, 28, 0.18), 0 4rpx 10rpx rgba(64, 48, 28, 0.06);
+    --shadow-sheet: 0 -12rpx 48rpx -8rpx rgba(64, 48, 28, 0.18), 0 -1rpx 0 rgba(64, 48, 28, 0.06);
 }
 
 /* ============================================================
@@ -254,6 +286,8 @@ page {
         --c-surface: #1e1b18;
         --c-surface-rgb: 30, 27, 24;
         --c-surface-2: #282420;
+        --c-surface-float: #282420;
+        --c-surface-float-rgb: 40, 36, 32;
         --c-mask: rgba(0, 0, 0, 0.68);
 
         --c-ink: #f3ede3;
@@ -264,9 +298,13 @@ page {
         --c-on-brand: #181614;
         --c-on-dark: #ffffff;
         --c-on-dark-2: rgba(255, 255, 255, 0.76);
+        --c-on-dark-fill-1: rgba(255, 255, 255, 0.06);
+        --c-on-dark-fill-2: rgba(255, 255, 255, 0.08);
+        --c-on-dark-fill-3: rgba(255, 255, 255, 0.14);
 
         --c-line: #312c26;
         --c-line-strong: #473f35;
+        --c-card-border: var(--c-line);
 
         --c-dark-1: #26211c;
         --c-dark-2: #1b1814;
@@ -279,6 +317,7 @@ page {
         --c-brand-bg: #2d2518;
         --c-hero-bg: #24201b;
         --c-hero-cta-bg: #c6a15b;
+        --c-switch-active: #d4b16a;
 
         /* ---- 主操作按钮（浅色=墨黑实心，暗色=香槟金实心） ---- */
         --c-action-bg: #c6a15b;
@@ -296,6 +335,7 @@ page {
         --c-warning-bg: #2e2415;
         --c-danger: #f08b7d;
         --c-danger-bg: #311c19;
+        --c-on-danger: #181614;
         --c-info: #93b6db;
         --c-info-bg: #1a2531;
         --c-neutral: #b5aca0;
@@ -318,9 +358,14 @@ page {
         --c-tabbar-active-label: #f3ede3;
         --c-tabbar-active-border: rgba(212, 177, 106, 0.34);
 
-        --shadow-card: none;
-        --shadow-float: 0 12rpx 32rpx rgba(0, 0, 0, 0.45);
-        --shadow-sheet: 0 -8rpx 32rpx rgba(0, 0, 0, 0.42);
+        --sk-sheen: rgba(243, 237, 227, 0.06);
+
+        /* v10 §2.1 暗色：描边承担分层，阴影只补深度 */
+        --shadow-card: 0 0 0 1rpx var(--c-line), 0 4rpx 14rpx rgba(0, 0, 0, 0.32);
+        --shadow-card-hover: 0 0 0 1rpx var(--c-line-strong), 0 10rpx 28rpx rgba(0, 0, 0, 0.42);
+        --shadow-glass: inset 0 1rpx 0 rgba(255, 255, 255, 0.06), 0 0 0 1rpx var(--c-line), 0 8rpx 28rpx rgba(0, 0, 0, 0.36);
+        --shadow-float: 0 20rpx 48rpx rgba(0, 0, 0, 0.5), 0 0 0 1rpx var(--c-line-strong);
+        --shadow-sheet: 0 -16rpx 56rpx rgba(0, 0, 0, 0.55), 0 -1rpx 0 var(--c-line-strong);
     }
 }
 
@@ -334,6 +379,8 @@ page {
     --c-surface: #fffdf8;
     --c-surface-rgb: 255, 253, 248;
     --c-surface-2: #f3ede1;
+    --c-surface-float: #fffdf8;
+    --c-surface-float-rgb: 255, 253, 248;
     --c-mask: rgba(24, 22, 20, 0.45);
 
     --c-ink: #181614;
@@ -344,9 +391,13 @@ page {
     --c-on-brand: #181614;
     --c-on-dark: #ffffff;
     --c-on-dark-2: rgba(255, 255, 255, 0.72);
+    --c-on-dark-fill-1: rgba(255, 255, 255, 0.06);
+    --c-on-dark-fill-2: rgba(255, 255, 255, 0.08);
+    --c-on-dark-fill-3: rgba(255, 255, 255, 0.12);
 
     --c-line: #e7e0d3;
     --c-line-strong: #d8c9ad;
+    --c-card-border: transparent;
 
     --c-dark-1: #211d19;
     --c-dark-2: #14110f;
@@ -359,6 +410,7 @@ page {
     --c-brand-bg: #f5eddd;
     --c-hero-bg: #f3ecdd;
     --c-hero-cta-bg: #fffdf8;
+    --c-switch-active: #c6a15b;
 
     /* ---- 主操作按钮（浅色=墨黑实心，暗色=香槟金实心） ---- */
     --c-action-bg: #181614;
@@ -376,6 +428,7 @@ page {
     --c-warning-bg: #faf0dc;
     --c-danger: #a33b2c;
     --c-danger-bg: #fbeae7;
+    --c-on-danger: #ffffff;
     --c-info: #465f7a;
     --c-info-bg: #e9eef4;
     --c-neutral: #605a51;
@@ -398,9 +451,13 @@ page {
     --c-tabbar-active-label: #f5eddd;
     --c-tabbar-active-border: transparent;
 
-    --shadow-card: none;
-    --shadow-float: 0 12rpx 32rpx rgba(24, 22, 20, 0.1);
-    --shadow-sheet: 0 -8rpx 32rpx rgba(24, 22, 20, 0.08);
+    --sk-sheen: rgba(198, 161, 91, 0.10);
+
+    --shadow-card: 0 0 0 1rpx rgba(64, 48, 28, 0.055), 0 2rpx 5rpx -1rpx rgba(64, 48, 28, 0.07), 0 12rpx 28rpx -14rpx rgba(64, 48, 28, 0.12);
+    --shadow-card-hover: 0 0 0 1rpx rgba(64, 48, 28, 0.07), 0 10rpx 26rpx -10rpx rgba(64, 48, 28, 0.14), 0 26rpx 56rpx -28rpx rgba(64, 48, 28, 0.18);
+    --shadow-glass: inset 0 1rpx 0 rgba(255, 255, 255, 0.55), 0 0 0 1rpx rgba(64, 48, 28, 0.05), 0 8rpx 24rpx -10rpx rgba(64, 48, 28, 0.12), 0 2rpx 6rpx rgba(64, 48, 28, 0.05);
+    --shadow-float: 0 0 0 1rpx rgba(64, 48, 28, 0.06), 0 16rpx 40rpx -12rpx rgba(64, 48, 28, 0.18), 0 4rpx 10rpx rgba(64, 48, 28, 0.06);
+    --shadow-sheet: 0 -12rpx 48rpx -8rpx rgba(64, 48, 28, 0.18), 0 -1rpx 0 rgba(64, 48, 28, 0.06);
 }
 
 .scheme-dark {
@@ -409,6 +466,8 @@ page {
     --c-surface: #1e1b18;
     --c-surface-rgb: 30, 27, 24;
     --c-surface-2: #282420;
+    --c-surface-float: #282420;
+    --c-surface-float-rgb: 40, 36, 32;
     --c-mask: rgba(0, 0, 0, 0.68);
 
     --c-ink: #f3ede3;
@@ -419,9 +478,13 @@ page {
     --c-on-brand: #181614;
     --c-on-dark: #ffffff;
     --c-on-dark-2: rgba(255, 255, 255, 0.76);
+    --c-on-dark-fill-1: rgba(255, 255, 255, 0.06);
+    --c-on-dark-fill-2: rgba(255, 255, 255, 0.08);
+    --c-on-dark-fill-3: rgba(255, 255, 255, 0.14);
 
     --c-line: #312c26;
     --c-line-strong: #473f35;
+    --c-card-border: var(--c-line);
 
     --c-dark-1: #26211c;
     --c-dark-2: #1b1814;
@@ -434,6 +497,7 @@ page {
     --c-brand-bg: #2d2518;
     --c-hero-bg: #24201b;
     --c-hero-cta-bg: #c6a15b;
+    --c-switch-active: #d4b16a;
 
     /* ---- 主操作按钮（浅色=墨黑实心，暗色=香槟金实心） ---- */
     --c-action-bg: #c6a15b;
@@ -451,6 +515,7 @@ page {
     --c-warning-bg: #2e2415;
     --c-danger: #f08b7d;
     --c-danger-bg: #311c19;
+    --c-on-danger: #181614;
     --c-info: #93b6db;
     --c-info-bg: #1a2531;
     --c-neutral: #b5aca0;
@@ -473,9 +538,13 @@ page {
     --c-tabbar-active-label: #f3ede3;
     --c-tabbar-active-border: rgba(212, 177, 106, 0.34);
 
-    --shadow-card: none;
-    --shadow-float: 0 12rpx 32rpx rgba(0, 0, 0, 0.45);
-    --shadow-sheet: 0 -8rpx 32rpx rgba(0, 0, 0, 0.42);
+    --sk-sheen: rgba(243, 237, 227, 0.06);
+
+    --shadow-card: 0 0 0 1rpx var(--c-line), 0 4rpx 14rpx rgba(0, 0, 0, 0.32);
+    --shadow-card-hover: 0 0 0 1rpx var(--c-line-strong), 0 10rpx 28rpx rgba(0, 0, 0, 0.42);
+    --shadow-glass: inset 0 1rpx 0 rgba(255, 255, 255, 0.06), 0 0 0 1rpx var(--c-line), 0 8rpx 28rpx rgba(0, 0, 0, 0.36);
+    --shadow-float: 0 20rpx 48rpx rgba(0, 0, 0, 0.5), 0 0 0 1rpx var(--c-line-strong);
+    --shadow-sheet: 0 -16rpx 56rpx rgba(0, 0, 0, 0.55), 0 -1rpx 0 var(--c-line-strong);
 }
 
 /* ===== B1 方案 B（备用，未启用；来源 03 §2.2）=====

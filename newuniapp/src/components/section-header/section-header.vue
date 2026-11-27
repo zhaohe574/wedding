@@ -5,7 +5,7 @@
             <view v-if="bar" class="sec__bar" aria-hidden="true" />
             <view class="sec__texts">
                 <text v-if="eyebrow" class="sec__eyebrow">{{ eyebrow }}</text>
-                <text class="sec__title">{{ title }}</text>
+                <text class="sec__title t-balance">{{ title }}</text>
                 <text v-if="subtitle" class="sec__sub">{{ subtitle }}</text>
             </view>
         </view>
@@ -14,7 +14,7 @@
             v-if="more"
             class="sec__more"
             :aria-label="more"
-            @tap="emit('more')"
+            @tap="onMore"
         >
             <text class="sec__more-text">{{ more }}</text>
             <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
@@ -31,6 +31,8 @@
  *  - align="end"：标题与右侧「更多」基线对齐（设计稿 .sec-head）
  *  - flush：去掉自身上下留白，由页面控制区块间距（设计稿用 margin 控间距）
  */
+import { haptic } from '@/utils/haptics'
+
 withDefaults(
     defineProps<{
         title: string
@@ -54,6 +56,12 @@ withDefaults(
 )
 
 const emit = defineEmits<{ (e: 'more'): void }>()
+
+/** 轻触反馈先行，再交给页面跳转；emit 契约不变 */
+function onMore() {
+    haptic('light', 'section-more')
+    emit('more')
+}
 </script>
 
 <style lang="scss" scoped>

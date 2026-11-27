@@ -50,6 +50,7 @@
  *  - 横向滚动（scroll）用于筛选条超出屏宽的场景，滚动容器本身不带内边距，由页面控制。
  */
 import { computed } from 'vue'
+import { haptic } from '@/utils/haptics'
 
 type ChipValue = string | number
 type ChipItem = string | { label: string; value: ChipValue }
@@ -76,6 +77,7 @@ const normalized = computed(() =>
 
 function pick(v: ChipValue) {
     if (v === props.modelValue) return
+    haptic('light', 'chip-group')
     emit('update:modelValue', v)
     emit('change', v)
 }
@@ -106,15 +108,20 @@ function pick(v: ChipValue) {
         border: 1rpx solid var(--c-control-border); /* 控件边界 ≥3:1，禁用 --c-line */
         background: var(--c-surface);
         position: relative;
+        transition:
+            background-color var(--dur-fast) var(--ease-out),
+            border-color var(--dur-fast) var(--ease-out),
+            transform var(--dur-press) var(--ease-out);
 
-        /* 视觉高度之外补足 88rpx 热区 */
+        /* 视觉高度之外补足 88rpx 竖向热区；左右不越过胶囊，避免相邻 chip 抢点击 */
         &::before {
             content: '';
             position: absolute;
-            top: -14rpx;
-            bottom: -14rpx;
+            top: 50%;
             left: 0;
             right: 0;
+            height: 88rpx;
+            transform: translateY(-50%);
         }
 
         &--md {
@@ -134,13 +141,29 @@ function pick(v: ChipValue) {
                 font-weight: var(--fw-semibold);
             }
         }
+
+        /* 按压压实：与全局 is-pressed 的透明度叠加成「按下即响应」 */
+        &.is-pressed {
+            transform: scale(0.97);
+        }
     }
 
     &__text {
         /* 字号只有一档：设计稿的 21rpx / 19rpx 低于全站 24rpx 可读底线，统一收到 --fs-xs */
         font-size: var(--fs-xs);
-        color: var(--c-ink-2);
+        color: var(--c-ink-2); /* 深浅两态对 --c-surface 均 ≥4.5:1 */
         line-height: var(--lh-none);
+    }
+}
+
+/* v10 §3.13：减弱动效下不做缩放与颜色过渡，直接呈现终态 */
+@media (prefers-reduced-motion: reduce) {
+    .cg__chip {
+        transition: none;
+
+        &.is-pressed {
+            transform: none;
+        }
     }
 }
 </style>

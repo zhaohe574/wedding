@@ -17,7 +17,7 @@
             <text class="ff__label"
                 >{{ label }}<text v-if="required" class="ff__req" aria-hidden="true">*</text></text
             >
-            <text class="ff__upload-meta">{{
+            <text class="ff__upload-meta t-num">{{
                 max === 1
                     ? uploadList.length
                         ? '已上传'
@@ -207,7 +207,7 @@
                 </view>
             </slot>
             <!-- 字数计数器：只有同时传 count 与 maxlength 才渲染（收编页面里手写的 .counter） -->
-            <text v-if="showCount" class="ff__count">{{ countText }}</text>
+            <text v-if="showCount" class="ff__count t-num">{{ countText }}</text>
         </view>
         <text v-if="error" :id="descId" class="ff__err" aria-live="polite">{{ error }}</text>
         <text v-else-if="hint" :id="descId" class="ff__hint">{{ hint }}</text>
@@ -252,6 +252,7 @@ import { computed, ref, getCurrentInstance } from 'vue'
 import { chooseImages } from '@/composables/useChooseImage'
 import { uploadImage } from '@/api/app'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 
 const props = withDefaults(
     defineProps<{
@@ -321,6 +322,7 @@ const onBlur = () => {
 const ratingValue = computed(() => Number(props.modelValue) || 0)
 function onRate(n: number) {
     if (props.disabled || props.readonly) return
+    haptic('light', 'form-rating')
     emit('update:modelValue', n)
     emit('change', n)
 }
@@ -502,7 +504,8 @@ function previewImage(index: number) {
         align-items: center;
         justify-content: space-between;
         min-height: 88rpx;
-        border-bottom: 1rpx solid var(--c-control-border);
+        /* 不再自绘底线：根节点 .ff 已画 1rpx --c-control-border，
+           两处同位置叠成 2rpx，看起来像「字段被加粗」而不是分隔。 */
         /* 右侧箭头；.ff__value / .ff__placeholder 各自声明了颜色 */
         color: var(--c-ink-3);
     }

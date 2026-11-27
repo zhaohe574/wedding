@@ -25,7 +25,8 @@
  * idle 隐藏 / pulling 下拉刷新 / ready 松手刷新 / refreshing 正在刷新 / done 已更新。
  * 颜色、字号、圆角一律消费 tokens.css 语义变量；tone="light" 用于透明导航（深色 hero）下的深底浅字。
  */
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
+import { haptic } from '@/utils/haptics'
 
 type PullState = 'idle' | 'pulling' | 'ready' | 'refreshing' | 'done'
 
@@ -64,6 +65,17 @@ const barRatio = computed(() =>
     props.state === 'refreshing' || props.state === 'done'
         ? 1
         : Math.max(0, Math.min(1, props.progress))
+)
+
+/**
+ * 触觉只挂在「可松手 / 已更新」两个跨过阈值的瞬间。
+ * watch 本身只在状态变化时触发，停留在同一状态不会重复震。
+ */
+watch(
+    () => props.state,
+    (next) => {
+        if (next === 'ready' || next === 'done') haptic('light', 'pull-refresh')
+    }
 )
 
 /**
@@ -238,6 +250,21 @@ const barStyle = computed(() => ({
     }
     100% {
         transform: scale(1);
+    }
+}
+
+/* v10 §3.13：减弱动效下不转圈、不弹跳，状态仍由文案与颜色表达 */
+@media (prefers-reduced-motion: reduce) {
+    .pr__spinner {
+        animation: none;
+    }
+
+    .pr--done .pr__emblem {
+        animation: none;
+    }
+
+    .pr__arrow {
+        transition: none;
     }
 }
 </style>

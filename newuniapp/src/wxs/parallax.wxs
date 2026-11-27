@@ -1,0 +1,82 @@
+/**
+ * 视差滚动 WXS（01 总方案 §3.8）。
+ *
+ * 用法：<wxs module="parallax" src="/wxs/parallax.wxs" />
+ *      <scroll-view @scroll="parallax.onScroll" ...>（事件第二个参数由 WXS 事件自动注入 ownerInstance）
+ *
+ * 为什么用 WXS：scroll 事件在逻辑层每帧 setData 会拖慢低端安卓机；
+ * WXS 在视图层直接 selectComponent + setStyle，零 setData。
+ *
+ * 语法约束：微信 WXS 只认 ES5 —— 全文只用 var / function，
+ * 不出现 let / const / 箭头函数 / 模板字符串。
+ */
+
+var HERO_MEDIA_FACTOR = 0.35 // 首页 Hero 背景位移系数
+var HERO_TEXT_FACTOR = 0.12 // 首页 Hero 文字前景位移系数
+var STAFF_COVER_FACTOR = 0.22 // 人员详情头图位移系数（比首页克制）
+var MAX_MEDIA_SHIFT = 320 // 背景位移上界（px），防止长列表滚到底把图拖飞
+var MAX_TEXT_SHIFT = 120 // 文字位移上界（px）
+var MAX_COVER_SHIFT = 240 // 头图位移上界（px）
+var HERO_FADE_SPAN = 320 // 文字渐隐所覆盖的滚动距离（px）
+
+function readScrollTop(event) {
+    if (event && event.detail && typeof event.detail.scrollTop === 'number') {
+        return event.detail.scrollTop
+    }
+    if (event && event.instance && typeof event.instance.getScrollOffset === 'function') {
+        var offset = event.instance.getScrollOffset()
+        if (offset && typeof offset.scrollTop === 'number') return offset.scrollTop
+    }
+    return 0
+}
+
+function clamp(value, min, max) {
+    if (value < min) return min
+    if (value > max) return max
+    return value
+}
+
+/**
+ * 位移 + 可选透明度：节点不存在时安全跳过（页面未渲染 Hero / 头图时不报错）。
+ * opacity 传 null 表示该项不参与渐隐。
+ */
+function shiftNode(instance, selector, distance, opacity) {
+    if (!instance) return
+    var node = instance.selectComponent(selector)
+    if (!node) return
+
+    var style = {
+        transform: 'translate3d(0, ' + distance + 'px, 0)'
+    }
+    if (typeof opacity === 'number') {
+        style.opacity = clamp(opacity, 0, 1)
+    }
+    node.setStyle(style)
+}
+
+/** 首页 Hero：背景 0.35 / 文字 0.12，滚动越深文字越淡 */
+function onScroll(event, ownerInstance) {
+    var scrollTop = readScrollTop(event)
+    if (scrollTop < 0) scrollTop = 0
+
+    var mediaY = clamp(scrollTop * HERO_MEDIA_FACTOR, 0, MAX_MEDIA_SHIFT)
+    shiftNode(ownerInstance, '.hero__media', mediaY, null)
+
+    var textY = clamp(scrollTop * HERO_TEXT_FACTOR, 0, MAX_TEXT_SHIFT)
+    var opacity = 1 - scrollTop / HERO_FADE_SPAN
+    shiftNode(ownerInstance, '.hero__content', textY, opacity)
+}
+
+/** 人员详情头图：单层 0.22，无渐隐 */
+function onStaffCoverScroll(event, ownerInstance) {
+    var scrollTop = readScrollTop(event)
+    if (scrollTop < 0) scrollTop = 0
+
+    var coverY = clamp(scrollTop * STAFF_COVER_FACTOR, 0, MAX_COVER_SHIFT)
+    shiftNode(ownerInstance, '.staff-cover__media', coverY, null)
+}
+
+module.exports = {
+    onScroll: onScroll,
+    onStaffCoverScroll: onStaffCoverScroll
+}

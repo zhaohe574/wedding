@@ -30,6 +30,15 @@
                     <text class="menu__value">{{ colorScheme.label }}</text>
                     <tn-icon name="right" :size="24" />
                 </view>
+                <!-- 触感反馈：交互由右侧开关接管，整行不绑 @tap，避免与开关重复触发 -->
+                <view class="menu menu--switch">
+                    <text class="menu__label">触感反馈</text>
+                    <elastic-switch
+                        :model-value="hapticsEnabled"
+                        aria-label="触感反馈"
+                        @change="onToggleHaptics"
+                    />
+                </view>
                 <view hover-class="is-pressed" class="menu" @tap="openAgreement('service')">
                     <text class="menu__label">服务协议</text>
                     <!-- v1 u-icon → v2 tn-icon：arrow-right → right（本文件 4 处同改） -->
@@ -230,6 +239,7 @@ import { useUserStore } from '@/stores/user'
 import { useColorSchemeStore } from '@/stores/colorScheme'
 import type { ColorSchemePreference } from '@/stores/colorScheme'
 import { navigate } from '@/utils/link'
+import { hapticsEnabled, setHapticsEnabled } from '@/utils/haptics'
 import { getCaseDetail } from '@/api/content'
 import {
     clear,
@@ -397,6 +407,11 @@ function pickColorScheme(val: ColorSchemePreference) {
     schemeVisible.value = false
 }
 
+/** 触感反馈：状态由 elastic-switch 回传，这里只负责落 Storage 与响应式状态 */
+function onToggleHaptics(next: boolean) {
+    setHapticsEnabled(next)
+}
+
 function openOa() {
     navigate({ path: '/pages/oa_subscribe/oa_subscribe' })
 }
@@ -520,6 +535,12 @@ onShow(() => {
     &__skeleton {
         width: 120rpx;
     }
+}
+
+/* 触感反馈行：开关自带 88rpx 热区，收紧上下内边距，整行仍落在 104rpx */
+.menu--switch {
+    padding-top: var(--sp-1);
+    padding-bottom: var(--sp-1);
 }
 
 .kv {

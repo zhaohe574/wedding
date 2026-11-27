@@ -7,7 +7,7 @@
     >
         <!-- 形状编码：10rpx 实心状态点，色继承 .tone-* 的 color；装饰不进读屏顺序 -->
         <view v-if="dot" class="tag__dot" aria-hidden="true" />
-        <text class="tag__label">{{ label }}</text>
+        <text class="tag__label t-num">{{ label }}</text>
     </view>
 </template>
 

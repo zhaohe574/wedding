@@ -14,7 +14,7 @@
         <template v-else-if="status === 'empty'">
             <!-- v1 u-icon → v2 tn-icon：默认空态图标 empty-list -->
             <tn-icon :name="emptyIcon" :size="96" class="empty__icon" aria-hidden="true" />
-            <text class="empty__text">{{ emptyText || FB.EMPTY_DEFAULT }}</text>
+            <text class="empty__text t-balance">{{ emptyText || FB.EMPTY_DEFAULT }}</text>
             <text v-if="desc" class="empty__text empty__text--sub">{{ desc }}</text>
             <view v-if="showAction" class="empty__action">
                 <base-button :text="actionText" size="sm" variant="ghost" @click="emit('action')" />
@@ -25,7 +25,7 @@
         <template v-else-if="status === 'error'">
             <!-- v1 u-icon → v2 tn-icon：错误态图标随 KIND_MAP -->
             <tn-icon :name="kind.icon" :size="96" class="empty__icon" aria-hidden="true" />
-            <text class="empty__text">{{ errorText || kind.text }}</text>
+            <text class="empty__text t-balance">{{ errorText || kind.text }}</text>
             <text v-if="kind.hint" class="empty__text empty__text--sub">{{ kind.hint }}</text>
             <!-- O5：business/permission 的可恢复入口，动词由 resolveErrorView 决定 -->
             <view v-if="primaryAction" class="empty__action">

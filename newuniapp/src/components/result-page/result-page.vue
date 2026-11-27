@@ -4,8 +4,8 @@
             <!-- v1 u-icon → v2 tn-icon：图标名见 iconName -->
             <tn-icon :name="iconName" :size="144" />
         </view>
-        <text class="rp__title" aria-live="polite">{{ title }}</text>
-        <text class="rp__desc">{{ desc }}</text>
+        <text class="rp__title t-balance" aria-live="polite">{{ title }}</text>
+        <text class="rp__desc t-balance">{{ desc }}</text>
         <view class="rp__amount"><slot name="amount" /></view>
         <view
             v-if="state === 'pending' && poll"
@@ -13,7 +13,7 @@
             :aria-live="pollTextVisible ? 'polite' : undefined"
         >
             <u-loading :size="32" :color="iconColor" aria-hidden="true" />
-            <text class="rp__poll-text">{{ poll.text }}</text>
+            <text class="rp__poll-text t-num">{{ poll.text }}</text>
         </view>
         <view class="rp__actions">
             <!-- O2+O14 三态矩阵：success 主「查看订单」；pending 不让位主操作；unconfirmed 次「刷新结果」 -->
@@ -104,6 +104,9 @@ const pollTextVisible = computed(() => !!props.poll && props.poll.current % 3 ==
         display: flex;
         align-items: center;
         justify-content: center;
+        /* 结果图标是全屏唯一焦点：浮起一层暖影，入场轻柔弹出（§3.2） */
+        box-shadow: var(--shadow-card);
+        animation: rp-icon-in var(--dur-slow) var(--ease-spring-soft) both;
         /* 图标颜色随 state 变，靠父级 class 而不是 :color 传 var()（后者无效）。
            默认取 info 色，success 覆盖。 */
         color: var(--c-info);
@@ -162,6 +165,24 @@ const pollTextVisible = computed(() => !!props.poll && props.poll.current % 3 ==
         display: flex;
         flex-direction: column;
         gap: var(--sp-2);
+    }
+}
+
+@keyframes rp-icon-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.88);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* v10 §3.13：减弱动效下图标直接到位 */
+@media (prefers-reduced-motion: reduce) {
+    .rp__icon {
+        animation: none;
     }
 }
 </style>
