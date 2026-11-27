@@ -384,7 +384,6 @@ body {
     place-items: center;
     cursor: pointer;
 }
-.pnav__back:active { transform: scale(0.94); }
 
 .page { padding-top: 88px; padding-bottom: 110px; }
 .page--flush { padding-top: 0; }
@@ -392,10 +391,7 @@ body {
 /* ============================================================
  * 4. 通用控件
  * ============================================================ */
-/* 所有原生按钮统一弹簧按压；.press 用于卡片/自定义可点块 */
-button { transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1); }
-button:active { transform: scale(0.96); transition-duration: 0.12s; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
-
+/* 所有控件统一两段式弹簧：按下 96% → 松手过冲 103.2% → 微回拉 99.3% → 100% */
 .btn {
     appearance: none;
     border: 0;
@@ -411,17 +407,50 @@ button:active { transform: scale(0.96); transition-duration: 0.12s; transition-t
     justify-content: center;
     gap: 7px;
     cursor: pointer;
-    transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
+    transition: transform 240ms cubic-bezier(0.2, 0, 0, 1), opacity 0.2s;
 }
 .btn--ink { background: var(--action-bg); color: var(--action-fg); }
 .btn--gold { background: var(--brand); color: #181614; }
 .btn--hero { background: var(--hero-cta-bg); color: var(--hero-cta-fg); }
 .btn--ghost { background: transparent; color: var(--ink); border: 1px solid var(--control); }
 .btn--sm { height: 34px; padding: 0 14px; font-size: 11px; }
-.btn:active, .press:active { transform: scale(0.96); transition-duration: 0.12s; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
 
-.press { transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.press:active { transform: scale(0.96); }
+.press,
+.icon-btn,
+.sheet__close,
+.pnav__back,
+.pstat,
+.ocell {
+    transition: transform 240ms cubic-bezier(0.2, 0, 0, 1);
+    transform-origin: center center;
+    will-change: transform;
+}
+
+.is-pressing,
+.btn:active,
+.press:active,
+.chip:active,
+.icon-btn:active,
+.sheet__close:active,
+.pnav__back:active,
+.screens button:active,
+.tg:active,
+.pstat:active,
+.ocell:active {
+    transform: scale(0.96) !important;
+    transition: transform 90ms cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+.is-rebound,
+.stagger > *.is-rebound {
+    animation: spring-release 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes spring-release {
+    0%   { transform: scale(0.96); }
+    42%  { transform: scale(1.032); }
+    72%  { transform: scale(0.993); }
+    100% { transform: scale(1); }
+}
 
 /* 100ms 错峰入场，末项封顶 600ms */
 .stagger > * {
@@ -470,10 +499,9 @@ button:active { transform: scale(0.96); transition-duration: 0.12s; transition-t
     align-items: center;
     gap: 6px;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: background 0.2s, color 0.2s, border-color 0.2s, transform 240ms cubic-bezier(0.2, 0, 0, 1);
 }
 .chip.is-on { background: var(--active-bg); color: var(--active-fg); border-color: var(--active-border); }
-.chip:active { transform: scale(0.95); }
 
 /* ============================================================
  * 5. 首页
@@ -1560,7 +1588,9 @@ body.reduced .sheet,
 body.reduced .press,
 body.reduced .btn,
 body.reduced .host,
-body.reduced .roll-reel { transition-duration: 0.001ms !important; animation: none !important; }
+body.reduced .roll-reel,
+body.reduced .is-pressing,
+body.reduced .is-rebound { transition-duration: 0.001ms !important; animation: none !important; transform: none !important; }
 
 .haptic-pill {
     position: absolute;
@@ -2736,6 +2766,70 @@ body.reduced .roll-reel { transition-duration: 0.001ms !important; animation: no
         guideBtn.classList.toggle('is-on', on);
         guideBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
         guideBtn.textContent = '辅助线 ' + (on ? '开' : '关');
+    });
+
+    /* ---------- 两段式按压回弹（按下 96% → 松手 103.2% → 99.3% → 100%） ---------- */
+    var SPRING_SEL = '.btn, .press, .chip, .icon-btn, .sheet__close, .pnav__back, .screens button, .tg, .pstat, .ocell';
+    var activeSpringEl = null;
+    var downAt = 0;
+    var downX = 0;
+    var downY = 0;
+
+    function triggerSpringRelease(el, cancelOnly) {
+        if (!el) return;
+        clearTimeout(el._pressTimer);
+        clearTimeout(el._reboundTimer);
+        el.classList.remove('is-pressing');
+        if (cancelOnly || REDUCED) {
+            el.classList.remove('is-rebound');
+            return;
+        }
+        el.classList.remove('is-rebound');
+        void el.offsetWidth;
+        el.classList.add('is-rebound');
+        el._reboundTimer = setTimeout(function () {
+            el.classList.remove('is-rebound');
+        }, 480);
+    }
+
+    document.addEventListener('pointerdown', function (e) {
+        if (REDUCED || e.button > 0) return;
+        var target = e.target && e.target.closest ? e.target.closest(SPRING_SEL) : null;
+        if (!target) return;
+        if (activeSpringEl && activeSpringEl !== target) {
+            triggerSpringRelease(activeSpringEl, true);
+        }
+        activeSpringEl = target;
+        downAt = performance.now();
+        downX = e.clientX;
+        downY = e.clientY;
+        clearTimeout(target._pressTimer);
+        clearTimeout(target._reboundTimer);
+        target.classList.remove('is-rebound');
+        target.classList.add('is-pressing');
+    });
+
+    document.addEventListener('pointerup', function (e) {
+        if (!activeSpringEl) return;
+        var el = activeSpringEl;
+        activeSpringEl = null;
+        var moved = Math.hypot(e.clientX - downX, e.clientY - downY) > 14;
+        var elapsed = performance.now() - downAt;
+        var hold = Math.max(0, 75 - elapsed);
+        if (moved || hold === 0) {
+            triggerSpringRelease(el, moved);
+        } else {
+            el._pressTimer = setTimeout(function () {
+                triggerSpringRelease(el, false);
+            }, hold);
+        }
+    });
+
+    document.addEventListener('pointercancel', function () {
+        if (!activeSpringEl) return;
+        var el = activeSpringEl;
+        activeSpringEl = null;
+        triggerSpringRelease(el, true);
     });
 
     /* ---------- 键盘：1–5 切屏，D 切深浅 ---------- */
