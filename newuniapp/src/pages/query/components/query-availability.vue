@@ -46,7 +46,7 @@
         <view v-else class="avail__row">
             <view class="avail__dot" :class="{ 'avail__dot--warning': count === 1 }" />
             <text v-if="count === 1" class="avail__only">仅</text>
-            <text class="avail__num">{{ count }}</text>
+            <rolling-number class="avail__num" :value="count ?? 0" :min-chars="1" />
             <text class="avail__unit">位可约</text>
             <text class="avail__note">· {{ note }}</text>
         </view>
@@ -200,6 +200,9 @@ const note = computed(() => {
     }
 
     &__num {
+        display: inline-flex;
+        align-items: baseline;
+        min-width: 2ch;
         font-family: var(--font-serif);
         font-size: var(--fs-33);
         font-weight: var(--fw-semibold);

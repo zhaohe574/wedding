@@ -8,11 +8,7 @@
         :show-back="false"
     >
         <view class="page-wrap query-page">
-            <view class="lead">
-                <view class="lead__dot" />
-                <text class="lead__text">选好日子与地区，再看当天谁有空</text>
-            </view>
-
+            <!-- 首屏直入月历：顶部标题只由 nav-bar 承担，不再重复说明文案 -->
             <view class="cal-card">
                 <query-calendar-card
                     :year="viewYear"
@@ -33,9 +29,10 @@
                     @jump="jumpToMonth"
                     @retry="loadCalendar"
                 />
+            </view>
 
-                <view class="cal-divider" />
-
+            <!-- 当日可约摘要：独立平铺在页面底面上，不再套第二层卡 -->
+            <view class="query-avail">
                 <query-availability
                     :date="form.date"
                     :weekday="selectedWeekday"
@@ -52,7 +49,9 @@
                     @pick-neighbor="onDatePick"
                     @contact="goContact"
                 />
+            </view>
 
+            <view class="query-conds">
                 <query-condition-chips
                     :region="form.region"
                     :category-name="categoryName"
@@ -70,21 +69,24 @@
                     @confirm-keyword="applyKeywordNow"
                     @clear-keyword="clearKeyword"
                 />
+            </view>
 
-                <view class="cal-cta">
-                    <base-button
-                        :text="ctaText"
-                        variant="ink"
-                        size="lg"
-                        block
-                        :loading="dayLoading || neighborsLoading"
-                        :loading-text="
-                            dayLoading ? '正在查询档期…' : neighborsLoading ? '正在查找可约日…' : ''
-                        "
-                        @click="onCta"
-                    />
-                </view>
+            <!-- CTA 走文档流底部容器：query 是 TabBar 页，fixed bottom-bar 会盖住 app-tabbar。
+                 40rpx 缓冲 + 一行轻提示放在按钮上方，上滑翻月不误触。 -->
+            <view class="cal-cta-wrap">
                 <text class="cal-hint">档期以老师当天是否可接单为准，最终以下单确认为准</text>
+                <base-button
+                    :text="ctaText"
+                    variant="ink"
+                    size="lg"
+                    block
+                    haptic-level="medium"
+                    :loading="dayLoading || neighborsLoading"
+                    :loading-text="
+                        dayLoading ? '正在查询档期…' : neighborsLoading ? '正在查找可约日…' : ''
+                    "
+                    @click="onCta"
+                />
             </view>
         </view>
 
@@ -1346,52 +1348,41 @@ onShow(() => {
 .query-page {
     /* 高度与底部 TabBar 安全区由 page-shell 承担，不继承 .page-wrap 的 100vh 与重复 padding-bottom */
     min-height: 0;
-    padding-top: 20rpx;
+    padding-top: 16rpx;
     padding-bottom: 0;
 }
 
-.lead {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-    padding: 0 var(--page-gutter) 14rpx;
-
-    &__dot {
-        width: 8rpx;
-        height: 8rpx;
-        border-radius: var(--r-pill);
-        background: var(--c-brand);
-        flex: none;
-    }
-
-    &__text {
-        font-size: var(--fs-20);
-        color: var(--c-ink-3);
-        line-height: var(--lh-none);
-    }
-}
-
+/* 独立月历卡：唯一一层卡片，--shadow-card 承担分层 */
 .cal-card {
     margin: 0 30rpx;
     padding: 26rpx;
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line-strong);
-    border-radius: var(--r-md);
+    border: 1rpx solid var(--c-card-border);
+    border-radius: var(--r-24);
+    box-shadow: var(--shadow-card);
 }
 
-.cal-divider {
-    height: 1rpx;
-    background: var(--c-line);
-    margin: 8rpx 0 20rpx;
+/* 当日可约摘要与条件条：直接铺在页面底面上，不再套第二层卡 */
+.query-avail {
+    margin: 24rpx 30rpx 0;
 }
 
-.cal-cta {
-    margin-top: 20rpx;
+.query-conds {
+    margin-top: 24rpx;
+    padding-left: 30rpx;
+}
+
+/* CTA 文档流底部容器：query 是 TabBar 页，不能用 fixed bottom-bar（会遮住 app-tabbar）。
+   底部安全区由 page-shell 的 tabbar 留白承担，这里只补内容间距。 */
+.cal-cta-wrap {
+    margin: 40rpx 30rpx 0;
+    padding-bottom: var(--sp-4);
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
 }
 
 .cal-hint {
-    display: block;
-    padding-top: 16rpx;
     text-align: center;
     font-size: var(--fs-20);
     line-height: var(--lh-body);

@@ -40,10 +40,11 @@
                     <section-header title="搜索历史" more="清空" flush @more="clearHistory" />
                     <view class="chips">
                         <view
-                            hover-class="is-pressed"
+                            hover-class="is-pressing"
+                            :hover-stay-time="90"
                             v-for="(h, i) in history"
                             :key="i"
-                            class="chip"
+                            class="chip press-spring"
                             @tap="applyKeyword(h)"
                         >
                             <text class="chip__text">{{ h }}</text>
@@ -55,10 +56,11 @@
                     <section-header title="热门搜索" flush />
                     <view class="chips">
                         <view
-                            hover-class="is-pressed"
+                            hover-class="is-pressing"
+                            :hover-stay-time="90"
                             v-for="(w, i) in hotWords"
                             :key="i"
-                            class="chip"
+                            class="chip press-spring"
                             @tap="applyKeyword(w)"
                         >
                             <text class="chip__text">{{ w }}</text>
@@ -83,7 +85,7 @@
                         @tap="switchTab(t.key)"
                     >
                         <text class="tabs__text">{{ t.label }}</text>
-                        <text v-if="countOf(t.key)" class="tabs__count">{{ countOf(t.key) }}</text>
+                        <text v-if="countOf(t.key)" class="tabs__count t-num">{{ countOf(t.key) }}</text>
                     </view>
                 </view>
 
@@ -91,7 +93,7 @@
                      .tabs__count 会从有到无再回来跳两下；这里给一行「正在搜索」承接 -->
                 <view v-if="loading" class="page-pad searching">
                     <text class="searching__text">正在搜索「{{ submitted }}」</text>
-                    <base-skeleton :rows="3" />
+                    <base-skeleton variant="card" :rows="3" />
                 </view>
 
                 <base-empty
@@ -219,6 +221,7 @@ import { useAppStore } from '@/stores/app'
 import { navigate, safeDecodeParam } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 import { FB } from '@/constants/feedback'
 
 const HISTORY_KEY = 'search_history'
@@ -391,6 +394,7 @@ function clearKeyword() {
 }
 
 function applyKeyword(word: string) {
+    haptic('light', 'search-chip')
     keyword.value = word
     handleSearch()
 }
@@ -536,9 +540,10 @@ onReachBottom(() => {
            .bar__input 自己声明了 --c-ink，输入文字不受影响 */
         color: var(--c-ink-3);
         min-width: 0;
-        height: 72rpx;
-        padding: 0 var(--sp-1) 0 var(--sp-3);
-        border: 1rpx solid var(--c-line);
+        /* 触控热区 88rpx：输入区整块高 88，点击落在胶囊内任意位置都能聚焦 */
+        height: 88rpx;
+        padding: 0 var(--sp-2) 0 var(--sp-3);
+        border: 1rpx solid var(--c-control-border);
         border-radius: var(--r-pill);
         background: var(--c-surface-2);
         box-sizing: border-box;
@@ -547,7 +552,7 @@ onReachBottom(() => {
     &__input {
         flex: 1;
         min-width: 0;
-        height: 68rpx;
+        height: 88rpx;
         font-size: var(--fs-md);
         color: var(--c-ink);
     }
@@ -563,17 +568,16 @@ onReachBottom(() => {
         justify-content: center;
         flex-shrink: 0;
         width: 64rpx;
-        height: 68rpx;
+        height: 88rpx;
 
         &::before {
             content: '';
             position: absolute;
-            /* P0 §2-1：透明热区补到 88×88rpx（视觉尺寸不变）。
-               68 高 + 上下各 10 = 88；64 宽 + 左右各 12 = 88。 */
-            top: -10rpx;
-            right: -12rpx;
-            bottom: -10rpx;
+            top: 0;
+            bottom: 0;
+            /* 横向补到 88rpx（64 + 12×2），纵向已由 88 高的行撑满 */
             left: -12rpx;
+            right: -12rpx;
         }
     }
 
@@ -582,9 +586,8 @@ onReachBottom(() => {
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        min-width: 72rpx;
+        min-width: 88rpx;
         min-height: 88rpx;
-        margin: -8rpx 0;
     }
 
     &__cancel-text {
@@ -637,6 +640,7 @@ onReachBottom(() => {
 }
 
 .chip {
+    position: relative;
     display: flex;
     align-items: center;
     max-width: 100%;
@@ -649,6 +653,17 @@ onReachBottom(() => {
     border: 1rpx solid var(--c-control-border);
     border-radius: var(--r-pill);
     background: var(--c-surface-2);
+    box-shadow: var(--shadow-card);
+
+    /* 视觉 56rpx，纵向热区扩到 88rpx（上下各 16rpx）；横向不动，避免相邻 chip 热区重叠 */
+    &::before {
+        content: '';
+        position: absolute;
+        top: -16rpx;
+        bottom: -16rpx;
+        left: 0;
+        right: 0;
+    }
 
     &__text {
         display: block;

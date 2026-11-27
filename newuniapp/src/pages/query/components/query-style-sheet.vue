@@ -1,73 +1,67 @@
 <template>
-    <tn-popup
+    <!-- 风格偏好：磁吸半屏抽屉 + 吸底操作（v10 §4.3）。必须显式 has-foot，mp-weixin 下 $slots 恒为空 -->
+    <snap-sheet
         :model-value="open"
-        open-direction="bottom"
-        :radius="24"
-        :safe-area-inset-bottom="true"
+        title="风格偏好"
+        :has-foot="true"
         @update:model-value="onVisible"
-        @close="close"
     >
-        <view class="sheet">
-            <view class="sheet__head">
-                <text class="sheet__title">风格偏好</text>
-                <tn-icon name="close" :size="34" @tap="close" />
-            </view>
+        <!-- 这句是 OR 语义的唯一澄清位，不可省、不可改成「同时满足」 -->
+        <text class="sheet__sub">可多选，结果包含任一风格的老师</text>
 
-            <!-- 这句是 OR 语义的唯一澄清位，不可省、不可改成「同时满足」 -->
-            <text class="sheet__sub">可多选，结果包含任一风格的老师</text>
+        <view v-if="error" class="tip">
+            <text class="tip__text">标签没加载出来</text>
+            <text class="tip__link" @tap="emit('retry')">重试</text>
+            <text class="tip__weak">已选风格会保留，可直接点「确定」用它查询</text>
+        </view>
 
-            <scroll-view class="sheet__scroll" scroll-y>
-                <view v-if="error" class="tip">
-                    <text class="tip__text">标签没加载出来</text>
-                    <text class="tip__link" @tap="emit('retry')">重试</text>
-                    <text class="tip__weak">已选风格会保留，可直接点「确定」用它查询</text>
+        <view v-else-if="!tags.length && !loading" class="tip">
+            <text class="tip__text">{{ emptyText }}</text>
+            <text class="tip__link" @tap="emit('change-category')">换一个服务类型</text>
+        </view>
+
+        <!-- 已失效：后端仍在过滤但不展示，必须留一个可移除的入口 -->
+        <view v-if="invalidTags.length" class="group">
+            <text class="group__name">已失效</text>
+            <view class="chips">
+                <view
+                    v-for="t in invalidTags"
+                    :key="`invalid-${t.id}`"
+                    hover-class="is-pressed"
+                    class="chip chip--invalid"
+                    @tap="removeInvalid(t.id)"
+                >
+                    <text class="chip__text">{{ t.name }}</text>
+                    <text class="chip__badge">移除</text>
                 </view>
-
-                <view v-else-if="!tags.length && !loading" class="tip">
-                    <text class="tip__text">{{ emptyText }}</text>
-                    <text class="tip__link" @tap="emit('change-category')">换一个服务类型</text>
-                </view>
-
-                <!-- 已失效：后端仍在过滤但不展示，必须留一个可移除的入口 -->
-                <view v-if="invalidTags.length" class="group">
-                    <text class="group__name">已失效</text>
-                    <view class="chips">
-                        <view
-                            v-for="t in invalidTags"
-                            :key="`invalid-${t.id}`"
-                            hover-class="is-pressed"
-                            class="chip chip--invalid"
-                            @tap="removeInvalid(t.id)"
-                        >
-                            <text class="chip__text">{{ t.name }}</text>
-                            <text class="chip__badge">移除</text>
-                        </view>
-                    </view>
-                </view>
-
-                <view v-for="g in groups" :key="g.type" class="group">
-                    <text class="group__name">{{ g.label }}</text>
-                    <view class="chips">
-                        <view
-                            v-for="t in g.tags"
-                            :key="t.id"
-                            hover-class="is-pressed"
-                            class="chip"
-                            :class="{ 'is-on': draft.includes(t.id) }"
-                            @tap="toggle(t.id)"
-                        >
-                            <text class="chip__text">{{ t.name }}</text>
-                        </view>
-                    </view>
-                </view>
-            </scroll-view>
-
-            <view class="sheet__foot">
-                <text v-if="draft.length" class="clear" @tap="clearDraft">清空已选</text>
-                <base-button text="确定" variant="ink" size="lg" @click="commitAndClose" />
             </view>
         </view>
-    </tn-popup>
+
+        <view v-for="g in groups" :key="g.type" class="group">
+            <text class="group__name">{{ g.label }}</text>
+            <view class="chips">
+                <view
+                    v-for="t in g.tags"
+                    :key="t.id"
+                    hover-class="is-pressed"
+                    class="chip"
+                    :class="{ 'is-on': draft.includes(t.id) }"
+                    @tap="toggle(t.id)"
+                >
+                    <text class="chip__text">{{ t.name }}</text>
+                </view>
+            </view>
+        </view>
+
+        <template #foot>
+            <view class="sheet__foot">
+                <text v-if="draft.length" class="clear" @tap="clearDraft">清空已选</text>
+                <view class="sheet__foot-btn">
+                    <base-button text="确定" variant="ink" size="lg" @click="commitAndClose" />
+                </view>
+            </view>
+        </template>
+    </snap-sheet>
 </template>
 
 <script setup lang="ts">
@@ -80,6 +74,9 @@
  *  3. 「已失效」组：已选但不在可选集里的标签（被删/隐藏，或不再属于当前类型）。
  *     后端对已下架标签仍然过滤（getTagStaffIds 不 join style_tag），所以不能静默剔除，
  *     否则会出现「卡上有、弹窗里看不到、结果却真的在筛」的幽灵条件。
+ *
+ * 外壳换成 snap-sheet 后，「滑落关闭 / 遮罩关闭 / 点确定」三条路径都只提交一次：
+ * 提交前先立 closingCommitted 闸门，避免 update:model-value 与 update:open 双触发。
  */
 import { computed, ref, watch } from 'vue'
 import { toast } from '@/composables/useToast'
@@ -117,11 +114,15 @@ const emit = defineEmits<{
 }>()
 
 const draft = ref<number[]>([])
+/** 本次打开是否已提交过：滑落 + 确定同时到达时不重复 reload */
+let closingCommitted = false
 
 watch(
     () => props.open,
     (v) => {
-        if (v) draft.value = [...(props.modelValue || [])]
+        if (!v) return
+        draft.value = [...(props.modelValue || [])]
+        closingCommitted = false
     },
     { immediate: true }
 )
@@ -162,7 +163,10 @@ function clearDraft() {
     draft.value = []
 }
 
+/** 点确定 / 滑落关闭 / 遮罩关闭都走这里，只提交一次 */
 function commitAndClose() {
+    if (closingCommitted) return
+    closingCommitted = true
     emit('commit', [...draft.value])
     close()
 }
@@ -177,40 +181,23 @@ function onVisible(v: boolean) {
 </script>
 
 <style lang="scss" scoped>
-.sheet {
-    padding: 30rpx 42rpx calc(24rpx + var(--safe-bottom));
+/* 模板里已没有 .sheet 包裹节点：以下类直接挂在 snap-sheet 的 body/foot 插槽内 */
+.sheet__sub {
+    display: block;
+    font-size: var(--fs-20);
+    color: var(--c-ink-3);
+    padding-bottom: 16rpx;
+}
 
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        color: var(--c-ink-3);
-        padding-bottom: 8rpx;
-    }
+.sheet__foot {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+}
 
-    &__title {
-        font-size: var(--fs-30);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__sub {
-        display: block;
-        font-size: var(--fs-20);
-        color: var(--c-ink-3);
-        padding-bottom: 16rpx;
-    }
-
-    &__scroll {
-        max-height: 56vh;
-    }
-
-    &__foot {
-        display: flex;
-        align-items: center;
-        gap: 24rpx;
-        padding-top: 20rpx;
-    }
+.sheet__foot-btn {
+    flex: 1;
+    min-width: 0;
 }
 
 .group {

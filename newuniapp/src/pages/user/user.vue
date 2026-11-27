@@ -9,8 +9,10 @@
         :show-back="false"
         :nav-capsule-avoid="isLogin"
     >
-        <!-- ============ 未登录：整页替换为登录引导（P 态） ============ -->
-        <view v-if="!isLogin" class="guest">
+        <!-- 顶部暖金晕染：从品牌暖底渐隐到页面底色，Profile 压在上面，无硬切边 -->
+        <view class="u-wash">
+            <!-- ============ 未登录：整页替换为登录引导（P 态） ============ -->
+            <view v-if="!isLogin" class="guest">
             <view class="guest__seal-wrap">
                 <!-- 后台配了图标就显示图标，没配自动回退到名称首字印章 -->
                 <brand-mark :size="120" variant="light" round />
@@ -49,10 +51,52 @@
             <view v-else-if="countdown.enabled === 1 && weddingDate" class="cd">
                 <text class="cd__label">{{ countdown.label }}</text>
                 <view class="cd__num-row">
-                    <text class="cd__num">{{ daysRemaining }}</text>
+                    <view class="cd__num">
+                        <rolling-number
+                            v-if="daysRemaining !== null"
+                            :value="daysRemaining"
+                            :min-chars="2"
+                        />
+                        <text v-else>—</text>
+                    </view>
                     <text class="cd__unit">{{ countdown.unit_text }}</text>
                 </view>
-                <!-- 筹备进度百分比后端无字段，进度条不画（画了就是编数据） -->
+
+                <!-- 真实备婚进度：只认 me.wedding.progress；缺失 / 开关关闭 / 无婚期时整块不渲染，绝不补 0 -->
+                <view v-if="weddingProgress" class="cd__progress">
+                    <view class="cd__progress-head">
+                        <text class="cd__progress-title">
+                            备婚进度 · {{ weddingProgress.done_count }}/{{ weddingProgress.total_count }} 项
+                        </text>
+                        <rolling-number
+                            class="cd__progress-pct t-num"
+                            :value="weddingProgress.percent"
+                            suffix="%"
+                            :min-chars="3"
+                        />
+                    </view>
+                    <view class="cd__track">
+                        <view
+                            class="cd__track-fill"
+                            :style="{ width: `${weddingProgress.percent}%` }"
+                        />
+                    </view>
+                    <view class="cd__steps">
+                        <view
+                            v-for="step in weddingProgress.milestones"
+                            :key="step.key"
+                            class="cd__step"
+                            :class="{
+                                'is-done': step.done,
+                                'is-current': !step.done && step.key === weddingProgress.current_key
+                            }"
+                        >
+                            <view class="cd__step-dot" />
+                            <text class="cd__step-label">{{ step.label }}</text>
+                        </view>
+                    </view>
+                </view>
+
                 <view class="cd__foot">
                     <text class="cd__foot-text">{{ todoText }}</text>
                     <text v-if="weddingVenue" class="cd__foot-venue">{{ weddingVenue }}</text>
@@ -89,7 +133,10 @@
                     @tap="m.path && navigate({ path: m.path })"
                 >
                     <view class="metric__value-wrap">
-                        <text class="metric__value">{{ m.value }}</text>
+                        <view class="metric__value">
+                            <rolling-number v-if="m.num !== null" :value="m.num" :min-chars="1" />
+                            <text v-else>—</text>
+                        </view>
                         <view v-if="m.dot" class="metric__dot" />
                     </view>
                     <text class="metric__label">{{ m.label }}</text>
@@ -149,11 +196,17 @@
                         <button
                             v-if="isWechatContactLink(row.link)"
                             open-type="contact"
-                            hover-class="is-pressed"
-                            class="lrow lrow--btn"
-                            :class="{ 'lrow--last': i === serviceRows.length - 1 }"
+                            class="lrow lrow--btn press-spring"
+                            :class="{
+                                'lrow--last': i === serviceRows.length - 1,
+                                'is-pressing': rowPressKey === row.key
+                            }"
+                            @touchstart="onRowPressStart(row.key)"
+                            @touchend="onRowPressEnd"
+                            @touchcancel="onRowPressEnd"
+                            @tap="onRowHaptic"
                         >
-                            <tn-icon :name="row.icon" :size="34" />
+                            <view class="lrow__ic"><tn-icon :name="row.icon" :size="34" /></view>
                             <view class="lrow__txt">
                                 <text class="lrow__label">{{ row.label }}</text>
                                 <text v-if="row.sub" class="lrow__sub">{{ row.sub }}</text>
@@ -165,12 +218,17 @@
                         </button>
                         <view
                             v-else
-                            hover-class="is-pressed"
-                            class="lrow"
-                            :class="{ 'lrow--last': i === serviceRows.length - 1 }"
+                            class="lrow press-spring"
+                            :class="{
+                                'lrow--last': i === serviceRows.length - 1,
+                                'is-pressing': rowPressKey === row.key
+                            }"
+                            @touchstart="onRowPressStart(row.key)"
+                            @touchend="onRowPressEnd"
+                            @touchcancel="onRowPressEnd"
                             @tap="onRow(row)"
                         >
-                            <tn-icon :name="row.icon" :size="34" />
+                            <view class="lrow__ic"><tn-icon :name="row.icon" :size="34" /></view>
                             <view class="lrow__txt">
                                 <text class="lrow__label">{{ row.label }}</text>
                                 <text v-if="row.sub" class="lrow__sub">{{ row.sub }}</text>
@@ -183,12 +241,17 @@
                         <!-- #endif -->
                         <!-- #ifndef MP-WEIXIN -->
                         <view
-                            hover-class="is-pressed"
-                            class="lrow"
-                            :class="{ 'lrow--last': i === serviceRows.length - 1 }"
+                            class="lrow press-spring"
+                            :class="{
+                                'lrow--last': i === serviceRows.length - 1,
+                                'is-pressing': rowPressKey === row.key
+                            }"
+                            @touchstart="onRowPressStart(row.key)"
+                            @touchend="onRowPressEnd"
+                            @touchcancel="onRowPressEnd"
                             @tap="onRow(row)"
                         >
-                            <tn-icon :name="row.icon" :size="34" />
+                            <view class="lrow__ic"><tn-icon :name="row.icon" :size="34" /></view>
                             <view class="lrow__txt">
                                 <text class="lrow__label">{{ row.label }}</text>
                                 <text v-if="row.sub" class="lrow__sub">{{ row.sub }}</text>
@@ -212,12 +275,17 @@
                     <view
                         v-for="(row, i) in moreRows"
                         :key="row.key"
-                        hover-class="is-pressed"
-                        class="lrow"
-                        :class="{ 'lrow--last': i === moreRows.length - 1 }"
+                        class="lrow press-spring"
+                        :class="{
+                            'lrow--last': i === moreRows.length - 1,
+                            'is-pressing': rowPressKey === row.key
+                        }"
+                        @touchstart="onRowPressStart(row.key)"
+                        @touchend="onRowPressEnd"
+                        @touchcancel="onRowPressEnd"
                         @tap="onRow(row)"
                     >
-                        <tn-icon :name="row.icon" :size="34" />
+                        <view class="lrow__ic"><tn-icon :name="row.icon" :size="34" /></view>
                         <view class="lrow__txt">
                             <text class="lrow__label">{{ row.label }}</text>
                             <!-- 金标只是身份提示，不等于可进：普通用户点击走弹窗说明 -->
@@ -237,7 +305,8 @@
             </view>
 
             <text class="ver">{{ versionText }}</text>
-        </template>
+            </template>
+        </view>
 
         <app-toast />
     </page-shell>
@@ -273,6 +342,7 @@ import { useUserStore } from '@/stores/user'
 import { useBadgeStore } from '@/stores/badge'
 import { useAppStore } from '@/stores/app'
 import { isDecorateLinkConfigured, isWechatContactLink, navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { useBrand } from '@/composables/useBrand'
 
 interface MenuRow {
@@ -340,9 +410,32 @@ const surname = computed(() => (nickname.value ? nickname.value.slice(0, 1) : '�
 /** 婚期：只认已支付的预约订单（服务端返回），没有就显示「去预约」引导 */
 const weddingDate = computed(() => me.value.wedding?.date || '')
 const weddingVenue = computed(() => me.value.wedding?.venue || '')
-const daysRemaining = computed(() => {
+/** null = 后端没给有效天数 → 显示「—」，不补 0 */
+const daysRemaining = computed<number | null>(() => {
     const n = Number(me.value.wedding?.days_remaining)
-    return Number.isFinite(n) && n >= 0 ? n : '—'
+    return Number.isFinite(n) && n >= 0 ? n : null
+})
+
+/**
+ * 真实备婚进度（M2 新字段 wedding.progress）。
+ * 三重门槛：装修开关 show_progress、有婚期、progress 且里程碑非空；
+ * 任一不满足整块不渲染 —— 宁可不画，也不用 0% 冒充。
+ */
+const weddingProgress = computed(() => {
+    if (Number(countdown.value.show_progress) === 0) return null
+    if (!weddingDate.value) return null
+    const progress = me.value.wedding?.progress
+    if (!progress) return null
+    const milestones = Array.isArray(progress.milestones) ? progress.milestones : []
+    if (!milestones.length) return null
+    const percent = Math.min(100, Math.max(0, Math.round(Number(progress.percent) || 0)))
+    return {
+        percent,
+        done_count: Number(progress.done_count) || 0,
+        total_count: Number(progress.total_count) || milestones.length,
+        current_key: String(progress.current_key || ''),
+        milestones
+    }
 })
 
 const profileSub = computed(() => {
@@ -430,21 +523,26 @@ const orderCells = computed(() => {
     ]
 })
 
-/** 四维资产：未读用红点，数字只在有真实计数时出现 */
+/** 四维资产：未读用红点，数字只在有真实计数时出现；null → 「—」，不补 0 */
 const metrics = computed(() => {
     const unreadTotal = Number((me.value.unread as any)?.total ?? 0)
+    const waitlistCount = me.value.todo
+        ? Number(me.value.todo.pending_waitlist ?? 0)
+        : null
     return [
         {
             key: 'favorite',
             label: '收藏',
             value: favoriteCount.value === null ? '—' : String(favoriteCount.value),
+            num: favoriteCount.value,
             dot: false,
             path: '/packages/pkg-user/pages/favorite/favorite'
         },
         {
             key: 'waitlist',
             label: '候补',
-            value: me.value.todo ? String(Number(me.value.todo.pending_waitlist ?? 0)) : '—',
+            value: waitlistCount === null ? '—' : String(waitlistCount),
+            num: waitlistCount,
             dot: false,
             path: '/packages/pkg-order/pages/waitlist/waitlist'
         },
@@ -452,6 +550,7 @@ const metrics = computed(() => {
             key: 'activity',
             label: '活动',
             value: activityCount.value === null ? '—' : String(activityCount.value),
+            num: activityCount.value,
             dot: false,
             path: '/packages/pkg-user/pages/activity/activity'
         },
@@ -459,6 +558,7 @@ const metrics = computed(() => {
             key: 'message',
             label: '消息',
             value: me.value.unread ? String(unreadTotal) : '—',
+            num: me.value.unread ? unreadTotal : null,
             dot: unreadTotal > 0,
             path: '/pages/message/message'
         }
@@ -662,11 +762,28 @@ function goQuery() {
 
 /** 订单五格 → 22 屏带筛选状态（22 用 storage 消费，避免 query 与 tab 页冲突） */
 function goOrders(status?: string) {
+    haptic('light', 'user-order')
     uni.setStorageSync('order_tab_status', status ?? 'all')
     navigate({ path: '/pages/order/order' })
 }
 
+/* ---- 行按压（§3.1）：只压行本身，外层卡片保持静止 ---- */
+const rowPressKey = ref('')
+
+function onRowPressStart(key: string) {
+    rowPressKey.value = key
+}
+
+function onRowPressEnd() {
+    rowPressKey.value = ''
+}
+
+function onRowHaptic() {
+    haptic('light', 'user-row')
+}
+
 function onRow(row: MenuRow) {
+    haptic('light', 'user-row')
     if (row.action === 'staff-workbench') {
         onWorkbench()
         return
@@ -695,6 +812,17 @@ onTabItemTap(() => {
 </script>
 
 <style lang="scss" scoped>
+/* 顶部暖金晕染：品牌暖底 → 透明，360rpx 内完成过渡，不留硬边 */
+.u-wash {
+    background-image: linear-gradient(
+        180deg,
+        var(--c-brand-bg) 0%,
+        rgba(var(--c-bg-rgb), 0) 100%
+    );
+    background-repeat: no-repeat;
+    background-size: 100% 360rpx;
+}
+
 /* ---------------- 未登录 ---------------- */
 .guest {
     padding: 120rpx 42rpx var(--sp-7);
@@ -802,7 +930,7 @@ onTabItemTap(() => {
     margin: 35rpx 42rpx 0; /* 设计稿 18px 22px */
     border-radius: var(--r-md);
     background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
-    border: 1rpx solid var(--c-line-strong);
+    border: 1rpx solid var(--c-on-dark-fill-2);
     padding: 35rpx 35rpx 31rpx; /* 设计稿 18px 18px 16px */
 
     &__label {
@@ -821,6 +949,9 @@ onTabItemTap(() => {
     }
 
     &__num {
+        display: inline-flex;
+        align-items: baseline;
+        min-width: 2ch;
         font-family: var(--font-serif);
         font-size: var(--fs-69); /* 设计稿 36px */
         font-weight: var(--fw-medium);
@@ -832,6 +963,93 @@ onTabItemTap(() => {
         font-size: var(--fs-xs);
         color: var(--c-on-dark-2);
         letter-spacing: 0.06em;
+    }
+
+    /* ---- 真实备婚进度：金色轨 + 里程碑节点（只渲染后端返回的 milestones） ---- */
+    &__progress {
+        margin-top: 24rpx;
+    }
+
+    &__progress-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--sp-2);
+    }
+
+    &__progress-title {
+        font-size: var(--fs-xs);
+        color: var(--c-on-dark-2);
+        letter-spacing: 0.04em;
+    }
+
+    &__progress-pct {
+        font-family: var(--font-serif);
+        font-size: var(--fs-lg);
+        color: var(--c-brand-soft);
+    }
+
+    &__track {
+        height: 6rpx;
+        margin-top: 12rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-on-dark-fill-2);
+        overflow: hidden;
+    }
+
+    &__track-fill {
+        height: 100%;
+        border-radius: var(--r-pill);
+        background: var(--c-brand);
+        transition: width 320ms var(--ease-out);
+    }
+
+    &__steps {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 4rpx;
+        margin-top: 16rpx;
+    }
+
+    &__step {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8rpx;
+    }
+
+    &__step-dot {
+        width: 12rpx;
+        height: 12rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-on-dark-fill-3);
+        border: 1rpx solid var(--c-on-dark-fill-3);
+    }
+
+    /* 已完成：金色实心；当前节点：金色描边空心 */
+    &__step.is-done &__step-dot {
+        background: var(--c-brand);
+        border-color: var(--c-brand);
+    }
+
+    &__step.is-current &__step-dot {
+        background: transparent;
+        border-color: var(--c-brand);
+    }
+
+    &__step-label {
+        font-size: var(--fs-18);
+        color: var(--c-on-dark-2);
+        text-align: center;
+        line-height: var(--lh-tight);
+    }
+
+    &__step.is-done &__step-label,
+    &__step.is-current &__step-label {
+        color: var(--c-brand-soft);
     }
 
     &__foot {
@@ -890,7 +1108,7 @@ onTabItemTap(() => {
 /* 深色卡内骨架用白色低透明度，不用灰块（灰块在墨黑上会脏） */
 .sk {
     border-radius: var(--r-xs);
-    background: rgba(255, 255, 255, 0.14);
+    background: var(--c-on-dark-fill-3);
 
     &--label {
         width: 45%;
@@ -960,10 +1178,14 @@ onTabItemTap(() => {
     }
 
     &__value {
+        display: inline-flex;
+        align-items: baseline;
+        min-width: 2ch;
         font-family: var(--font-serif);
         font-size: var(--fs-33); /* 设计稿 17px */
         font-weight: var(--fw-medium);
         color: var(--c-ink);
+        line-height: var(--lh-tight);
     }
 
     &__dot {
@@ -988,8 +1210,9 @@ onTabItemTap(() => {
 .panel {
     margin: 23rpx 42rpx 0;
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
-    border-radius: var(--r-lg);
+    border: 1rpx solid var(--c-card-border);
+    border-radius: var(--r-20); /* 同心圆角：面板 20 → 图标底块 --r-16 */
+    box-shadow: var(--shadow-card);
     overflow: hidden;
 
     &__head {
@@ -1021,9 +1244,12 @@ onTabItemTap(() => {
     }
 }
 
+/* 订单五格：轻量入口条 —— 不做逐格底色，只保留图标 + 红点/金色小数字 */
 .order-row {
     display: flex;
-    padding: 31rpx 15rpx 29rpx; /* 设计稿 16px 8px 15px */
+    margin: 18rpx 24rpx 0;
+    padding: 16rpx 0 20rpx;
+    border-top: 1rpx solid var(--c-line);
 }
 
 .order-cell {
@@ -1031,8 +1257,9 @@ onTabItemTap(() => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15rpx; /* 设计稿 8px */
+    gap: 12rpx;
     min-height: 88rpx;
+    padding: 4rpx 0;
 
     &__ic {
         position: relative;
@@ -1062,15 +1289,22 @@ onTabItemTap(() => {
             background: var(--c-danger);
         }
 
+        /* 非紧急状态只留金色小数字，不加底色（减重，避免五个角标堆成噪声） */
         &--calm {
-            background: var(--c-brand-bg);
-            border: 1rpx solid var(--c-primary-border);
+            top: -6rpx;
+            right: -12rpx;
+            min-width: 0;
+            height: auto;
+            padding: 0;
+            border: 0;
+            background: transparent;
         }
     }
 
     &__num-text {
         font-size: var(--fs-xs);
-        color: var(--c-ink-inverse);
+        /* 深底角标：浅色模式白字，深色模式墨字（--c-on-danger 两套均已核过对比度） */
+        color: var(--c-on-danger);
         line-height: var(--lh-none);
 
         &--calm {
@@ -1115,6 +1349,7 @@ onTabItemTap(() => {
     min-height: 96rpx; /* 设计稿 14px padding + 内容 */
     padding: 27rpx 0;
     border-bottom: 1rpx solid var(--c-line);
+    transform-origin: center center;
 
     &--last {
         border-bottom: 0;
@@ -1130,7 +1365,7 @@ onTabItemTap(() => {
         border-bottom: 1rpx solid var(--c-line);
         border-radius: 0;
         text-align: left;
-        line-height: 1.4;
+        line-height: var(--lh-tight);
         font-size: inherit;
         &::after {
             border: none;
@@ -1138,6 +1373,19 @@ onTabItemTap(() => {
         &.lrow--last {
             border-bottom: 0;
         }
+    }
+
+    /* 图标盒：60rpx 圆角方底，同心圆角 20 − 4 = --r-16；颜色固定 --c-brand-text */
+    &__ic {
+        width: 60rpx;
+        height: 60rpx;
+        flex: none;
+        border-radius: var(--r-16);
+        background: var(--c-surface-2);
+        color: var(--c-brand-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     &__txt {
@@ -1203,7 +1451,7 @@ onTabItemTap(() => {
     &__badge-text {
         font-size: var(--fs-20);
         font-weight: var(--fw-semibold);
-        color: var(--c-ink-inverse);
+        color: var(--c-on-danger);
         line-height: var(--lh-none);
     }
 }

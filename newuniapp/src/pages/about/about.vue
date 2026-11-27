@@ -44,7 +44,11 @@
                 </view>
             </view>
 
-            <text class="footer">用心记录每一场仪式</text>
+            <!-- 顶部已展示 brand.slogan 时，页脚不再重复；只留一条金线与品牌/备案入口 -->
+            <view class="footer">
+                <view class="footer__rule" aria-hidden="true" />
+                <text v-if="!brand.slogan" class="footer__text">用心记录每一场仪式</text>
+            </view>
         </view>
         <app-toast />
     </page-shell>
@@ -59,6 +63,7 @@ import { useBrand } from '@/composables/useBrand'
 import { navigate } from '@/utils/link'
 import { isAllowedWebviewUrl } from '@/constants/domains'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 
 const appStore = useAppStore()
 /** 品牌（名称 / 图标 / Slogan）唯一来源；图标失败回退由 brand-mark 内部处理 */
@@ -71,14 +76,17 @@ const copyrights = computed<any[]>(() => {
 })
 
 function openAgreement(type: string) {
+    haptic('light', 'about-row')
     navigate({ path: '/pages/agreement/agreement', query: { type } })
 }
 
 function goContact() {
+    haptic('light', 'about-row')
     navigate({ path: '/pages/customer-service/customer-service' })
 }
 
 function openCopyright(item: any) {
+    haptic('light', 'about-copyright')
     const value = String(item?.value || '')
     if (!value) return
     // 判据从「是不是 https」改成「是否在白名单内」：备案类域名（如 beian.miit.gov.cn）
@@ -206,7 +214,7 @@ onLoad(() => {
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 64rpx;
+        min-height: 88rpx;
         max-width: 100%;
     }
 
@@ -218,12 +226,26 @@ onLoad(() => {
     }
 }
 
+/* 极简金线页脚：品牌 Slogan 已在顶部出现，这里只留一条品牌金线（无重复文案） */
 .footer {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-3);
     margin-top: var(--sp-6);
     padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
-    text-align: center;
-    font-size: var(--fs-xs);
-    color: var(--c-ink-3);
+
+    &__rule {
+        width: 48rpx;
+        height: 1rpx;
+        background: var(--c-brand);
+    }
+
+    &__text {
+        text-align: center;
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-3);
+    }
 }
 </style>

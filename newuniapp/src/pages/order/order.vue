@@ -37,7 +37,7 @@
                         @tap="switchTab(tab.key)"
                     >
                         <text class="od-pill__text">{{ tab.label }}</text>
-                        <text v-if="countOf(tab.key) > 0" class="od-pill__num">{{
+                        <text v-if="countOf(tab.key) > 0" class="od-pill__num t-num">{{
                             countOf(tab.key)
                         }}</text>
                     </view>
@@ -46,7 +46,7 @@
         </template>
 
         <view v-if="firstLoading" class="pad">
-            <base-skeleton :rows="4" />
+            <base-skeleton variant="card" :rows="3" />
         </view>
 
         <base-empty
@@ -74,13 +74,15 @@
         />
 
         <view v-else class="list">
-            <view
-                v-for="item in list"
-                :key="item.id"
-                class="card"
-                hover-class="is-pressed"
-                @tap="goDetail(item.id)"
-            >
+            <view class="orders" :class="{ stagger: staggerOn, 'is-in': staggerIn }">
+                <view
+                    v-for="(item, index) in list"
+                    :key="item.id"
+                    class="card"
+                    hover-class="is-pressed"
+                    :style="{ '--i': index }"
+                    @tap="goDetail(item.id)"
+                >
                 <view class="card__top">
                     <image
                         v-if="avatarOf(item)"
@@ -120,16 +122,23 @@
                 <view class="card__foot">
                     <view class="card__amt">
                         <text class="card__amt-label">{{ amountOf(item).label }}</text>
-                        <text class="card__amt-value">¥{{ amountOf(item).value }}</text>
+                        <text class="card__amt-value t-num">¥{{ amountOf(item).value }}</text>
                     </view>
                     <view
-                        class="card__btn"
-                        :class="{ 'is-solid': primaryAction(item).solid }"
-                        hover-class="is-pressed"
+                        class="card__btn press-spring"
+                        :class="{
+                            'is-solid': primaryAction(item).solid,
+                            'is-pressing': actionPressId === item.id
+                        }"
+                        hover-stop-propagation="true"
+                        @touchstart.stop="onActionPressStart(item.id)"
+                        @touchend.stop="onActionPressEnd"
+                        @touchcancel.stop="onActionPressEnd"
                         @tap.stop="onAction(item)"
                     >
                         <text class="card__btn-text">{{ primaryAction(item).text }}</text>
                     </view>
+                </view>
                 </view>
             </view>
 
@@ -150,7 +159,7 @@
  * 后端 11 个状态收敛为 5 组，/order/lists 的 status 支持逗号分隔多值。
  * 统计数字来自 /order/statistics（后端按状态分别 count），不是前端数当前页。
  */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     ORDER_STATUS_NAME_MAP,
@@ -161,6 +170,7 @@ import {
 import { getOrderList, getOrderStatistics } from '@/api/order'
 import { normalizePage } from '@/request'
 import { navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { formatMoney } from '@shared/utils/format'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { useAppStore } from '@/stores/app'
@@ -216,6 +226,42 @@ const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
 })
 
 const activeStatus = computed(() => TABS.find((t) => t.key === activeKey.value)?.status)
+
+/* ---- 首屏错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
+const staggerOn = ref(false)
+const staggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playStagger() {
+    if (staggerIn.value) return
+    staggerOn.value = true
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        staggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => list.value.length,
+    (len) => {
+        if (len) playStagger()
+    }
+)
+
+/* ---- 主操作按钮按压（§3.1）：只有按钮自身微缩，卡片保持静止 ---- */
+const actionPressId = ref(0)
+
+function onActionPressStart(id: number) {
+    actionPressId.value = id
+}
+
+function onActionPressEnd() {
+    actionPressId.value = 0
+}
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
 
 /** 统计：售后 = 退款中 + 已退款 */
 function countOf(key: string) {
@@ -388,6 +434,7 @@ function refreshKeepingCount() {
 
 function switchTab(key: string) {
     if (key === activeKey.value) return
+    haptic('light', 'order-tab')
     activeKey.value = key
     list.value = []
     reload()
@@ -398,6 +445,7 @@ function goDetail(id: number) {
 }
 
 function onAction(item: any) {
+    haptic('medium', 'order-action')
     const status = Number(item.order_status)
     if (status === 1) {
         navigate({
@@ -495,6 +543,18 @@ function onReachBottomLoad() {
     display: flex;
     align-items: center;
     gap: 8rpx;
+    transition: background-color 220ms var(--ease-out), border-color 220ms var(--ease-out);
+
+    /* 视觉 56rpx，热区纵向扩到 88rpx；相邻胶囊横向 gap 12rpx 保留视觉呼吸 */
+    position: relative;
+    &::before {
+        content: '';
+        position: absolute;
+        top: -16rpx;
+        bottom: -16rpx;
+        left: 0;
+        right: 0;
+    }
 
     &__text {
         font-size: var(--fs-23);
@@ -525,12 +585,17 @@ function onReachBottomLoad() {
     padding: 16rpx 0 calc(var(--sp-6) + var(--safe-bottom));
 }
 
+/* 卡片列表容器：只承载错峰入场，本身不加间距（间距在 .card 上） */
+.orders {
+    width: 100%;
+}
+
 .card {
     margin: 0 42rpx 20rpx;
     padding: 26rpx 26rpx 22rpx;
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
     box-shadow: var(--shadow-card);
 
     &__top {
@@ -650,6 +715,7 @@ function onReachBottomLoad() {
     }
 
     &__btn {
+        position: relative;
         height: 64rpx;
         padding: 0 30rpx;
         border-radius: var(--r-pill);
@@ -658,9 +724,21 @@ function onReachBottomLoad() {
            不是类名 —— `__btn` 这个名字看起来"当然是按钮"，但同类里 `.chip-tag`/`.seg__item`
            都不含可点字样却也是控件，反之也有叫 chip 却不可点的（`.ohero__chip`）。 */
         border: 1rpx solid var(--c-control-border);
+        background: var(--c-surface);
         display: flex;
         align-items: center;
         justify-content: center;
+        transform-origin: center center;
+
+        /* 视觉 64rpx，热区纵向扩到 88rpx；与卡片下缘仍留出安全距离 */
+        &::before {
+            content: '';
+            position: absolute;
+            top: -12rpx;
+            bottom: -12rpx;
+            left: 0;
+            right: 0;
+        }
 
         &-text {
             font-size: var(--fs-xs);

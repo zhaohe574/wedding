@@ -30,14 +30,25 @@
                 <text class="lg__h2">先认识你们，再谈仪式。</text>
                 <text class="lg__sub">登录后可查档期、收藏人员与订单进度</text>
 
-                <button class="lg__btn lg__btn--wechat" :disabled="loading" @tap="onWechat">
+                <button
+                    class="lg__btn lg__btn--wechat press-spring"
+                    hover-class="is-pressing"
+                    :hover-stay-time="90"
+                    :disabled="loading"
+                    @tap="onWechat"
+                >
                     <tn-icon name="wechat" :size="34" />
                     <text class="lg__btn-text">{{ loading ? '登录中…' : '微信一键登录' }}</text>
                 </button>
 
                 <template v-if="phoneEntryVisible">
                     <view class="lg__or"><text class="lg__or-text">或</text></view>
-                    <button class="lg__btn lg__btn--phone" @tap="openPhone">
+                    <button
+                        class="lg__btn lg__btn--phone press-spring"
+                        hover-class="is-pressing"
+                        :hover-stay-time="90"
+                        @tap="openPhone"
+                    >
                         <tn-icon name="iphone" :size="28" />
                         <text class="lg__btn-text lg__btn-text--ink">手机号快捷登录</text>
                     </button>
@@ -50,10 +61,21 @@
                         aria-role="checkbox"
                         :aria-checked="agreed"
                         aria-label="我已阅读并同意用户协议与隐私政策"
-                        @tap="agreed = !agreed"
+                        @tap="toggleAgree"
                     >
                         <view class="agree__box" :class="{ 'is-checked': agreed }">
-                            <tn-icon v-if="agreed" name="check" :size="20" />
+                            <!-- v10 §3.6 一笔描出：H5 用 SVG dashoffset，小程序用 CSS 双段短臂 → 长臂 -->
+                            <!-- #ifdef H5 -->
+                            <svg viewBox="0 0 24 24" class="agree__check" aria-hidden="true">
+                                <path d="M5 12.5 L10 17.5 L19 7" pathLength="1" />
+                            </svg>
+                            <!-- #endif -->
+                            <!-- #ifndef H5 -->
+                            <view class="agree__check-arms" aria-hidden="true">
+                                <view class="agree__arm agree__arm--short" />
+                                <view class="agree__arm agree__arm--long" />
+                            </view>
+                            <!-- #endif -->
                         </view>
                         <view class="agree__text">
                             <text>我已阅读并同意</text>
@@ -73,86 +95,56 @@
 
                 <view class="lg__foot">
                     <text class="lg__foot-text">遇到登录问题？</text>
-                    <text class="lg__foot-link" @tap="goConcierge">联系专属顾问</text>
+                    <text class="lg__foot-link hit-88" @tap="goConcierge">联系专属顾问</text>
                 </view>
             </view>
         </view>
 
         <template #bottom>
-            <!-- 手机验证码登录：设计稿没有这一步，按同构样式内联成弹层，不新开页面 -->
-            <!--
-                ⚠️ 这三个 prop 名必须照 tn-popup 的真实定义写（node_modules/@tuniao/tnui-vue3-uniapp/
-                components/popup/src/popup.ts），写错不会报错、不会告警，只会静默失效：
-                  v-model:show → v-model（组件收的是 modelValue，不是 show）
-                  mode         → open-direction（组件只有 openDirection，默认 'center'）
-                  :round       → :radius
-                此前三处全写错，导致「手机号快捷登录」点了毫无反应 —— phonePopup 置了 true，
-                但组件收不到，弹层永远不出现。
-            -->
-            <tn-popup
-                v-model="phonePopup"
-                open-direction="bottom"
-                :radius="24"
-                :safe-area-inset-bottom="true"
-            >
-                <view class="pp">
-                    <view class="pp__head">
-                        <view class="pp__head-text">
-                            <text class="pp__title">手机号登录</text>
-                        </view>
-                        <!-- 显式关闭入口：此前只能点遮罩或下滑，弹层本身没有可点的关闭按钮 -->
-                        <view
-                            class="pp__close"
-                            hover-class="is-pressed"
-                            aria-role="button"
-                            aria-label="关闭"
-                            @tap="phonePopup = false"
-                        >
-                            <tn-icon name="close" :size="28" />
-                        </view>
-                    </view>
+            <!-- 手机验证码登录：设计稿没有这一步，按磁吸抽屉承接，不新开页面。
+                 标题 / 关闭 / 吸底按钮由 snap-sheet 统一承担（必须显式 has-foot）。 -->
+            <snap-sheet v-model="phonePopup" title="手机号登录" :has-foot="true">
+                <view class="pp__field" :class="{ 'is-err': mobileError }">
+                    <text class="pp__label">手机号</text>
+                    <input
+                        v-model="mobile"
+                        class="pp__input"
+                        type="number"
+                        maxlength="11"
+                        placeholder="请输入 11 位手机号"
+                        placeholder-class="pp__ph"
+                        @input="mobileError = ''"
+                    />
+                </view>
+                <text v-if="mobileError" class="pp__err">{{ mobileError }}</text>
 
-                    <view class="pp__field" :class="{ 'is-err': mobileError }">
-                        <text class="pp__label">手机号</text>
-                        <input
-                            v-model="mobile"
-                            class="pp__input"
-                            type="number"
-                            maxlength="11"
-                            placeholder="请输入 11 位手机号"
-                            placeholder-class="pp__ph"
-                            @input="mobileError = ''"
-                        />
-                    </view>
-                    <text v-if="mobileError" class="pp__err">{{ mobileError }}</text>
+                <view class="pp__field" :class="{ 'is-err': codeError }">
+                    <text class="pp__label">验证码</text>
+                    <input
+                        v-model="code"
+                        class="pp__input"
+                        type="number"
+                        maxlength="6"
+                        placeholder="6 位数字验证码"
+                        placeholder-class="pp__ph"
+                        @input="codeError = ''"
+                    />
+                    <text class="pp__send" :class="{ 'is-off': counting || sending }" @tap="sendCode">
+                        {{ counting ? `${countdown}s 后重发` : sending ? '发送中…' : '获取验证码' }}
+                    </text>
+                </view>
+                <text v-if="codeError" class="pp__err">{{ codeError }}</text>
 
-                    <view class="pp__field" :class="{ 'is-err': codeError }">
-                        <text class="pp__label">验证码</text>
-                        <input
-                            v-model="code"
-                            class="pp__input"
-                            type="number"
-                            maxlength="6"
-                            placeholder="6 位数字验证码"
-                            placeholder-class="pp__ph"
-                            @input="codeError = ''"
-                        />
-                        <text class="pp__send" :class="{ 'is-off': counting || sending }" @tap="sendCode">
-                            {{ counting ? `${countdown}s 后重发` : sending ? '发送中…' : '获取验证码' }}
-                        </text>
-                    </view>
-                    <text v-if="codeError" class="pp__err">{{ codeError }}</text>
-
+                <template #foot>
                     <base-button
-                        class="pp__submit"
                         text="登录"
                         variant="ink"
                         size="lg"
                         :loading="phoneLoading"
                         @click="submitPhone"
                     />
-                </view>
-            </tn-popup>
+                </template>
+            </snap-sheet>
 
             <profile-guide-popup
                 v-model="guidePopup"
@@ -200,6 +192,7 @@ import ProfileGuidePopup from './components/profile-guide-popup.vue'
 import cache from '@/utils/cache'
 import { BACK_URL, BACK_URL_AT } from '@/enums/constantEnums'
 import { navigate, TAB_PAGES } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { toast } from '@/composables/useToast'
 import { FB } from '@/constants/feedback'
 import { report } from '@/platform/report'
@@ -359,12 +352,19 @@ function openAgreement(type: string) {
     navigate({ path: '/pages/agreement/agreement', query: { type } })
 }
 
+/** 协议勾选：默认未勾（合规底线），整行可点，触觉轻提示 */
+function toggleAgree() {
+    haptic('light', 'login-agree')
+    agreed.value = !agreed.value
+}
+
 function goConcierge() {
     navigate({ path: '/pages/customer-service/customer-service' })
 }
 
 /** 微信登录 */
 async function onWechat() {
+    haptic('medium', 'login-btn')
     if (!agreed.value) {
         agreeError.value = true
         return
@@ -505,6 +505,7 @@ function onMobileCancel() {
 }
 
 function openPhone() {
+    haptic('medium', 'login-btn')
     phonePopup.value = true
 }
 
@@ -524,6 +525,7 @@ function startCountdown() {
 
 async function sendCode() {
     if (counting.value || sending.value) return
+    haptic('light', 'pp-send')
     mobileError.value = ''
     if (!/^1\d{10}$/.test(mobile.value)) {
         mobileError.value = '请输入正确的 11 位手机号'
@@ -660,6 +662,18 @@ async function finish() {
         flex: none;
         overflow: hidden;
         background: var(--c-dark-2);
+
+        /* 底部与米白画布柔和接缝：最后 48rpx 由透明过渡到 --c-bg，避免深图直接切浅底 */
+        &::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 48rpx;
+            background: linear-gradient(180deg, rgba(var(--c-bg-rgb), 0) 0%, var(--c-bg) 100%);
+            pointer-events: none;
+        }
     }
 
     &__img {
@@ -676,7 +690,7 @@ async function finish() {
         bottom: 0;
         background: linear-gradient(
             180deg,
-            rgba(20, 17, 14, 0.55) 0%,
+            rgba(20, 17, 14, 0.7) 0%,
             rgba(20, 17, 14, 0.05) 34%,
             rgba(20, 17, 14, 0.42) 68%,
             rgba(20, 17, 14, 0.92) 100%
@@ -687,6 +701,7 @@ async function finish() {
         position: absolute;
         left: 50rpx;
         right: 50rpx;
+        /* 位于底部 48rpx 渐隐接缝之上，品牌字样不被半透明过渡削弱 */
         bottom: 54rpx;
     }
 
@@ -696,7 +711,7 @@ async function finish() {
         font-size: var(--fs-63); /* 33px */
         letter-spacing: 0.3em;
         color: var(--c-on-dark);
-        line-height: 1;
+        line-height: var(--lh-none);
     }
 
     &__en {
@@ -729,7 +744,7 @@ async function finish() {
     &__h2 {
         font-size: var(--fs-37); /* 19px */
         font-weight: var(--fw-semibold);
-        line-height: 1.52;
+        line-height: var(--lh-body);
         letter-spacing: 0.02em;
         color: var(--c-ink);
         margin-top: 14rpx;
@@ -738,7 +753,7 @@ async function finish() {
     &__sub {
         margin-top: 18rpx;
         font-size: var(--fs-19);
-        line-height: 1.8;
+        line-height: var(--lh-loose);
         letter-spacing: 0.02em;
         color: var(--c-ink-3);
     }
@@ -757,6 +772,14 @@ async function finish() {
         box-sizing: border-box;
         border: 0;
         font-family: inherit;
+        /* 两段式弹簧：按下 90ms 压实，松手 440ms 软回弹（时长由本地规则覆盖全局 .press-spring） */
+        transition: transform var(--dur-release) var(--ease-spring-soft);
+
+        &.is-pressing {
+            transform: scale(0.96);
+            transition-duration: var(--dur-press);
+            transition-timing-function: var(--ease-out);
+        }
 
         &::after {
             border: 0;
@@ -764,7 +787,7 @@ async function finish() {
 
         &--wechat {
             margin-top: 40rpx;
-            height: 87rpx; /* 45px */
+            height: 88rpx; /* 44px：与全站触控下限对齐 */
             border-radius: var(--r-24);
             background: var(--c-action-bg);
             /* ⚠️ 必须在这里给 color：tn-icon 的 useComponentColor 只认 tn-* 类名和
@@ -775,7 +798,7 @@ async function finish() {
         }
 
         &--phone {
-            height: 83rpx; /* 43px */
+            height: 88rpx; /* 44px：与全站触控下限对齐 */
             border-radius: var(--r-24);
             background: transparent;
             border: 1rpx solid var(--c-control-border);
@@ -837,6 +860,10 @@ async function finish() {
         display: flex;
         align-items: flex-start;
         gap: 14rpx;
+        /* 整行可点：最小热区 88rpx（文案两行时由内容自然撑高） */
+        min-height: 88rpx;
+        padding: var(--sp-1) 0;
+        box-sizing: border-box;
     }
 
     &__box {
@@ -849,20 +876,76 @@ async function finish() {
         justify-content: center;
         flex: none;
         margin-top: 4rpx;
+        transition: background-color 180ms var(--ease-out), border-color 180ms var(--ease-out);
 
         &.is-checked {
             background: var(--c-active-bg);
             border-color: var(--c-active-border);
-            /* 勾选后的对勾图标靠继承拿色：tn-icon 不认 var()，见 .lg__btn--wechat 的注释。
-               不写这一行，对勾会是默认黑 —— 黑勾压在墨黑圆点上，等于勾了看不出来。 */
-            color: var(--c-active-fg);
         }
+    }
+
+    /* H5：真实 SVG 一笔描出（pathLength=1 → dashoffset 1→0 即整段画完） */
+    &__check {
+        width: 76%;
+        height: 76%;
+
+        path {
+            fill: none;
+            stroke: var(--c-active-fg);
+            stroke-width: 2.6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 1;
+            stroke-dashoffset: 1;
+            transition: stroke-dashoffset 240ms var(--ease-out);
+        }
+    }
+
+    &__box.is-checked &__check path {
+        stroke-dashoffset: 0;
+    }
+
+    /* 小程序：rotate(-45deg) 把「竖臂 + 横臂」的 L 转成对勾，
+       短臂 90ms 先长出、长臂 150ms 延迟 90ms 补上，总长 240ms，视觉等同一笔描出。 */
+    &__check-arms {
+        position: relative;
+        width: 22rpx;
+        height: 22rpx;
+        transform: rotate(-45deg);
+    }
+
+    &__arm {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        background: var(--c-active-fg);
+        border-radius: var(--r-pill);
+
+        &--short {
+            width: 3rpx;
+            height: 0;
+            transition: height 90ms var(--ease-out);
+        }
+
+        &--long {
+            width: 0;
+            height: 3rpx;
+            transition: width 150ms var(--ease-out) 90ms;
+        }
+    }
+
+    &__box.is-checked .agree__arm--short {
+        height: 45%;
+    }
+
+    &__box.is-checked .agree__arm--long {
+        width: 100%;
     }
 
     &__text {
         flex: 1;
         font-size: var(--fs-20);
-        line-height: 1.7;
+        line-height: var(--lh-loose);
         color: var(--c-ink-3);
     }
 
@@ -879,96 +962,73 @@ async function finish() {
     }
 }
 
-.pp {
-    padding: 40rpx 42rpx calc(32rpx + var(--safe-bottom));
+/* 手机号登录抽屉：模板里已没有 .pp 包裹节点，类直接挂在 snap-sheet 的 body/foot 插槽内 */
+.pp__field {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    height: 96rpx;
+    padding: 0 24rpx;
+    border-radius: var(--r-md);
+    background: var(--c-surface-2);
+    border: 1rpx solid transparent;
 
-    &__head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: var(--sp-2);
-        margin-bottom: 30rpx;
+    & + .pp__field {
+        margin-top: 20rpx;
     }
 
-    &__head-text {
-        flex: 1;
-        min-width: 0;
+    &.is-err {
+        border-color: var(--c-danger-border);
     }
+}
 
-    &__close {
-        flex: none;
-        width: 72rpx;
-        height: 72rpx;
-        margin: -12rpx -12rpx 0 0; /* 热区外扩，视觉位置贴右上角 */
-        display: flex;
-        align-items: center;
-        justify-content: center;
+.pp__label {
+    width: 104rpx;
+    flex: none;
+    font-size: var(--fs-25);
+    color: var(--c-ink-2);
+}
+
+.pp__input {
+    flex: 1;
+    height: 96rpx;
+    font-size: var(--fs-md);
+    color: var(--c-ink);
+}
+
+.pp__ph {
+    color: var(--c-ink-3);
+}
+
+.pp__send {
+    flex: none;
+    display: flex;
+    align-items: center;
+    align-self: stretch;
+    padding: 0 var(--sp-1);
+    font-size: var(--fs-23);
+    color: var(--c-brand-text);
+
+    &.is-off {
         color: var(--c-ink-3);
     }
+}
 
-    &__title {
-        display: block;
-        font-size: var(--fs-34);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
+.pp__err {
+    display: block;
+    margin: 10rpx 0 0 24rpx;
+    font-size: var(--fs-21);
+    color: var(--c-danger);
+}
 
-    &__field {
-        display: flex;
-        align-items: center;
-        gap: 16rpx;
-        height: 96rpx;
-        padding: 0 24rpx;
-        border-radius: var(--r-md);
-        background: var(--c-surface-2);
-        border: 1rpx solid transparent;
-
-        & + & {
-            margin-top: 20rpx;
-        }
-
-        &.is-err {
-            border-color: var(--c-danger-border);
-        }
-    }
-
-    &__label {
-        width: 104rpx;
-        flex: none;
-        font-size: var(--fs-25);
-        color: var(--c-ink-2);
-    }
-
-    &__input {
-        flex: 1;
-        font-size: var(--fs-md);
-        color: var(--c-ink);
-    }
-
-    &__ph {
-        color: var(--c-ink-3);
-    }
-
-    &__send {
-        flex: none;
-        font-size: var(--fs-23);
-        color: var(--c-brand-text);
-
-        &.is-off {
-            color: var(--c-ink-3);
-        }
-    }
-
-    &__err {
-        display: block;
-        margin: 10rpx 0 0 24rpx;
-        font-size: var(--fs-21);
-        color: var(--c-danger);
-    }
-
-    &__submit {
-        /* 验证码框 96rpx 高，34rpx 间距视觉上几乎粘连；提到 --sp-5(48rpx) */
-        margin-top: var(--sp-5);
+/* v10 §3.13：减弱动效下按钮不缩放、勾选直接呈现终态 */
+@media (prefers-reduced-motion: reduce) {
+    .lg__btn,
+    .agree__box,
+    .agree__check path,
+    .agree__arm--short,
+    .agree__arm--long {
+        transition: none;
     }
 }
 </style>

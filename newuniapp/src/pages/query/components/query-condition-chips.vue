@@ -128,7 +128,7 @@ function regionLabel(r: PickedRegion | null) {
 
     &__scroll {
         width: 100%;
-        height: 72rpx;
+        height: 88rpx;
         white-space: nowrap;
     }
 
@@ -136,12 +136,13 @@ function regionLabel(r: PickedRegion | null) {
         display: inline-flex;
         align-items: center;
         gap: 12rpx;
-        height: 72rpx;
-        padding-right: 24rpx;
+        height: 88rpx;
+        padding-right: 30rpx;
     }
 }
 
 .cond {
+    position: relative;
     height: 56rpx;
     padding: 0 20rpx;
     border-radius: var(--r-pill);
@@ -151,6 +152,16 @@ function regionLabel(r: PickedRegion | null) {
     align-items: center;
     gap: 6rpx;
     flex: none;
+
+    /* 视觉 56rpx，热区纵向扩到 88rpx；相邻 chip 横向 gap 12rpx 保留视觉呼吸 */
+    &::before {
+        content: '';
+        position: absolute;
+        top: -16rpx;
+        bottom: -16rpx;
+        left: 0;
+        right: 0;
+    }
 
     &--ph {
         border-style: dashed;

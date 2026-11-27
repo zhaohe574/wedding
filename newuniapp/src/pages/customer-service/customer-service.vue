@@ -128,7 +128,7 @@
                     <text class="concierge__meta-text">客服专线 {{ contact.mobile }}</text>
                     <view
                         hover-class="is-pressed"
-                        class="concierge__meta-action"
+                        class="concierge__meta-action hit-88"
                         aria-role="button"
                         aria-label="复制客服号码"
                         @tap="copyMobile"
@@ -266,155 +266,132 @@
             <!-- 打电话前确认号码与服务时段 -->
             <tn-modal ref="modalRef" />
 
-            <!-- 预约回电 / 婚礼需求抽屉 -->
-            <tn-popup
+            <!-- 预约回电 / 婚礼需求抽屉：磁吸半屏，标题 / 关闭 / 吸底由 snap-sheet 统一承担 -->
+            <snap-sheet
                 v-model="intentionOpen"
-                open-direction="bottom"
-                bg-color="transparent"
-                radius="0"
-                :safe-area-inset-bottom="true"
+                title="预约专属顾问回电"
+                :enable-full="true"
+                :has-foot="true"
             >
-                <view class="intent-sheet">
-                    <view class="intent-sheet__head">
-                        <view>
-                            <text class="intent-sheet__title">预约专属顾问回电</text>
-                            <text class="intent-sheet__sub"
-                                >完善婚期与需求，顾问将提前备好档期与参考报价</text
-                            >
-                        </view>
-                        <view
-                            hover-class="is-pressed"
-                            class="intent-sheet__close"
-                            aria-role="button"
-                            aria-label="关闭"
-                            @tap="intentionOpen = false"
+                <text class="intent-sub">完善婚期与需求，顾问将提前备好档期与参考报价</text>
+
+                <view class="ifield">
+                    <text class="ifield__label">您的称呼</text>
+                    <input
+                        v-model="intentionForm.customer_name"
+                        class="ifield__input"
+                        placeholder="如：林小姐 / 张先生"
+                        placeholder-class="ifield__ph"
+                        maxlength="50"
+                    />
+                </view>
+
+                <view class="ifield">
+                    <text class="ifield__label">联系电话 *</text>
+                    <input
+                        v-model="intentionForm.customer_mobile"
+                        class="ifield__input"
+                        type="number"
+                        placeholder="请输入 11 位手机号，方便顾问回电"
+                        placeholder-class="ifield__ph"
+                        maxlength="20"
+                    />
+                </view>
+
+                <view class="ifield-row">
+                    <view class="ifield ifield--half">
+                        <text class="ifield__label">计划婚期</text>
+                        <picker
+                            mode="date"
+                            :value="intentionForm.wedding_date || todayStr"
+                            @change="onPickWeddingDate"
                         >
-                            <tn-icon name="close" :size="28" />
+                            <view class="ifield__picker">
+                                <text :class="{ 'is-empty': !intentionForm.wedding_date }">{{
+                                    intentionForm.wedding_date || '选择日期'
+                                }}</text>
+                                <tn-icon name="calendar" :size="22" />
+                            </view>
+                        </picker>
+                    </view>
+                    <view class="ifield ifield--half">
+                        <text class="ifield__label">办婚城市</text>
+                        <input
+                            v-model="intentionForm.city"
+                            class="ifield__input"
+                            placeholder="如：杭州市"
+                            placeholder-class="ifield__ph"
+                            maxlength="50"
+                        />
+                    </view>
+                </view>
+
+                <view class="ifield">
+                    <text class="ifield__label">婚礼预算范围</text>
+                    <view class="ichip-row">
+                        <view
+                            v-for="opt in BUDGET_OPTIONS"
+                            :key="opt"
+                            hover-class="is-pressed"
+                            class="ichip"
+                            :class="{ 'is-active': intentionForm.budget_range === opt }"
+                            @tap="pickBudget(opt)"
+                        >
+                            <text class="ichip__text">{{ opt }}</text>
                         </view>
                     </view>
+                </view>
 
-                    <scroll-view class="intent-sheet__body" scroll-y>
-                        <view class="ifield">
-                            <text class="ifield__label">您的称呼</text>
-                            <input
-                                v-model="intentionForm.customer_name"
-                                class="ifield__input"
-                                placeholder="如：林小姐 / 张先生"
-                                placeholder-class="ifield__ph"
-                                maxlength="50"
-                            />
+                <view class="ifield">
+                    <text class="ifield__label">意向服务（可多选）</text>
+                    <view class="ichip-row">
+                        <view
+                            v-for="need in NEED_OPTIONS"
+                            :key="need"
+                            hover-class="is-pressed"
+                            class="ichip"
+                            :class="{
+                                'is-active': intentionForm.service_needs.includes(need)
+                            }"
+                            @tap="toggleNeed(need)"
+                        >
+                            <text class="ichip__text">{{ need }}</text>
                         </view>
+                    </view>
+                </view>
 
-                        <view class="ifield">
-                            <text class="ifield__label">联系电话 *</text>
-                            <input
-                                v-model="intentionForm.customer_mobile"
-                                class="ifield__input"
-                                type="number"
-                                placeholder="请输入 11 位手机号，方便顾问回电"
-                                placeholder-class="ifield__ph"
-                                maxlength="20"
-                            />
-                        </view>
+                <view class="ifield">
+                    <text class="ifield__label">补充想法（选填）</text>
+                    <textarea
+                        v-model="intentionForm.remark"
+                        class="ifield__textarea"
+                        placeholder="如：偏好户外草坪/中式仪式、希望重点沟通主持人风格等"
+                        placeholder-class="ifield__ph"
+                        maxlength="500"
+                    />
+                </view>
 
-                        <view class="ifield-row">
-                            <view class="ifield ifield--half">
-                                <text class="ifield__label">计划婚期</text>
-                                <picker
-                                    mode="date"
-                                    :value="intentionForm.wedding_date || todayStr"
-                                    @change="onPickWeddingDate"
-                                >
-                                    <view class="ifield__picker">
-                                        <text
-                                            :class="{ 'is-empty': !intentionForm.wedding_date }"
-                                            >{{ intentionForm.wedding_date || '选择日期' }}</text
-                                        >
-                                        <tn-icon name="calendar" :size="22" />
-                                    </view>
-                                </picker>
-                            </view>
-                            <view class="ifield ifield--half">
-                                <text class="ifield__label">办婚城市</text>
-                                <input
-                                    v-model="intentionForm.city"
-                                    class="ifield__input"
-                                    placeholder="如：杭州市"
-                                    placeholder-class="ifield__ph"
-                                    maxlength="50"
-                                />
-                            </view>
-                        </view>
-
-                        <view class="ifield">
-                            <text class="ifield__label">婚礼预算范围</text>
-                            <view class="ichip-row">
-                                <view
-                                    v-for="opt in BUDGET_OPTIONS"
-                                    :key="opt"
-                                    hover-class="is-pressed"
-                                    class="ichip"
-                                    :class="{ 'is-active': intentionForm.budget_range === opt }"
-                                    @tap="
-                                        intentionForm.budget_range =
-                                            intentionForm.budget_range === opt ? '' : opt
-                                    "
-                                >
-                                    <text class="ichip__text">{{ opt }}</text>
-                                </view>
-                            </view>
-                        </view>
-
-                        <view class="ifield">
-                            <text class="ifield__label">意向服务（可多选）</text>
-                            <view class="ichip-row">
-                                <view
-                                    v-for="need in NEED_OPTIONS"
-                                    :key="need"
-                                    hover-class="is-pressed"
-                                    class="ichip"
-                                    :class="{
-                                        'is-active': intentionForm.service_needs.includes(need)
-                                    }"
-                                    @tap="toggleNeed(need)"
-                                >
-                                    <text class="ichip__text">{{ need }}</text>
-                                </view>
-                            </view>
-                        </view>
-
-                        <view class="ifield">
-                            <text class="ifield__label">补充想法（选填）</text>
-                            <textarea
-                                v-model="intentionForm.remark"
-                                class="ifield__textarea"
-                                placeholder="如：偏好户外草坪/中式仪式、希望重点沟通主持人风格等"
-                                placeholder-class="ifield__ph"
-                                maxlength="500"
-                            />
-                        </view>
-                    </scroll-view>
-
-                    <view class="intent-sheet__foot">
+                <template #foot>
+                    <view class="intent-foot">
                         <base-button
                             text="取消"
                             variant="ghost"
                             size="md"
-                            class="intent-sheet__btn"
+                            class="intent-btn"
                             @click="intentionOpen = false"
                         />
                         <base-button
                             :text="intentionSubmitting ? '提交中…' : '提交预约回电'"
                             variant="ink"
                             size="md"
-                            class="intent-sheet__btn"
+                            class="intent-btn"
                             :loading="intentionSubmitting"
                             :disabled="intentionSubmitting"
                             @click="submitIntentionForm"
                         />
                     </view>
-                </view>
-            </tn-popup>
+                </template>
+            </snap-sheet>
 
             <app-toast />
         </template>
@@ -446,6 +423,7 @@ import { navigate } from '@/utils/link'
 import { report } from '@/platform/report'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 
 const appStore = useAppStore()
 const userStore = useUserStore()
@@ -708,6 +686,7 @@ function onPrimary() {
 }
 
 function toggleFaq(i: number) {
+    haptic('light', 'cs-faq')
     openFaq.value = openFaq.value === i ? -1 : i
 }
 
@@ -716,10 +695,12 @@ function goLogin() {
 }
 
 function goOrders() {
+    haptic('light', 'cs-quick')
     navigate({ path: '/pages/order/order' })
 }
 
 function goAftersale() {
+    haptic('light', 'cs-quick')
     const pages = getCurrentPages()
     const prevRoute = pages.length >= 2 ? String((pages[pages.length - 2] as any)?.route || '') : ''
     if (prevRoute === 'packages/pkg-service/pages/aftersale/index') {
@@ -730,6 +711,7 @@ function goAftersale() {
 }
 
 function onFallbackChat() {
+    haptic('light', 'cs-chat')
     if (contact.mobile) {
         askCall()
         return
@@ -739,6 +721,7 @@ function onFallbackChat() {
 
 function copyMobile() {
     if (!contact.mobile) return
+    haptic('light', 'cs-copy')
     uni.setClipboardData({
         data: contact.mobile,
         success: () => toast.success('号码已复制'),
@@ -747,6 +730,7 @@ function copyMobile() {
 }
 
 function askCall() {
+    haptic('light', 'cs-call')
     if (!contact.mobile) return
     modalRef.value?.showModal({
         title: '拨打客服专线',
@@ -772,7 +756,13 @@ function openIntentionSheet() {
         goLogin()
         return
     }
+    haptic('light', 'cs-intent')
     intentionOpen.value = true
+}
+
+function pickBudget(opt: string) {
+    haptic('light', 'cs-chip')
+    intentionForm.budget_range = intentionForm.budget_range === opt ? '' : opt
 }
 
 function onPickWeddingDate(e: any) {
@@ -781,6 +771,7 @@ function onPickWeddingDate(e: any) {
 }
 
 function toggleNeed(need: string) {
+    haptic('light', 'cs-chip')
     const idx = intentionForm.service_needs.indexOf(need)
     if (idx >= 0) {
         intentionForm.service_needs.splice(idx, 1)
@@ -866,6 +857,7 @@ onShow(() => load(loaded.value))
     overflow: hidden;
     background: linear-gradient(150deg, var(--c-dark-1) 0%, var(--c-dark-2) 100%);
     border: 1rpx solid var(--c-line-strong);
+    box-shadow: var(--shadow-float);
 
     &__glow {
         position: absolute;
@@ -953,8 +945,8 @@ onShow(() => load(loaded.value))
         font-size: var(--fs-20);
         line-height: var(--lh-tight);
         color: var(--c-brand-soft);
-        background: rgba(198, 161, 91, 0.14);
-        border: 1rpx solid rgba(217, 190, 130, 0.34);
+        background: var(--c-on-dark-fill-2);
+        border: 1rpx solid var(--c-on-dark-fill-3);
     }
 
     &__hours {
@@ -997,8 +989,8 @@ onShow(() => load(loaded.value))
         border-radius: var(--r-pill);
         font-size: var(--fs-20);
         color: var(--c-brand-soft);
-        background: rgba(255, 255, 255, 0.08);
-        border: 1rpx solid rgba(255, 255, 255, 0.14);
+        background: var(--c-on-dark-fill-2);
+        border: 1rpx solid var(--c-on-dark-fill-3);
     }
 
     &__acts {
@@ -1017,7 +1009,7 @@ onShow(() => load(loaded.value))
         gap: var(--sp-2);
         margin-top: 24rpx;
         padding-top: 20rpx;
-        border-top: 1rpx solid rgba(255, 255, 255, 0.1);
+        border-top: 1rpx solid var(--c-on-dark-fill-3);
     }
 
     &__meta-text {
@@ -1048,8 +1040,8 @@ onShow(() => load(loaded.value))
     gap: 8rpx;
     padding: 6rpx 16rpx;
     border-radius: var(--r-pill);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1rpx solid rgba(255, 255, 255, 0.12);
+    background: var(--c-on-dark-fill-2);
+    border: 1rpx solid var(--c-on-dark-fill-3);
 
     &.is-live {
         background: rgba(169, 192, 172, 0.14);
@@ -1090,7 +1082,7 @@ onShow(() => load(loaded.value))
         margin: 0;
         padding: 0;
         border: 0;
-        line-height: 1;
+        line-height: var(--lh-none);
         font-size: inherit;
 
         &::after {
@@ -1104,8 +1096,8 @@ onShow(() => load(loaded.value))
     }
 
     &--glass {
-        background: rgba(255, 255, 255, 0.06);
-        border: 1rpx solid rgba(255, 255, 255, 0.24);
+        background: var(--c-on-dark-fill-1);
+        border: 1rpx solid var(--c-on-dark-fill-3);
         color: var(--c-on-dark);
     }
 
@@ -1132,7 +1124,8 @@ onShow(() => load(loaded.value))
     margin-top: 24rpx;
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
     overflow: hidden;
 
     &__cell {
@@ -1217,7 +1210,8 @@ onShow(() => load(loaded.value))
     grid-template-columns: 1fr 1fr;
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
     overflow: hidden;
 }
 
@@ -1272,7 +1266,8 @@ onShow(() => load(loaded.value))
     padding: 0 32rpx;
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 }
 
 .faq-row {
@@ -1342,6 +1337,7 @@ onShow(() => load(loaded.value))
     border-radius: var(--r-md);
     background: var(--c-surface);
     border: 1rpx solid var(--c-brand-soft);
+    box-shadow: var(--shadow-card);
 
     &.is-done {
         border-color: var(--c-line);
@@ -1398,60 +1394,23 @@ onShow(() => load(loaded.value))
     }
 }
 
-.intent-sheet {
-    background: var(--c-surface);
-    border-top-left-radius: var(--r-xl);
-    border-top-right-radius: var(--r-xl);
-    padding: 32rpx 34rpx calc(24rpx + var(--safe-bottom));
-    max-height: 82vh;
+/* 抽屉内容直接挂在 snap-sheet 的 body / foot 插槽内（已无 .intent-sheet 包裹节点） */
+.intent-sub {
+    display: block;
+    margin-bottom: var(--sp-4);
+    font-size: var(--fs-22);
+    line-height: var(--lh-body);
+    color: var(--c-ink-3);
+}
+
+.intent-foot {
     display: flex;
-    flex-direction: column;
+    gap: 20rpx;
+}
 
-    &__head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16rpx;
-        padding-bottom: 20rpx;
-        border-bottom: 1rpx solid var(--c-line);
-    }
-
-    &__title {
-        display: block;
-        font-size: var(--fs-32);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__sub {
-        display: block;
-        margin-top: 6rpx;
-        font-size: var(--fs-22);
-        color: var(--c-ink-3);
-    }
-
-    &__close {
-        flex: none;
-        padding: 8rpx;
-        color: var(--c-ink-3);
-    }
-
-    &__body {
-        flex: 1;
-        max-height: 58vh;
-        padding: 20rpx 0;
-    }
-
-    &__foot {
-        display: flex;
-        gap: 20rpx;
-        padding-top: 20rpx;
-        border-top: 1rpx solid var(--c-line);
-    }
-
-    &__btn {
-        flex: 1;
-    }
+.intent-btn {
+    flex: 1;
+    min-width: 0;
 }
 
 .ifield-row {
@@ -1475,13 +1434,14 @@ onShow(() => load(loaded.value))
         color: var(--c-ink-2);
     }
 
+    /* 输入 / 选择控件：高 88rpx 满足触控下限，边界用可辨识的 --c-control-border */
     &__input,
     &__picker {
-        height: 78rpx;
+        height: 88rpx;
         padding: 0 22rpx;
         border-radius: var(--r-sm);
-        background: var(--c-page);
-        border: 1rpx solid var(--c-line);
+        background: var(--c-surface-2);
+        border: 1rpx solid var(--c-control-border);
         font-size: var(--fs-26);
         color: var(--c-ink);
         display: flex;
@@ -1499,9 +1459,9 @@ onShow(() => load(loaded.value))
         min-height: 132rpx;
         padding: 18rpx 22rpx;
         border-radius: var(--r-sm);
-        background: var(--c-page);
-        border: 1rpx solid var(--c-line);
-        font-size: var(--fs-24);
+        background: var(--c-surface-2);
+        border: 1rpx solid var(--c-control-border);
+        font-size: var(--fs-md);
         color: var(--c-ink);
         box-sizing: border-box;
     }
@@ -1518,10 +1478,25 @@ onShow(() => load(loaded.value))
 }
 
 .ichip {
-    padding: 10rpx 22rpx;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 64rpx;
+    padding: 0 22rpx;
     border-radius: var(--r-pill);
-    background: var(--c-page);
-    border: 1rpx solid var(--c-line);
+    background: var(--c-surface-2);
+    border: 1rpx solid var(--c-control-border);
+    box-sizing: border-box;
+
+    /* 视觉 64rpx，纵向热区扩到 88rpx（上下各 12rpx），与 12rpx 行间距正好对接 */
+    &::before {
+        content: '';
+        position: absolute;
+        top: -12rpx;
+        bottom: -12rpx;
+        left: 0;
+        right: 0;
+    }
 
     &__text {
         font-size: var(--fs-22);

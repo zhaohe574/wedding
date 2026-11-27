@@ -20,7 +20,7 @@
                 </view>
                 <!-- 显式关闭入口：profile 跳过当前步骤；强制绑定步骤 2 取消本次登录 -->
                 <view
-                    class="pg__close"
+                    class="pg__close hit-88"
                     hover-class="is-pressed"
                     aria-role="button"
                     aria-label="关闭"
@@ -64,7 +64,9 @@
                 <text v-if="submitError" class="pg__err">{{ submitError }}</text>
 
                 <button
-                    class="pg__submit"
+                    class="pg__submit press-spring"
+                    hover-class="is-pressing"
+                    :hover-stay-time="90"
                     form-type="submit"
                     :disabled="submitting || uploadingAvatar"
                 >
@@ -76,7 +78,9 @@
             <!-- 步骤 2：绑定手机号（微信原生 getPhoneNumber） -->
             <view v-else>
                 <button
-                    class="pg__submit"
+                    class="pg__submit press-spring"
+                    hover-class="is-pressing"
+                    :hover-stay-time="90"
                     open-type="getPhoneNumber"
                     :disabled="bindingPhone"
                     @getphonenumber="onGetPhoneNumber"
@@ -110,6 +114,7 @@ import { updateUser, getMobileByMnp } from '@/api/auth'
 import { getUserInfo } from '@/api/user'
 import { isPhoneAuthDenied, extractPhoneCode } from '@/platform/login'
 import { sanitizeServerMessage } from '@/utils/resolveErrorView'
+import { haptic } from '@/utils/haptics'
 
 const props = withDefaults(
     defineProps<{
@@ -235,6 +240,7 @@ function onNicknameChange(e: any) {
 
 async function onSubmitProfile(e: any) {
     if (submitting.value || uploadingAvatar.value) return
+    haptic('medium', 'pg-submit')
     submitError.value = ''
     nicknameError.value = ''
 
@@ -274,6 +280,7 @@ function onProfileSkip() {
 
 async function onGetPhoneNumber(e: any) {
     if (bindingPhone.value) return
+    haptic('medium', 'pg-submit')
     mobileError.value = ''
     if (isPhoneAuthDenied(e)) {
         mobileError.value = '已取消授权，可重试或稍后在个人资料页绑定'
@@ -331,6 +338,10 @@ function onClose() {
 <style lang="scss" scoped>
 .pg {
     padding: 40rpx 42rpx calc(32rpx + var(--safe-bottom));
+    /* 与 snap-sheet 同一套浮层语义：同心圆角 + 顶部发散阴影 + 暗色 1rpx 描边 */
+    border-radius: var(--r-24) var(--r-24) 0 0;
+    box-shadow: var(--shadow-sheet);
+    border: 1rpx solid var(--c-card-border);
 
     &__head {
         display: flex;
@@ -471,7 +482,7 @@ function onClose() {
         gap: var(--sp-1);
         width: 100%;
         margin-top: var(--sp-5);
-        height: 87rpx;
+        height: 88rpx;
         padding: 0;
         line-height: normal;
         box-sizing: border-box;
@@ -482,6 +493,14 @@ function onClose() {
         /* ⚠️ 颜色必须写在按钮上：tn-icon 的 useComponentColor 不认 var()，图标靠继承拿色；
            文字由 .pg__submit-text 自己覆盖成反相色 */
         color: var(--c-action-fg);
+        /* 两段式弹簧：按下 90ms 压实，松手 440ms 软回弹 */
+        transition: transform var(--dur-release) var(--ease-spring-soft);
+
+        &.is-pressing {
+            transform: scale(0.96);
+            transition-duration: var(--dur-press);
+            transition-timing-function: var(--ease-out);
+        }
 
         &::after {
             border: none;
@@ -500,11 +519,23 @@ function onClose() {
     }
 
     &__skip {
-        display: block;
-        margin-top: var(--sp-3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 88rpx;
+        margin-top: var(--sp-1);
+        padding: var(--sp-1) 0;
+        box-sizing: border-box;
         text-align: center;
         font-size: var(--fs-20);
         color: var(--c-ink-3);
+    }
+}
+
+/* v10 §3.13：减弱动效下按钮不缩放 */
+@media (prefers-reduced-motion: reduce) {
+    .pg__submit {
+        transition: none;
     }
 }
 </style>

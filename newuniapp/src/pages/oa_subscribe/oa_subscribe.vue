@@ -17,7 +17,7 @@
                         <tn-icon name="notice" :size="22" />
                         <text>{{ statusPill.text }}</text>
                     </view>
-                    <view class="hero__refresh" @tap="refresh">
+                    <view class="hero__refresh hit-88" @tap="onRefreshTap">
                         <text>{{ busy.status ? '同步中' : '刷新' }}</text>
                     </view>
                 </view>
@@ -223,6 +223,7 @@ import {
     type OaInvitationStatusResult
 } from '@/api/user'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 import { useUserStore } from '@/stores/user'
 import {
     captureOaInvitation,
@@ -366,6 +367,13 @@ async function refresh() {
     }
 }
 
+/** 顶部「刷新」：只有用户主动点才震，onShow 的自动刷新不震 */
+function onRefreshTap() {
+    if (busy.status) return
+    haptic('light', 'oa-refresh')
+    void refresh()
+}
+
 async function confirmBinding() {
     if (busy.confirm || !inviteState.can_confirm) return
     busy.confirm = true
@@ -390,6 +398,7 @@ async function confirmBinding() {
 
 async function unbind() {
     if (busy.unbind) return
+    haptic('light', 'oa-unbind')
     const confirmed = await new Promise<boolean>((resolve) => {
         uni.showModal({
             title: '解除绑定',
@@ -416,6 +425,7 @@ async function unbind() {
 }
 
 function copyAccount(successText = '已复制') {
+    haptic('light', 'oa-copy')
     uni.setClipboardData({
         data: status.official_account || status.official_name,
         success: () => toast.success(typeof successText === 'string' ? successText : '已复制'),
@@ -729,8 +739,9 @@ onUnload(() => {
     gap: var(--sp-3);
     padding: var(--sp-4);
     border-radius: var(--r-lg);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
     background: var(--c-surface);
+    box-shadow: var(--shadow-card);
 
     &__head {
         display: flex;
@@ -896,9 +907,11 @@ onUnload(() => {
     align-items: center;
     justify-content: space-between;
     gap: var(--sp-2);
+    min-height: 88rpx;
     padding: var(--sp-2) var(--sp-3);
     border-radius: var(--r-sm);
     background: var(--c-surface-2);
+    box-sizing: border-box;
 
     &__info {
         flex: 1;
@@ -958,7 +971,7 @@ onUnload(() => {
     right: 50%;
     width: 100%;
     height: 1rpx;
-    background: var(--c-line);
+    background: var(--c-line-strong);
 }
 
 .flow__dot {
@@ -970,16 +983,17 @@ onUnload(() => {
     align-items: center;
     justify-content: center;
     border-radius: var(--r-pill);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);
     background: var(--c-surface-2);
     color: var(--c-ink-3);
     font-size: var(--fs-xs);
     font-weight: var(--fw-semibold);
 
+    /* 已完成：金色实心圆点（对勾反相），未完成保持中性描边 */
     &.is-done {
-        background: var(--c-brand-bg);
-        border-color: var(--c-primary-border);
-        color: var(--c-brand-text);
+        background: var(--c-brand);
+        border-color: var(--c-brand);
+        color: var(--c-on-brand);
     }
 }
 
@@ -1031,6 +1045,10 @@ onUnload(() => {
     gap: var(--sp-3);
 
     &__link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 88rpx;
         padding: var(--sp-2);
         text-align: center;
         font-size: var(--fs-xs);

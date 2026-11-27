@@ -23,7 +23,7 @@
 
             <template v-else>
                 <view class="page-pad head">
-                    <text class="head__title">{{ data.title }}</text>
+                    <text class="head__title t-balance">{{ data.title }}</text>
                     <view class="head__meta">
                         <!-- 样板页：v1 手写纯文字标签 → v2 status-tag（消息类型非状态，dot 关掉） -->
                         <status-tag
@@ -168,7 +168,7 @@ onLoad((options: any) => {
 
     &__title {
         font-size: var(--fs-2xl);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
         color: var(--c-ink);
         line-height: var(--lh-tight);
         overflow-wrap: anywhere;

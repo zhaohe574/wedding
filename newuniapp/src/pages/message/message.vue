@@ -26,7 +26,7 @@
         <view v-if="!loading && !error && list.length" class="bar">
             <text class="bar__text">
                 <template v-if="unreadCount > 0">
-                    <text class="bar__num">{{ unreadCount }}</text>
+                    <text class="bar__num t-num">{{ unreadCount }}</text>
                     <text> 条未读 · </text>
                 </template>
                 <text v-else>已全部读完 · </text>
@@ -108,7 +108,7 @@
                                     </view>
                                     <text class="item__p">{{ item.content }}</text>
                                     <view class="item__foot">
-                                        <text class="item__time">{{ timeOf(item) }}</text>
+                                        <text class="item__time t-num">{{ timeOf(item) }}</text>
                                         <view v-if="item.target_type" class="item__go">
                                             <text class="item__go-text">去看看</text>
                                             <tn-icon name="right" :size="18" class="ic-ink-3" />
@@ -147,6 +147,8 @@ import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
 import { useBadgeStore } from '@/stores/badge'
 import { report } from '@/platform/report'
+import { schemeColor } from '@/utils/scheme-color'
+import { haptic } from '@/utils/haptics'
 
 const tabs = [
     { key: 0, label: '全部' },
@@ -173,7 +175,10 @@ let hasMore = true
 let seq = 0
 let appending = false
 
-const swipeOptions = [{ text: '删除', style: { backgroundColor: '#B4453C' } }]
+/** tn-swipe-action 的 options.style 只认字面色值（行内样式里 wxss 变量不生效），走 schemeColor 镜像 */
+const swipeOptions = computed(() => [
+    { text: '删除', style: { backgroundColor: schemeColor('danger') } }
+])
 
 /** 按「今天 / 更早」分组：用接口给的 create_time_text 判断，不自己解析时区 */
 const groups = computed(() => {
@@ -284,6 +289,7 @@ function loadMore() {
 
 function switchType(key: number) {
     if (activeType.value === key) return
+    haptic('light', 'msg-tab')
     activeType.value = key
     list.value = []
     reload()
@@ -392,12 +398,14 @@ function onRefresh(done: () => void) {
 .chips {
     display: flex;
     gap: 12rpx;
-    padding: 22rpx 42rpx 8rpx;
+    /* 底部 18rpx 用来承接 chip 的 :before 热区扩展，避免被横向滚动容器裁掉 */
+    padding: 22rpx 42rpx 18rpx;
     overflow-x: auto;
 }
 
 .chip {
     flex: none;
+    position: relative;
     height: 52rpx;
     padding: 0 24rpx;
     border-radius: var(--r-pill);
@@ -407,6 +415,16 @@ function onRefresh(done: () => void) {
     background: var(--c-surface);
     display: flex;
     align-items: center;
+
+    /* 视觉 52rpx，纵向热区扩到 88rpx（上下各 18rpx），横向不动避免与相邻 chip 重叠 */
+    &::before {
+        content: '';
+        position: absolute;
+        top: -18rpx;
+        bottom: -18rpx;
+        left: 0;
+        right: 0;
+    }
 
     &__text {
         font-size: var(--fs-22);
@@ -458,10 +476,13 @@ function onRefresh(done: () => void) {
 .item {
     display: flex;
     gap: 20rpx;
+    min-height: 96rpx;
     padding: 24rpx;
+    box-sizing: border-box;
     border-radius: var(--r-md);
     background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
     &__ic {
         width: 64rpx;
@@ -511,7 +532,7 @@ function onRefresh(done: () => void) {
         display: block;
         margin-top: 8rpx;
         font-size: var(--fs-22);
-        line-height: 1.65;
+        line-height: var(--lh-body);
         color: var(--c-ink-2);
     }
 

@@ -14,24 +14,27 @@
         @reach-bottom="loadMore"
     >
         <template #sticky>
-            <!-- 分类栏：按动态类型（图文 / 视频 / 活动）分，不按标签分；排序收在右侧同一行 -->
+            <!-- 分类栏：胶囊底槽 + 弹性滑动指示块；排序收在右侧同一行 -->
             <view v-if="categories.length" class="catbar">
-                <view class="catbar__tabs">
-                    <view
-                        v-for="c in categories"
-                        :key="c.key"
-                        class="cat"
-                        :class="{ 'is-active': activeCat === c.key }"
-                        @tap="selectCat(c.key)"
-                    >
-                        <text class="cat__text">{{ c.label }}</text>
-                        <view v-if="activeCat === c.key" class="cat__line" aria-hidden="true" />
+                <view class="seg">
+                    <view class="seg__track">
+                        <view class="seg__thumb" :style="segThumbStyle" aria-hidden="true" />
+                        <view
+                            v-for="c in categories"
+                            :key="c.key"
+                            class="seg__item"
+                            :class="{ 'is-active': activeCat === c.key }"
+                            @tap="selectCat(c.key)"
+                        >
+                            <text class="seg__text">{{ c.label }}</text>
+                        </view>
                     </view>
                 </view>
 
                 <view class="catbar__sort">
                     <view
-                        class="sorter"
+                        class="sorter hit-88"
+                        :class="{ 'is-open': sorterOpen }"
                         aria-role="button"
                         :aria-label="`排序：${sortLabel}`"
                         @tap="sorterOpen = !sorterOpen"
@@ -108,13 +111,22 @@
         />
 
         <!-- 列表 -->
-        <view v-else-if="phase === 'ready'">
-            <view v-for="post in list" :key="post.id" class="post">
-                <!-- 置顶标识：4rpx 竖条只占左侧留白（内容仍是 42rpx 对齐），与暖米底协调但一眼可辨。
-                     用 v-if 而非常驻节点：非置顶卡片连一个空 view 都不多占 -->
-                <view v-if="isTop(post)" class="post__pin" aria-hidden="true" />
+        <view v-else-if="phase === 'ready'" class="list">
+            <view
+                class="posts"
+                :class="{ stagger: postStaggerOn, 'is-in': postStaggerIn }"
+            >
+                <view
+                    v-for="(post, index) in list"
+                    :key="post.id"
+                    class="post"
+                    :class="{ 'post--pinned': isTop(post) }"
+                    :style="{ '--i': index }"
+                >
+                    <!-- 置顶标识：4rpx 金线只占卡片内缘，内容不偏移；非置顶卡连空节点都不多占 -->
+                    <view v-if="isTop(post)" class="post__pin" aria-hidden="true" />
                 <view class="post__head">
-                    <view class="avatar">
+                    <view class="avatar" hover-class="is-pressed" @tap.stop="goDetail(post)">
                         <image
                             v-if="post.user_avatar"
                             class="avatar__img"
@@ -153,11 +165,18 @@
                     </view>
                 </view>
 
-                <!-- 文案：点整块进详情 -->
-                <text class="post__text" @tap="goDetail(post)">{{ post.content }}</text>
+                <!-- 文案：独立按压区，整块进详情（卡片本身不动） -->
+                <view class="post__text" hover-class="is-pressed" @tap="goDetail(post)">
+                    {{ post.content }}
+                </view>
 
                 <!-- 视频：只出静帧，点播放圆进详情全屏播放（列表内联播放会同时出声、耗流量） -->
-                <view v-if="post.media_type === 'video'" class="post__media" @tap="goDetail(post)">
+                <view
+                    v-if="post.media_type === 'video'"
+                    class="post__media"
+                    hover-class="is-pressed"
+                    @tap="goDetail(post)"
+                >
                     <image
                         class="post__media-img"
                         :src="post.media_cover"
@@ -166,7 +185,10 @@
                     />
                     <view class="post__play">
                         <view class="post__play-btn">
-                            <tn-icon name="play-fill" :size="30" />
+                            <!-- 三角形视觉重心偏左：整体右移 4rpx 才是几何居中 -->
+                            <view class="post__play-ic">
+                                <tn-icon name="play-fill" :size="30" />
+                            </view>
                         </view>
                     </view>
                 </view>
@@ -210,10 +232,11 @@
                 <view
                     v-if="post.activity && post.activity.activity_enabled === 1"
                     class="event"
+                    hover-class="is-pressed"
                     @tap="goDetail(post)"
                 >
                     <view class="event__date">
-                        <text class="event__date-d">{{ eventDayText(post.activity) }}</text>
+                        <text class="event__date-d t-num">{{ eventDayText(post.activity) }}</text>
                         <text class="event__date-w">{{ eventWeekText(post.activity) }}</text>
                     </view>
                     <view class="event__main">
@@ -233,28 +256,55 @@
 
                 <view class="post__stats">
                     <view
-                        hover-class="is-pressed"
                         class="pstat"
-                        :class="{ 'is-liked': isLiked(post) }"
+                        :class="{ 'is-liked': isLiked(post), 'is-pressing': likePressedId === post.id }"
+                        hover-stop-propagation="true"
                         aria-role="button"
                         :aria-label="isLiked(post) ? '取消点赞' : '点赞'"
-                        @tap="onLike(post)"
+                        @touchstart.stop="onLikePressStart(post.id)"
+                        @touchend.stop="onLikePressEnd"
+                        @touchcancel.stop="onLikePressEnd"
+                        @tap.stop="onLike(post)"
                     >
-                        <tn-icon :name="isLiked(post) ? 'like-fill' : 'like'" :size="29" />
-                        <text class="pstat__text">{{ post.like_count || 0 }}</text>
+                        <view class="pstat__icon">
+                            <tn-icon :name="isLiked(post) ? 'like-fill' : 'like'" :size="29" />
+                            <like-burst :active="isLiked(post)" />
+                        </view>
+                        <rolling-number class="pstat__num" :value="post.like_count || 0" />
                     </view>
-                    <view hover-class="is-pressed" class="pstat" @tap="goDetail(post)">
-                        <tn-icon name="comment" :size="29" />
-                        <text class="pstat__text">{{ post.comment_count || 0 }}</text>
+                    <view
+                        class="pstat"
+                        hover-stop-propagation="true"
+                        aria-role="button"
+                        aria-label="查看评论"
+                        @touchstart.stop
+                        @tap.stop="goDetail(post)"
+                    >
+                        <view class="pstat__icon">
+                            <tn-icon name="comment" :size="29" />
+                        </view>
+                        <rolling-number class="pstat__num" :value="post.comment_count || 0" />
                     </view>
                     <!-- 分享走小程序原生面板（button open-type=share），不自绘 -->
-                    <button class="pstat pstat--share" open-type="share" :data-id="post.id">
-                        <tn-icon name="share" :size="29" />
-                        <text v-if="post.share_count" class="pstat__text">{{
-                            post.share_count
-                        }}</text>
+                    <button
+                        class="pstat pstat--share"
+                        open-type="share"
+                        :data-id="post.id"
+                        hover-stop-propagation="true"
+                        @touchstart.stop
+                        @tap.stop="onShareTap"
+                    >
+                        <view class="pstat__icon">
+                            <tn-icon name="share" :size="29" />
+                        </view>
+                        <rolling-number
+                            v-if="post.share_count"
+                            class="pstat__num"
+                            :value="post.share_count"
+                        />
                     </button>
                 </view>
+            </view>
             </view>
 
             <view v-if="hasMore" class="feed-more">
@@ -283,12 +333,13 @@
  *  · 视频只出静帧，点进详情播放（列表内联播放会同时出声、耗流量）。
  *  · 只读：没有发布入口、没有编辑/删除入口。
  */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import { getCaseList, toggleCaseLike } from '@/api/content'
 import { normalizePage, toArray } from '@/request'
 import { navigate, safeDecodeParam } from '@/utils/link'
 import { toast } from '@/composables/useToast'
+import { haptic } from '@/utils/haptics'
 import { useUserStore } from '@/stores/user'
 import { useInteractionStore } from '@/stores/interaction'
 import { useTabQueryStore } from '@/stores/tabQuery'
@@ -384,6 +435,58 @@ const loadMoreFailed = ref(false)
 const pendingLikeId = ref(0)
 
 const sortLabel = computed(() => SORTS.find((s) => s.key === sortKey.value)?.label || '最新')
+
+/* ---- 液态分段筛选（§4.2）：指示块按百分比对齐，分类数量变化也自动适配 ---- */
+const activeCatIndex = computed(() => {
+    const index = categories.findIndex((c) => c.key === activeCat.value)
+    return index < 0 ? 0 : index
+})
+
+const segThumbStyle = computed(() => ({
+    width: `${100 / categories.length}%`,
+    transform: `translate3d(${activeCatIndex.value * 100}%, 0, 0)`
+}))
+
+/* ---- 点赞按压态与卡片彻底隔离：只有图标自身微缩，卡片不参与 ---- */
+const likePressedId = ref(0)
+
+function onLikePressStart(id: number) {
+    likePressedId.value = id
+}
+
+function onLikePressEnd() {
+    likePressedId.value = 0
+}
+
+/** 分享按钮：原生面板由 open-type 打开，这里只阻断冒泡 + 单次轻触觉 */
+function onShareTap() {
+    haptic('light', 'feed-share')
+}
+
+/* ---- 首屏 6 张卡错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in ---- */
+const postStaggerOn = ref(false)
+const postStaggerIn = ref(false)
+let staggerTimer: ReturnType<typeof setTimeout> | null = null
+
+function playPostStagger() {
+    if (postStaggerIn.value) return
+    postStaggerOn.value = true
+    staggerTimer = setTimeout(() => {
+        staggerTimer = null
+        postStaggerIn.value = true
+    }, 40)
+}
+
+watch(
+    () => phase.value,
+    (next) => {
+        if (next === 'ready') playPostStagger()
+    }
+)
+
+onUnmounted(() => {
+    if (staggerTimer) clearTimeout(staggerTimer)
+})
 
 const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
     if (loadMoreFailed.value) return 'error'
@@ -612,6 +715,7 @@ function onRefresh(done: () => void) {
 
 function selectCat(key: number) {
     if (activeCat.value === key) return
+    haptic('light', 'feed-cat')
     activeCat.value = key
     sorterOpen.value = false
     list.value = []
@@ -682,6 +786,7 @@ async function onLike(post: FeedRow) {
         navigate({ path: '/pages/login/login' })
         return
     }
+    haptic('medium', 'like')
     const liked = isLiked(post)
     // 乐观更新：先变色变数，失败回滚；同时写会话快照，详情页读同一份状态
     post.is_liked = !liked
@@ -823,24 +928,17 @@ onUnload(() => {
 </script>
 
 <style lang="scss" scoped>
-/* ---------- 分类条（类型 + 排序同一行） ---------- */
+/* ---------- 液态分段筛选（类型 + 排序同一行） ---------- */
 .catbar {
     position: relative;
     /* 锁视口 flex 列布局：分类条固定在 scroll-view 之上，排序面板要压在滚动内容上 */
     flex: none;
     z-index: 20;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: 20rpx;
-    padding: 4rpx 42rpx 0;
-
-    &__tabs {
-        display: flex;
-        flex: 1;
-        min-width: 0;
-        gap: 42rpx;
-    }
+    gap: 16rpx;
+    padding: 8rpx 42rpx 12rpx;
 
     &__sort {
         position: relative;
@@ -848,29 +946,63 @@ onUnload(() => {
     }
 }
 
-.cat {
-    position: relative;
-    padding: 12rpx 0 16rpx;
+.seg {
+    flex: 1;
+    min-width: 0;
+    padding: 4rpx;
+    border-radius: var(--r-pill);
+    background: var(--c-surface-2);
+    border: 1rpx solid var(--c-card-border);
+
+    &__track {
+        position: relative;
+        display: flex;
+        height: 64rpx;
+    }
+
+    /* 指示块：宽度 = 100% / 分类数，translateX 按序号整格滑动，分类增删自动适配 */
+    &__thumb {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        border-radius: var(--r-pill);
+        background: var(--c-active-bg);
+        box-shadow: var(--shadow-card);
+        transition: transform 280ms var(--ease-spring-soft);
+        will-change: transform;
+    }
+
+    &__item {
+        position: relative;
+        z-index: 1;
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 64rpx;
+
+        /* 视觉 64rpx，热区纵向扩到 92rpx；相邻项横向零死区 */
+        &::before {
+            content: '';
+            position: absolute;
+            top: -14rpx;
+            bottom: -14rpx;
+            left: 0;
+            right: 0;
+        }
+    }
 
     &__text {
-        font-size: var(--fs-26);
+        font-size: var(--fs-25);
         color: var(--c-ink-3);
         letter-spacing: 0.04em;
+        transition: color 200ms var(--ease-out);
     }
 
-    &__line {
-        position: absolute;
-        left: 50%;
-        bottom: 0;
-        width: 31rpx;
-        height: 4rpx;
-        border-radius: var(--r-2);
-        background: var(--c-ink);
-        transform: translateX(-50%);
-    }
-
-    &.is-active .cat__text {
-        color: var(--c-ink);
+    &__item.is-active &__text {
+        color: var(--c-active-fg);
         font-weight: var(--fw-semibold);
     }
 }
@@ -909,31 +1041,39 @@ onUnload(() => {
     }
 }
 
+/* 排序入口收成紧凑胶囊：视觉 64rpx，热区由 .hit-88 扩到 88rpx */
 .sorter {
     display: inline-flex;
     align-items: center;
-    gap: 8rpx;
-    /* 与分类文字基线对齐；排序不再单独占一行 */
-    padding: 14rpx 0 8rpx 8rpx;
-    /* 箭头与排序文字同色；.sorter__text 自己声明了 --c-ink-3 */
+    gap: 6rpx;
+    height: 64rpx;
+    padding: 0 16rpx;
+    border-radius: var(--r-pill);
+    border: 1rpx solid var(--c-control-border);
+    background: var(--c-surface);
     color: var(--c-ink-3);
 
     &__text {
         font-size: var(--fs-21);
-        color: var(--c-ink-3);
+        color: var(--c-ink-2);
+    }
+
+    &.is-open {
+        background: var(--c-surface-2);
+        color: var(--c-ink);
     }
 }
 
 .sortpanel {
     position: absolute;
     right: 0;
-    top: 66rpx;
+    top: 76rpx;
     z-index: 30;
-    min-width: 168rpx;
+    min-width: 176rpx;
     padding: 8rpx 0;
     border-radius: var(--r-md);
-    background: var(--c-surface);
-    border: 1rpx solid var(--c-line);
+    background: var(--c-surface-float);
+    border: 1rpx solid var(--c-card-border);
     box-shadow: var(--shadow-float);
 
     &__item {
@@ -941,7 +1081,8 @@ onUnload(() => {
         align-items: center;
         justify-content: space-between;
         gap: 12rpx;
-        padding: 18rpx 24rpx;
+        min-height: 88rpx;
+        padding: 0 24rpx;
         /* 选中勾与文字同色；.sortpanel__text 及 .is-on 变体都自己声明了颜色 */
         color: var(--c-brand-text);
     }
@@ -1023,24 +1164,33 @@ onUnload(() => {
     }
 }
 
-/* ---------- 卡片 ---------- */
+/* ---------- 卡片列表 ---------- */
+.posts {
+    padding: 8rpx 42rpx 0;
+}
+
 .post {
     position: relative;
-    padding: 35rpx 42rpx 0;
+    margin-bottom: 20rpx;
+    padding: 32rpx;
+    border-radius: var(--r-24);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-card-border);
+    box-shadow: var(--shadow-card);
 
-    /*
-     * 置顶标识：卡片左缘 4rpx 竖条，只用留白区（内容仍是 42rpx 对齐，不改卡片底色、不加阴影）。
-     * top 与 .post 的 padding-top 对齐；bottom 0 落在 .post__stats 的 padding-bottom 下沿
-     * （.post 自身 padding-bottom 为 0，stats 的 1rpx 分隔线就是卡片最后一行像素）。
-     */
+    /* 置顶卡：抬高一层阴影 + 左缘金线；卡片本身保持静止（点赞不带动整卡） */
+    &--pinned {
+        box-shadow: var(--shadow-card-hover);
+    }
+
     &__pin {
         position: absolute;
-        left: 18rpx;
-        top: 35rpx;
-        bottom: 0;
+        left: 0;
+        top: 32rpx;
+        bottom: 32rpx;
         width: 4rpx;
-        border-radius: var(--r-2);
-        background: var(--c-warning);
+        border-radius: var(--r-pill);
+        background: var(--c-brand);
     }
 
     &__head {
@@ -1105,15 +1255,15 @@ onUnload(() => {
         display: block;
         margin-top: 21rpx;
         font-size: var(--fs-25);
-        line-height: 1.78;
+        line-height: var(--lh-loose);
         color: var(--c-ink-2);
     }
 
     &__media {
         position: relative;
         margin-top: 21rpx;
-        height: 500rpx;
-        border-radius: var(--r-27);
+        height: 340rpx; /* 16:9：视频静帧不再占 4:3 大块 */
+        border-radius: var(--r-16);
         overflow: hidden;
         background: var(--c-neutral-bg);
     }
@@ -1136,20 +1286,29 @@ onUnload(() => {
         width: 88rpx;
         height: 88rpx;
         border-radius: var(--r-pill);
-        background: var(--c-surface-2);
+        background: var(--c-surface-float);
+        box-shadow: var(--shadow-float);
         display: flex;
         color: var(--c-ink);
         align-items: center;
         justify-content: center;
     }
 
+    /* 三角形视觉重心偏左：整体右移 4rpx 才落在圆心 */
+    &__play-ic {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform: translateX(4rpx);
+    }
+
     &__stats {
         display: flex;
         align-items: center;
-        gap: 42rpx;
-        margin-top: 23rpx;
-        padding-bottom: 31rpx;
-        border-bottom: 1rpx solid var(--c-line);
+        /* gap: 0 —— 三个热区由 .pstat 的左右内边距直接拼满，不留死缝 */
+        gap: 0;
+        margin-top: 8rpx;
+        margin-left: -24rpx;
     }
 }
 
@@ -1226,7 +1385,7 @@ onUnload(() => {
     &--g1 .gallery__cell {
         width: 100%;
         height: 500rpx;
-        border-radius: var(--r-27);
+        border-radius: var(--r-16);
     }
 
     /* 2 图：两列等宽方形，(666 - 8) / 2 = 329 */
@@ -1318,23 +1477,36 @@ onUnload(() => {
     display: inline-flex;
     align-items: center;
     gap: 10rpx;
-    padding: 0;
+    /* 88rpx 最小热区：上下内边距撑满，左右 24rpx 让相邻热区首尾相接、零死区 */
+    min-height: 88rpx;
+    padding: 0 24rpx;
     margin: 0;
     background: none;
     border: 0;
-    line-height: 1;
-    /* 点赞/评论/分享三个图标同色，由父级继承；.pstat__text 自己声明了 --c-ink-3 */
+    line-height: var(--lh-none);
+    /* 点赞/评论/分享三个图标同色，由父级继承；数字也继承，选中时一起变红 */
     color: var(--c-ink-3);
 
-    /* 点赞选中：原来靠 tn-icon 的 :color 动态传 var()，那条路走不通（tn-icon 只认 tn-* / hex）。
-       改成状态类，图标和文字一起变红。 */
+    /* 点赞选中：状态类控制图标 + 数字，不走 tn-icon 的 :color（只认 hex/tn-*） */
     &.is-liked {
         color: var(--c-danger);
     }
 
-    &__text {
+    &__icon {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 140ms var(--ease-out);
+    }
+
+    /* 只有图标自身微缩，卡片与字号都不动 */
+    &.is-pressing .pstat__icon {
+        transform: scale(0.84);
+    }
+
+    &__num {
         font-size: var(--fs-20);
-        color: var(--c-ink-3);
     }
 
     &--share {
@@ -1342,10 +1514,6 @@ onUnload(() => {
         &::after {
             border: 0;
         }
-    }
-
-    &.is-liked .pstat__text {
-        color: var(--c-danger);
     }
 }
 
@@ -1358,7 +1526,7 @@ onUnload(() => {
     color: var(--c-ink-3);
     margin-top: 21rpx;
     padding: 25rpx;
-    border-radius: var(--r-27);
+    border-radius: var(--r-16);
     border: 1rpx solid var(--c-line-strong);
     background: var(--c-surface-2);
 
@@ -1375,7 +1543,7 @@ onUnload(() => {
         font-family: var(--font-serif);
         font-size: var(--fs-37);
         color: var(--c-brand-text);
-        line-height: 1.1;
+        line-height: var(--lh-tight);
     }
 
     &__date-w {

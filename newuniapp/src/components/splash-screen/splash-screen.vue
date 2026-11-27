@@ -23,7 +23,7 @@
         <!-- 右上角跳过：仅配置了跳转目标时出现，遵循同一套 skip_mode / skip_delay 可点击时机 -->
         <view
             v-if="showAd && hasLink"
-            class="splash__skip"
+            class="splash__skip hit-88"
             :class="{ 'is-disabled': !buttonEnabled }"
             :style="{ top: skipTop }"
             :hover-class="buttonEnabled ? 'is-pressed' : 'none'"
@@ -66,41 +66,44 @@
             <button
                 v-if="showAd && buttonEnabled && isContactLink"
                 open-type="contact"
-                class="splash__cta splash__cta--btn"
-                hover-class="is-pressed"
+                class="splash__cta splash__cta--btn press-spring"
+                hover-class="is-pressing"
+                :hover-stay-time="90"
                 @tap="finish"
             >
                 <text class="splash__cta-text">{{ buttonLabel }}</text>
-                <text v-if="autoEnter" class="splash__cta-count">
+                <text v-if="autoEnter" class="splash__cta-count t-num">
                     {{ left }}s
                 </text>
             </button>
             <view
                 v-else
-                class="splash__cta"
+                class="splash__cta press-spring"
                 :class="{ 'is-disabled': !buttonEnabled }"
-                :hover-class="buttonEnabled ? 'is-pressed' : 'none'"
+                :hover-class="buttonEnabled ? 'is-pressing' : 'none'"
+                :hover-stay-time="90"
                 aria-role="button"
                 :aria-disabled="!buttonEnabled"
                 @tap="onCta"
             >
                 <text class="splash__cta-text">{{ buttonLabel }}</text>
-                <text v-if="buttonEnabled && autoEnter && showAd" class="splash__cta-count">
+                <text v-if="buttonEnabled && autoEnter && showAd" class="splash__cta-count t-num">
                     {{ left }}s
                 </text>
             </view>
             <!-- #endif -->
             <!-- #ifndef MP-WEIXIN -->
             <view
-                class="splash__cta"
+                class="splash__cta press-spring"
                 :class="{ 'is-disabled': !buttonEnabled }"
-                :hover-class="buttonEnabled ? 'is-pressed' : 'none'"
+                :hover-class="buttonEnabled ? 'is-pressing' : 'none'"
+                :hover-stay-time="90"
                 aria-role="button"
                 :aria-disabled="!buttonEnabled"
                 @tap="onCta"
             >
                 <text class="splash__cta-text">{{ buttonLabel }}</text>
-                <text v-if="buttonEnabled && autoEnter && showAd" class="splash__cta-count">
+                <text v-if="buttonEnabled && autoEnter && showAd" class="splash__cta-count t-num">
                     {{ left }}s
                 </text>
             </view>
@@ -141,6 +144,7 @@ import {
     resolveSplash
 } from '@/utils/splash'
 import { bootTrace } from '@/utils/boot-trace'
+import { haptic } from '@/utils/haptics'
 
 /** 首次安装（无缓存）最多等配置的时间，超过就露出首页 */
 const BOOT_TIMEOUT = 800
@@ -263,12 +267,14 @@ function startAd(next: SplashAdContent) {
 /** 右上角跳过：直接进入首页，不触发开屏跳转 */
 function onSkip() {
     if (!buttonEnabled.value) return
+    haptic('light', 'splash-skip')
     finish()
 }
 
 /** 主按钮 / 主图点击：可点击时关闭开屏；若配置了跳转目标则同步打开 */
 function onCta() {
     if (!buttonEnabled.value) return
+    haptic('light', 'splash-cta')
     const target = content.value.link
     finish()
     if (isDecorateLinkConfigured(target)) {
@@ -445,22 +451,35 @@ onBeforeUnmount(stopTimers)
         padding: 0 var(--sp-6);
         border-radius: var(--r-pill);
         background: var(--c-surface);
-        box-shadow: 0 12rpx 32rpx rgba(24, 22, 20, 0.32);
-        transition: opacity 0.2s ease;
+        box-shadow: var(--shadow-float);
+        transition: opacity var(--dur-fast) var(--ease-out),
+            transform var(--dur-release) var(--ease-spring-soft);
 
+        &.is-pressing {
+            transform: scale(0.96);
+            transition-duration: var(--dur-press);
+            transition-timing-function: var(--ease-out);
+        }
+
+        /* 未到可点击时间：仍用语义表面色，只降透明度并换次级文字色，不再写暖白 rgba */
         &.is-disabled {
-            background: rgba(255, 253, 248, 0.72);
+            background: var(--c-surface);
+            opacity: 0.72;
             box-shadow: none;
 
             .splash__cta-text {
-                color: rgba(24, 22, 20, 0.52);
+                color: var(--c-ink-2);
+            }
+
+            .splash__cta-count {
+                color: var(--c-ink-3);
             }
         }
 
         &--btn {
             margin: 0;
             border: none;
-            line-height: 1;
+            line-height: var(--lh-none);
             font-size: inherit;
             &::after {
                 border: none;
@@ -479,6 +498,17 @@ onBeforeUnmount(stopTimers)
         font-weight: var(--fw-semibold);
         letter-spacing: 0.04em;
         color: var(--c-ink);
+    }
+}
+
+/* v10 §3.13：减弱动效下不缩放、不渐变 */
+@media (prefers-reduced-motion: reduce) {
+    .splash__cta {
+        transition: none;
+
+        &.is-pressing {
+            transform: none;
+        }
     }
 }
 </style>

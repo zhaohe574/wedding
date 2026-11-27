@@ -59,7 +59,10 @@
 
         <template v-else>
             <view v-if="hasData && (loading || statusLoading)" class="cal__progress" />
-            <view class="cal__grid" :class="{ 'is-loading': loading && hasData }">
+            <view
+                class="cal__grid"
+                :class="[{ 'is-loading': loading && hasData }, gridAnimClass]"
+            >
                 <view
                     v-for="cell in cells"
                     :key="cell.key"
@@ -115,7 +118,8 @@
  * 今天到 minSelectable 之前为提前期：不可点、无状态点；今天格显示「今」。
  * 月历不显示农历小字，农历只在已选日期行出现（35 个农历字会让网格密度翻倍）。
  */
-import { computed } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { haptic } from '@/utils/haptics'
 import type { CalendarMeta, DayAvailability, DayStatus } from './types'
 
 const props = withDefaults(
@@ -265,6 +269,36 @@ const cells = computed<Cell[]>(() => {
 /** 当月是否含提前期锁定日：决定「最早可订」注记是否出现 */
 const hasLocked = computed(() => cells.value.some((c) => c.classes['is-locked']))
 
+/* ---- 翻月位移淡入（§4.3）：不加 3D 翻转，只做 24rpx 横移 + 淡入 ---- */
+const gridAnimClass = ref('')
+let gridTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(
+    () => [props.year, props.month],
+    (next, prev) => {
+        const [y, m] = next
+        const [py, pm] = prev || []
+        if (y === py && m === pm) return
+        const dir = y * 12 + m > py * 12 + pm ? 'next' : 'prev'
+        if (gridTimer) {
+            clearTimeout(gridTimer)
+            gridTimer = null
+        }
+        gridAnimClass.value = ''
+        nextTick(() => {
+            gridAnimClass.value = `is-enter-${dir}`
+            gridTimer = setTimeout(() => {
+                gridAnimClass.value = ''
+                gridTimer = null
+            }, 280)
+        })
+    }
+)
+
+onUnmounted(() => {
+    if (gridTimer) clearTimeout(gridTimer)
+})
+
 const minNote = computed(() => {
     const [, m, d] = props.minSelectable.split('-')
     return `${Number(m)}.${Number(d)}`
@@ -274,6 +308,7 @@ const showMinNote = computed(() => hasLocked.value && !!props.minSelectable)
 
 function onCell(cell: Cell) {
     if (!cell.date || cell.disabled) return
+    haptic('light', 'cal-day')
     emit('select', cell.date)
 }
 </script>
@@ -323,13 +358,16 @@ function onCell(cell: Cell) {
     &__nav {
         display: flex;
         align-items: center;
-        gap: 2rpx;
+        gap: 0;
         flex: none;
     }
 
+    /* 视觉 56rpx，热区 88rpx：负 margin 让按钮只占 56rpx 布局宽，
+       相邻两颗热区首尾相接，翻月不会点空 */
     &__nav-btn {
-        width: 56rpx;
-        height: 56rpx;
+        width: 88rpx;
+        height: 88rpx;
+        margin: 0 -16rpx;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -340,8 +378,8 @@ function onCell(cell: Cell) {
     }
 
     &__today {
-        height: 56rpx;
-        line-height: 56rpx;
+        height: 88rpx;
+        line-height: 88rpx;
         padding: 0 12rpx;
         font-size: var(--fs-21);
         color: var(--c-brand-text);
@@ -373,6 +411,15 @@ function onCell(cell: Cell) {
 
         &.is-loading {
             opacity: 0.4;
+        }
+
+        /* 翻月：仅横移 + 淡入，不做 3D 翻转（信息密度高，翻转会晕） */
+        &.is-enter-next {
+            animation: cal-grid-next 240ms var(--ease-out);
+        }
+
+        &.is-enter-prev {
+            animation: cal-grid-prev 240ms var(--ease-out);
         }
     }
 
@@ -407,6 +454,8 @@ function onCell(cell: Cell) {
         &.is-selected .cal__day {
             background: var(--c-active-bg);
             box-shadow: inset 0 0 0 1rpx var(--c-active-border);
+            /* 选中日弹性放大：0.84 → 1.08 → 1（320ms） */
+            animation: cal-day-pop 320ms var(--ease-spring);
         }
 
         &.is-selected .cal__day-num {
@@ -583,8 +632,47 @@ function onCell(cell: Cell) {
     }
 }
 
+@keyframes cal-day-pop {
+    0% {
+        transform: scale(0.84);
+    }
+    55% {
+        transform: scale(1.08);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes cal-grid-next {
+    from {
+        opacity: 0.35;
+        transform: translate3d(24rpx, 0, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes cal-grid-prev {
+    from {
+        opacity: 0.35;
+        transform: translate3d(-24rpx, 0, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .cal__sk {
+        animation: none;
+    }
+    .cal__cell.is-selected .cal__day,
+    .cal__grid.is-enter-next,
+    .cal__grid.is-enter-prev {
         animation: none;
     }
 }

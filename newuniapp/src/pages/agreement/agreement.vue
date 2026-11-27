@@ -26,7 +26,7 @@
                          教用户怎么读的元指令，不是内容；用户点进协议页已表明要读。
                          §3-6③：正文去掉 base-card 包裹——卡片自带 --sp-4 内边距，
                          正文又有自己的内边距，两层叠加让阅读区变窄；v2 里长文本正文不套卡片。 -->
-                    <text class="agree-page__title">{{ title }}</text>
+                    <text class="agree-page__title t-balance">{{ title }}</text>
                 </view>
                 <u-parse class="agree-page__content" :html="content" />
             </view>

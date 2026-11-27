@@ -1,47 +1,32 @@
 <template>
-    <tn-popup
-        :model-value="open"
-        open-direction="bottom"
-        :radius="24"
-        :safe-area-inset-bottom="true"
-        @update:model-value="onVisible"
-        @close="close"
-    >
-        <view class="sheet">
-            <view class="sheet__head">
-                <text class="sheet__title">服务类型</text>
-                <tn-icon name="close" :size="34" @tap="close" />
-            </view>
-
-            <scroll-view class="sheet__scroll" scroll-y>
-                <view
-                    hover-class="is-pressed"
-                    class="row"
-                    :class="{ 'is-on': modelValue === 0 }"
-                    @tap="select(0)"
-                >
-                    <text class="row__name">全部类型</text>
-                    <tn-icon v-if="modelValue === 0" name="check" :size="26" />
-                </view>
-                <view
-                    v-for="c in categories"
-                    :key="c.id"
-                    hover-class="is-pressed"
-                    class="row"
-                    :class="{ 'is-on': modelValue === c.id }"
-                    @tap="select(c.id)"
-                >
-                    <text class="row__name">{{ c.name }}</text>
-                    <tn-icon v-if="modelValue === c.id" name="check" :size="26" />
-                </view>
-            </scroll-view>
-
-            <view v-if="!categories.length && !loading" class="tip">
-                <text class="tip__text">服务类型没加载出来</text>
-                <text class="tip__link" @tap="emit('retry')">重试</text>
-            </view>
+    <!-- 服务类型：磁吸半屏抽屉（v10 §4.3）。标题/关闭由 snap-sheet 统一承担 -->
+    <snap-sheet :model-value="open" title="服务类型" @update:model-value="onVisible">
+        <view
+            hover-class="is-pressed"
+            class="row"
+            :class="{ 'is-on': modelValue === 0 }"
+            @tap="select(0)"
+        >
+            <text class="row__name">全部类型</text>
+            <tn-icon v-if="modelValue === 0" name="check" :size="26" />
         </view>
-    </tn-popup>
+        <view
+            v-for="c in categories"
+            :key="c.id"
+            hover-class="is-pressed"
+            class="row"
+            :class="{ 'is-on': modelValue === c.id }"
+            @tap="select(c.id)"
+        >
+            <text class="row__name">{{ c.name }}</text>
+            <tn-icon v-if="modelValue === c.id" name="check" :size="26" />
+        </view>
+
+        <view v-if="!categories.length && !loading" class="tip">
+            <text class="tip__text">服务类型没加载出来</text>
+            <text class="tip__link" @tap="emit('retry')">重试</text>
+        </view>
+    </snap-sheet>
 </template>
 
 <script setup lang="ts">
@@ -52,6 +37,8 @@
  * （admin/src/views/staff/lists/edit.vue:98），人员可以被绑到父级分类上；
  * 若改成「只允许选叶子」，绑父级的人会静默消失（不报错、不提示）。
  * 反向问题（人员绑二级、选一级查不到）是既有问题，记录为技术债，不在本次处理。
+ *
+ * 外壳已从 tn-popup 换成 snap-sheet；props / emits 与单选逻辑保持不变。
  */
 withDefaults(
     defineProps<{
@@ -83,34 +70,13 @@ function close() {
     emit('update:open', false)
 }
 
+/** snap-sheet 的遮罩/下滑关闭统一回调到这里，保证父级 open 同步 */
 function onVisible(v: boolean) {
     if (!v) close()
 }
 </script>
 
 <style lang="scss" scoped>
-.sheet {
-    padding: 30rpx 42rpx calc(24rpx + var(--safe-bottom));
-
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        color: var(--c-ink-3);
-        padding-bottom: 12rpx;
-    }
-
-    &__title {
-        font-size: var(--fs-30);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__scroll {
-        max-height: 62vh;
-    }
-}
-
 .row {
     display: flex;
     align-items: center;

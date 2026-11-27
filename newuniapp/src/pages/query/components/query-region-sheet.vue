@@ -1,37 +1,31 @@
 <template>
-    <tn-popup
+    <!-- 服务地区：可拖到全屏的磁吸抽屉（v10 §4.3）。标题/关闭由 snap-sheet 承担 -->
+    <snap-sheet
         :model-value="open"
-        open-direction="bottom"
-        :radius="24"
-        :safe-area-inset-bottom="true"
+        title="服务地区"
+        :enable-full="true"
+        :has-foot="true"
         @update:model-value="onVisible"
-        @close="close"
     >
-        <view class="sheet">
-            <view class="sheet__head">
-                <view class="sheet__head-main">
-                    <text class="sheet__title">服务地区</text>
-                    <text class="sheet__path" :class="{ 'is-empty': !hasSelectionPath }">
-                        {{ pathText }}
-                    </text>
-                </view>
-                <view class="sheet__close" hover-class="is-pressed" aria-label="关闭" @tap="close">
-                    <tn-icon name="close" :size="34" />
-                </view>
-            </view>
+        <!-- 已选路径放正文顶部：半屏时也能一眼看到当前省市区 -->
+        <view class="sheet__path-wrap">
+            <text class="sheet__path" :class="{ 'is-empty': !hasSelectionPath }">
+                {{ pathText }}
+            </text>
+        </view>
 
-            <view v-if="loading && !tree.length" class="state">
-                <text class="state__text">地区加载中…</text>
-            </view>
+        <view v-if="loading && !tree.length" class="state">
+            <text class="state__text">地区加载中…</text>
+        </view>
 
-            <view v-else-if="error || !tree.length" class="state">
-                <text class="state__text">地区数据没加载出来</text>
-                <text class="state__retry" hover-class="is-pressed" @tap="emit('retry')">
-                    点击重试
-                </text>
-            </view>
+        <view v-else-if="error || !tree.length" class="state">
+            <text class="state__text">地区数据没加载出来</text>
+            <text class="state__retry" hover-class="is-pressed" @tap="emit('retry')">
+                点击重试
+            </text>
+        </view>
 
-            <view v-else class="cols">
+        <view v-else class="cols">
                 <view class="cols__head">
                     <text class="cols__head-cell cols__head-cell--prov">省份</text>
                     <text class="cols__head-cell cols__head-cell--city">城市</text>
@@ -125,11 +119,10 @@
                 </view>
             </view>
 
-            <view class="sheet__foot">
+            <template #foot>
                 <text class="sheet__tip">选到区县后自动生效，价格与服务范围按区县计算</text>
-            </view>
-        </view>
-    </tn-popup>
+            </template>
+    </snap-sheet>
 </template>
 
 <script setup lang="ts">
@@ -324,72 +317,35 @@ function onVisible(v: boolean) {
 </script>
 
 <style lang="scss" scoped>
-.sheet {
-    background: var(--c-surface);
+/* 模板里已没有 .sheet 包裹节点：这些类直接挂在 snap-sheet 的 body/foot 插槽内，
+   选择器必须是顶层平铺的完整类名，不能再嵌套在 .sheet { &__x } 里 */
+.sheet__path-wrap {
+    padding-bottom: 16rpx;
+}
+
+/* 已选路径：正文顶部一行，半屏时也能核对省市区 */
+.sheet__path {
+    display: block;
+    font-size: var(--fs-20);
+    color: var(--c-brand-text);
     overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--sp-2);
-        padding: 30rpx 42rpx 20rpx;
-        color: var(--c-ink-3);
-    }
-
-    &__head-main {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 6rpx;
-    }
-
-    &__title {
-        font-size: var(--fs-30);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__path {
-        font-size: var(--fs-20);
-        color: var(--c-brand-text);
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-
-        &.is-empty {
-            color: var(--c-ink-3);
-        }
-    }
-
-    &__close {
-        flex: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 72rpx;
-        height: 72rpx;
-        margin: -12rpx -12rpx -12rpx 0;
-    }
-
-    &__foot {
-        padding: 18rpx 42rpx calc(20rpx + var(--safe-bottom));
-        border-top: 1rpx solid var(--c-line);
-        background: var(--c-surface);
-    }
-
-    &__tip {
-        display: block;
-        font-size: var(--fs-18);
-        line-height: var(--lh-body);
+    &.is-empty {
         color: var(--c-ink-3);
     }
 }
 
+.sheet__tip {
+    display: block;
+    font-size: var(--fs-18);
+    line-height: var(--lh-body);
+    color: var(--c-ink-3);
+}
+
 .state {
-    height: 460rpx;
-    padding: 0 42rpx;
+    height: 32vh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -449,8 +405,8 @@ function onVisible(v: boolean) {
         display: flex;
         align-items: stretch;
         width: 100%;
-        height: 560rpx;
-        max-height: 54vh;
+        /* 半屏抽屉可视高度有限：三栏固定 40vh，全屏时也不会无限拉长 */
+        height: 40vh;
         overflow: hidden;
     }
 }
