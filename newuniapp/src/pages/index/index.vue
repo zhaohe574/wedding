@@ -1439,8 +1439,7 @@ onShareAppMessage(() =>
     height: 168rpx;
     overflow: hidden;
     border-radius: var(--r-md);
-    background: var(--c-dark-2);
-    border: 1rpx solid var(--c-card-border);
+    background: var(--c-neutral-bg);
     box-shadow: var(--shadow-card);
     box-sizing: border-box;
 
