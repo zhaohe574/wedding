@@ -259,13 +259,22 @@
                         class="pstat"
                         :class="{ 'is-liked': isLiked(post) }"
                         hover-class="pstat--pressed"
+                        :hover-start-time="20"
                         :hover-stop-propagation="true"
                         aria-role="button"
                         :aria-label="isLiked(post) ? '取消点赞' : '点赞'"
                         @tap.stop="onLike(post)"
                     >
                         <view class="pstat__icon">
-                            <tn-icon :name="isLiked(post) ? 'like-fill' : 'like'" :size="29" />
+                            <view
+                                class="pstat__heart"
+                                :class="{ 'is-pop': likePopId === post.id }"
+                            >
+                                <tn-icon
+                                    :name="isLiked(post) ? 'like-fill' : 'like'"
+                                    :size="29"
+                                />
+                            </view>
                             <like-burst :active="isLiked(post)" />
                         </view>
                         <rolling-number class="pstat__num" :value="post.like_count || 0" />
@@ -330,7 +339,7 @@
  *  · 视频只出静帧，点进详情播放（列表内联播放会同时出声、耗流量）。
  *  · 只读：没有发布入口、没有编辑/删除入口。
  */
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShareAppMessage, onShow, onUnload } from '@dcloudio/uni-app'
 import { getCaseList, toggleCaseLike } from '@/api/content'
 import { normalizePage, toArray } from '@/request'
@@ -432,6 +441,32 @@ const loadMoreFailed = ref(false)
 /** 未登录时点了赞：记下 id，登录回来补执行（02 §P） */
 const pendingLikeId = ref(0)
 
+/* ---- 点赞图标弹跳：只让爱心自己跳，卡片与数字都不动 ---- */
+const likePopId = ref(0)
+let likePopTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearLikePopTimer() {
+    if (!likePopTimer) return
+    clearTimeout(likePopTimer)
+    likePopTimer = null
+}
+
+/**
+ * 先清 id 再下一拍设回去：同一个动态连点两次时，false → true 的跳变才能重启动画，
+ * 直接重复赋同一个 id 不会重新触发 keyframes。
+ */
+function triggerLikePop(id: number) {
+    clearLikePopTimer()
+    likePopId.value = 0
+    nextTick(() => {
+        likePopId.value = id
+        likePopTimer = setTimeout(() => {
+            likePopId.value = 0
+            likePopTimer = null
+        }, 460)
+    })
+}
+
 const sortLabel = computed(() => SORTS.find((s) => s.key === sortKey.value)?.label || '最新')
 
 /* ---- 液态分段筛选（§4.2）：指示块按百分比对齐，分类数量变化也自动适配 ---- */
@@ -470,6 +505,7 @@ watch(
 
 onUnmounted(() => {
     if (staggerTimer) clearTimeout(staggerTimer)
+    clearLikePopTimer()
 })
 
 const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
@@ -771,6 +807,12 @@ async function onLike(post: FeedRow) {
     }
     haptic('light', 'like')
     const liked = isLiked(post)
+    // 只有「无 → 有」才让爱心跳一下；取消点赞立即收住，不残留动画
+    if (!liked) triggerLikePop(post.id)
+    else if (likePopId.value === post.id) {
+        clearLikePopTimer()
+        likePopId.value = 0
+    }
     // 乐观更新：先变色变数，失败回滚；同时写会话快照，详情页读同一份状态
     post.is_liked = !liked
     post.like_count = Math.max(0, Number(post.like_count || 0) + (liked ? -1 : 1))
@@ -787,6 +829,11 @@ async function onLike(post: FeedRow) {
         post.is_liked = liked
         post.like_count = Math.max(0, Number(post.like_count || 0) + (liked ? 1 : -1))
         interactionStore.setDynamicLike(post.id, liked, post.like_count)
+        // 回滚后把弹跳一起收掉，避免「没点成却跳了一下」
+        if (likePopId.value === post.id) {
+            clearLikePopTimer()
+            likePopId.value = 0
+        }
         toast.error('点赞没成功，再点一次')
     }
 }
@@ -1500,7 +1547,20 @@ onShareAppMessage((res: any) => {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        /* 微粒与光环会飞出图标边界，不能被裁掉 */
+        overflow: visible;
         transition: transform 140ms var(--ease-out);
+    }
+
+    /* 爱心本体：单独一层承载弹跳，图标、数字与微粒都不跟着变形 */
+    &__heart {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        &.is-pop {
+            animation: feed-heart-pop 420ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
     }
 
     /* 只有图标自身微缩，卡片与字号都不动 */
@@ -1517,6 +1577,22 @@ onShareAppMessage((res: any) => {
         &::after {
             border: 0;
         }
+    }
+}
+
+/* 爱心弹跳曲线：先压一下再冲高，回落时略过冲，最后归位 */
+@keyframes feed-heart-pop {
+    0% {
+        transform: scale(0.72);
+    }
+    42% {
+        transform: scale(1.34);
+    }
+    72% {
+        transform: scale(0.92);
+    }
+    100% {
+        transform: scale(1);
     }
 }
 
@@ -1605,6 +1681,12 @@ onShareAppMessage((res: any) => {
         font-size: var(--fs-18);
         letter-spacing: 0.2em;
         color: var(--c-ink-3);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pstat__heart.is-pop {
+        animation: none;
     }
 }
 </style>

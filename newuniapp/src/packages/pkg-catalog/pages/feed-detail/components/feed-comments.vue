@@ -54,7 +54,9 @@
                         aria-role="button"
                         @tap="onLike(c)"
                     >
-                        <tn-icon :name="c.is_liked ? 'like-fill' : 'like'" :size="22" />
+                        <view class="cm__like-ic" :class="{ 'is-pop': popCommentId === c.id }">
+                            <tn-icon :name="c.is_liked ? 'like-fill' : 'like'" :size="22" />
+                        </view>
                         <text class="cm__like-num t-num">{{ c.like_count || 0 }}</text>
                     </view>
                     <view
@@ -130,10 +132,15 @@
                                         aria-role="button"
                                         @tap="onLike(r)"
                                     >
-                                        <tn-icon
-                                            :name="r.is_liked ? 'like-fill' : 'like'"
-                                            :size="20"
-                                        />
+                                        <view
+                                            class="cm__like-ic"
+                                            :class="{ 'is-pop': popCommentId === r.id }"
+                                        >
+                                            <tn-icon
+                                                :name="r.is_liked ? 'like-fill' : 'like'"
+                                                :size="20"
+                                            />
+                                        </view>
                                         <text class="cm__like-num t-num">{{
                                             r.like_count || 0
                                         }}</text>
@@ -185,7 +192,9 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick, onUnmounted, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { useUserStore } from '@/stores/user'
 import type { CommentRow, ReplyState } from '../useFeedComments'
 
 defineProps<{
@@ -208,12 +217,37 @@ const emit = defineEmits<{
 }>()
 
 const appStore = useAppStore()
+const userStore = useUserStore()
+
+/* ---- 评论爱心弹跳：按行 id 记录，只有被点的那一行跳 ---- */
+const popCommentId = ref(0)
+let popTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearPopTimer() {
+    if (!popTimer) return
+    clearTimeout(popTimer)
+    popTimer = null
+}
+
+onUnmounted(clearPopTimer)
 
 function onSwitchSort(next: 'hot' | 'new') {
     emit('switchSort', next)
 }
 
 function onLike(row: CommentRow) {
+    // 只在「登录后点成赞」时跳；取消赞与未登录去登录都不跳
+    if (userStore.isLogin && !row.is_liked) {
+        clearPopTimer()
+        popCommentId.value = 0
+        nextTick(() => {
+            popCommentId.value = Number(row.id)
+            popTimer = setTimeout(() => {
+                popCommentId.value = 0
+                popTimer = null
+            }, 380)
+        })
+    }
     emit('like', row)
 }
 
@@ -513,9 +547,39 @@ function imgUrl(url?: string) {
         }
     }
 
+    /* 爱心本体：单独一层承载弹跳，数字与热区都不变形 */
+    &__like-ic {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        &.is-pop {
+            animation: cm-heart-pop 380ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+    }
+
     &__like-num {
         font-size: var(--fs-19);
         color: inherit;
+    }
+}
+
+/* 评论爱心弹跳：幅度比主点赞小一档，评论区不抢视觉重心 */
+@keyframes cm-heart-pop {
+    0% {
+        transform: scale(0.75);
+    }
+    45% {
+        transform: scale(1.3);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cm__like-ic.is-pop {
+        animation: none;
     }
 }
 </style>

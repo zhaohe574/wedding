@@ -194,13 +194,19 @@
                         class="bar__act"
                         :class="{ 'is-on': post.is_liked }"
                         hover-class="is-pressed"
+                        :hover-start-time="20"
                         :hover-stop-propagation="true"
                         aria-role="button"
                         :aria-label="post.is_liked ? '取消点赞' : '点赞'"
                         @tap="onLikePost"
                     >
                         <view class="bar__act-icon">
-                            <tn-icon :name="post.is_liked ? 'like-fill' : 'like'" :size="30" />
+                            <view class="bar__act-heart" :class="{ 'is-pop': likePopping }">
+                                <tn-icon
+                                    :name="post.is_liked ? 'like-fill' : 'like'"
+                                    :size="30"
+                                />
+                            </view>
                             <like-burst :active="!!post.is_liked" />
                         </view>
                         <view class="bar__act-text">
@@ -234,7 +240,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onUnmounted, ref } from 'vue'
 import { onLoad, onReachBottom, onShareAppMessage } from '@dcloudio/uni-app'
 import { getCaseDetail, toggleCaseLike } from '@/api/content'
 import { navigate } from '@/utils/link'
@@ -432,6 +438,30 @@ function onVideoError(): void {
     toast.error('视频加载失败，请稍后重试')
 }
 
+/* ---- 底栏爱心弹跳：先复位再下一拍置 true，同一图标连点也能重启动画 ---- */
+const likePopping = ref(false)
+let likePopTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearLikePopTimer() {
+    if (!likePopTimer) return
+    clearTimeout(likePopTimer)
+    likePopTimer = null
+}
+
+function triggerLikePop() {
+    clearLikePopTimer()
+    likePopping.value = false
+    nextTick(() => {
+        likePopping.value = true
+        likePopTimer = setTimeout(() => {
+            likePopping.value = false
+            likePopTimer = null
+        }, 460)
+    })
+}
+
+onUnmounted(clearLikePopTimer)
+
 async function onLikePost() {
     if (!userStore.isLogin) {
         navigate({ path: '/pages/login/login' })
@@ -441,6 +471,11 @@ async function onLikePost() {
     if (!p) return
     haptic('light', 'feed-like')
     const liked = !p.is_liked
+    if (liked) triggerLikePop()
+    else {
+        clearLikePopTimer()
+        likePopping.value = false
+    }
     p.is_liked = liked
     p.like_count = Math.max(0, Number(p.like_count || 0) + (liked ? 1 : -1))
     interactionStore.setDynamicLike(p.id, p.is_liked, p.like_count)
@@ -456,6 +491,9 @@ async function onLikePost() {
         p.is_liked = !liked
         p.like_count = Math.max(0, Number(p.like_count || 0) + (liked ? -1 : 1))
         interactionStore.setDynamicLike(p.id, p.is_liked, p.like_count)
+        // 失败回滚：弹跳一起收掉，不留下「跳了但没点成」的错觉
+        clearLikePopTimer()
+        likePopping.value = false
         toast.error('点赞没成功，再点一次')
     }
 }
@@ -878,6 +916,19 @@ onShareAppMessage(() =>
         display: flex;
         align-items: center;
         justify-content: center;
+        /* 微粒与光环会飞出图标边界，不能被裁掉 */
+        overflow: visible;
+    }
+
+    /* 爱心本体：单独一层承载弹跳，底栏其它元素不跟着变形 */
+    &__act-heart {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        &.is-pop {
+            animation: detail-heart-pop 420ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
     }
 
     &__act-text {
@@ -891,5 +942,27 @@ onShareAppMessage(() =>
 }
 .ic-ink-2 {
     color: var(--c-ink-2);
+}
+
+/* 爱心弹跳曲线（与列表页同一节奏）：压 → 冲高 → 回落 → 归位 */
+@keyframes detail-heart-pop {
+    0% {
+        transform: scale(0.72);
+    }
+    42% {
+        transform: scale(1.34);
+    }
+    72% {
+        transform: scale(0.92);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bar__act-heart.is-pop {
+        animation: none;
+    }
 }
 </style>
