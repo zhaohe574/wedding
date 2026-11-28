@@ -57,11 +57,12 @@
 <script setup lang="ts">
 /** 关于我们：品牌信息 + 协议入口 + 备案信息 */
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { useAppStore } from '@/stores/app'
 import { useBrand } from '@/composables/useBrand'
 import { navigate } from '@/utils/link'
 import { isAllowedWebviewUrl } from '@/constants/domains'
+import { buildShare, buildTimelineShare, enableShareMenu } from '@/utils/share'
 import { toast } from '@/composables/useToast'
 
 const appStore = useAppStore()
@@ -98,6 +99,7 @@ function openCopyright(item: any) {
 }
 
 onLoad(() => {
+    enableShareMenu()
     try {
         const info = uni.getAccountInfoSync()
         version.value = (info as any)?.miniProgram?.version || '1.0.0'
@@ -107,6 +109,20 @@ onLoad(() => {
     // 关于页是「验品牌配置」最直观的一屏：进来补拉一次，后台改完名称/图标能立刻看到
     refreshBrand().catch(() => undefined)
 })
+
+/** 分享参数：标题用品牌名 + Slogan；好友卡片走品牌横图，朋友圈才用方形 LOGO */
+function aboutShareOptions() {
+    return {
+        title: brand.value.slogan
+            ? `${brand.value.name} · ${brand.value.slogan}`
+            : brand.value.name,
+        path: '/pages/about/about',
+        timelineImageUrl: brand.value.logo || undefined
+    }
+}
+
+onShareAppMessage(() => buildShare(aboutShareOptions()))
+onShareTimeline(() => buildTimelineShare(aboutShareOptions()))
 </script>
 
 <style lang="scss" scoped>

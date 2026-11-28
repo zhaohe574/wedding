@@ -144,7 +144,7 @@
  *  - 条件真源仍在这里；列表页只读，改条件必须返回本页。
  */
 import { computed, reactive, ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline, onShow } from '@dcloudio/uni-app'
 import {
     getAvailabilityOverview,
     getCategoryTree,
@@ -162,6 +162,7 @@ import { navigate, safeDecodeParam } from '@/utils/link'
 import { saveBookingContext } from '@/utils/booking-context'
 import { toast } from '@/composables/useToast'
 import cache from '@/utils/cache'
+import { buildShare, buildTimelineShare, enableShareMenu } from '@/utils/share'
 import { useTabQueryStore } from '@/stores/tabQuery'
 import { useBadgeStore } from '@/stores/badge'
 import { normalizePage } from '@/request'
@@ -1316,7 +1317,17 @@ function reconcile() {
 
 // ---------------------------------------------------------------- 生命周期
 
-onLoad(() => {
+onLoad((options?: Record<string, any>) => {
+    enableShareMenu()
+    // 分享卡片直达 tab 页：带条件时先写进中转，等规则就绪后由 applyPending 统一消费
+    const hasEntryQuery =
+        !!options &&
+        ['date', 'city_code', 'district_code', 'category_id', 'tag_ids', 'keyword'].some((key) => {
+            const value = options[key]
+            return value !== undefined && value !== ''
+        })
+    if (hasEntryQuery) tabQuery.setQuery('query', options as Record<string, any>)
+
     restore()
     // 规则未就绪时 applyPending 只返回 false，不会消费入口参数
     applyPending()
@@ -1341,6 +1352,38 @@ onShow(() => {
     }
     reconcile()
 })
+
+/**
+ * 分享参数：落地页仍是查档期 tab，日期 / 地区 / 类型 / 风格 / 关键词一起带回去，
+ * 接收方打开即可复现同一组查询条件。
+ */
+function queryShareOptions() {
+    const r = form.value.region
+    const query = {
+        ...(form.value.date ? { date: form.value.date } : {}),
+        ...(r
+            ? {
+                  province_code: r.provinceCode,
+                  province_name: r.provinceName,
+                  city_code: r.cityCode,
+                  city_name: r.cityName,
+                  district_code: r.districtCode,
+                  district_name: r.districtName
+              }
+            : {}),
+        ...(form.value.categoryId > 0 ? { category_id: form.value.categoryId } : {}),
+        ...(form.value.tagIds.length ? { tag_ids: form.value.tagIds.join(',') } : {}),
+        ...(form.value.keyword.trim() ? { keyword: form.value.keyword.trim() } : {})
+    }
+    const parts = [form.value.date, r?.districtName || r?.cityName || '', categoryName.value].filter(
+        Boolean
+    )
+    const title = parts.length ? `${parts.join(' · ')} · 档期查询` : '档期查询'
+    return { title, path: '/pages/query/query', query }
+}
+
+onShareAppMessage(() => buildShare(queryShareOptions()))
+onShareTimeline(() => buildTimelineShare(queryShareOptions()))
 </script>
 
 <style lang="scss" scoped>

@@ -157,7 +157,18 @@
                         {{ viewCount }} 浏览
                     </text>
                 </view>
-                <text class="card__title">{{ work.title || '精选作品' }}</text>
+                <view class="card__title-row">
+                    <text class="card__title">{{ work.title || '精选作品' }}</text>
+                    <button
+                        class="card__share hit-88"
+                        open-type="share"
+                        hover-class="is-pressed"
+                        aria-label="分享作品"
+                    >
+                        <tn-icon name="share" :size="26" class="card__share-ic" />
+                        <text class="card__share-text">分享</text>
+                    </button>
+                </view>
                 <text v-if="work.description" class="card__desc">{{ work.description }}</text>
             </view>
 
@@ -235,11 +246,11 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { getWorkDetail } from '@/api/catalog'
 import { report } from '@/platform/report'
 import { navigate } from '@/utils/link'
-import { buildShare } from '@/utils/share'
+import { buildShare, buildTimelineShare, enableShareMenu } from '@/utils/share'
 import { useAppStore } from '@/stores/app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 
@@ -402,21 +413,38 @@ async function load() {
 }
 
 onLoad((options: any) => {
-    workId.value = Number(options?.id || 0)
+    enableShareMenu()
+    workId.value = Number(options?.id || options?.work_id || 0)
     if (!workId.value) {
         loading.value = false
         return
     }
+    // 分享直达时全局配置可能还没拉过：补一次，品牌名 / 域名才能用于分享与图片
+    if (!appStore.configLoaded) appStore.getConfig().catch(() => undefined)
     load()
 })
 
-onShareAppMessage(() =>
-    buildShare({
-        title: String(work.value?.title || ''),
-        path: '/packages/pkg-catalog/pages/work-detail/work-detail?id=' + workId.value,
-        imageUrl: coverUrl.value || galleryImages.value[0] || undefined
-    })
-)
+/** 分享卡片：标题「作品名 · 创作者」，封面候选 = 封面图 → 图集 → 创作者头像 */
+function workShareOptions() {
+    const workTitle = String(work.value?.title || '').trim()
+    const author = String(staffInfo.value?.name || '').trim()
+    const title =
+        workTitle && author
+            ? `${workTitle} · ${author}`
+            : workTitle || (author ? `${author} 的精选作品` : '')
+    return {
+        title,
+        suffix: ' · 精选作品',
+        path: '/packages/pkg-catalog/pages/work-detail/work-detail',
+        query: { id: workId.value },
+        imageUrls: [coverUrl.value, ...galleryImages.value, staffAvatar.value],
+        timelineImageUrls: [coverUrl.value, ...galleryImages.value, staffAvatar.value]
+    }
+}
+
+onShareAppMessage(() => buildShare(workShareOptions()))
+
+onShareTimeline(() => buildTimelineShare(workShareOptions()))
 </script>
 
 <style lang="scss" scoped>
@@ -616,13 +644,50 @@ onShareAppMessage(() =>
         color: var(--c-warning);
     }
 
+    &__title-row {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+        margin-top: 16rpx;
+    }
+
     &__title {
         display: block;
-        margin-top: 16rpx;
+        flex: 1;
+        min-width: 0;
+        margin-top: 0;
         font-size: var(--fs-40);
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
         line-height: var(--lh-tight);
+    }
+
+    &__share {
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+        flex: none;
+        height: 52rpx;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        background: transparent;
+        color: var(--c-ink-3);
+        line-height: var(--lh-none);
+
+        &::after {
+            border: 0;
+        }
+    }
+
+    &__share-ic,
+    &__share-text {
+        color: inherit;
+    }
+
+    &__share-text {
+        font-size: var(--fs-20);
+        line-height: var(--lh-none);
     }
 
     &__desc {

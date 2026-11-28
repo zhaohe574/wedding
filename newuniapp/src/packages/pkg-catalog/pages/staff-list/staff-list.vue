@@ -365,7 +365,7 @@
  * 收藏接口读的是 id 字段（后端 toggleFavorite 用 $this->request->post('id/d')），不是 staff_id。
  */
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { getStaffList, toggleStaffFavorite, getCategoryTree } from '@/api/catalog'
 import { normalizePage } from '@/request'
 import { useAppStore } from '@/stores/app'
@@ -375,6 +375,7 @@ import { haptic } from '@/utils/haptics'
 import { regionParams, type RegionContext } from '@/utils/region'
 import { saveBookingContext } from '@/utils/booking-context'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { buildShare, buildTimelineShare, enableShareMenu } from '@/utils/share'
 import { FB } from '@/constants/feedback'
 
 // 排序值必须与后端 StaffLists::getOrderRaw 的 switch 分支一致，
@@ -821,6 +822,7 @@ function goBack() {
 }
 
 onLoad((options: any) => {
+    enableShareMenu()
     fromQuery.value = options?.from === 'query'
 
     date.value = options?.date ? String(options.date) : ''
@@ -860,6 +862,63 @@ function onRefresh(done: () => void) {
 function onReachBottomLoad() {
     fetchPage(false)
 }
+
+/**
+ * 分享候选图：跳过已加载失败的人（imgError），封面 / 头像各取前 5 张去重。
+ * 好友卡片优先横版封面，朋友圈优先清晰人像头像，两套顺序由调用方拼。
+ */
+function collectStaffListImages(): { covers: string[]; avatars: string[] } {
+    const covers: string[] = []
+    const avatars: string[] = []
+    for (const item of list.value) {
+        if (imgError.value[item.id]) continue
+        const cover = imageUrl(item.cover)
+        if (cover && covers.length < 5 && !covers.includes(cover)) covers.push(cover)
+        const avatar = imageUrl(item.avatar)
+        if (avatar && avatars.length < 5 && !avatars.includes(avatar)) avatars.push(avatar)
+    }
+    return { covers, avatars }
+}
+
+/**
+ * 分享参数：落地页仍是本列表，日期 / 地区 / 分类 / 风格 / 关键词一起带走，
+ * 接收方打开即是同一批可约人员。
+ */
+function staffListShareOptions() {
+    const catText =
+        categoryNameRaw.value ||
+        (categoryName.value && categoryName.value !== '分类' ? categoryName.value : '')
+    const region = currentRegion()
+    const query = {
+        ...(fromQuery.value ? { from: 'query' } : {}),
+        ...(date.value ? { date: date.value } : {}),
+        ...(categoryId.value > 0 ? { category_id: categoryId.value } : {}),
+        ...(catText ? { category_name: catText } : {}),
+        ...(keyword.value.trim() ? { keyword: keyword.value.trim() } : {}),
+        ...(tagIds.value.length ? { tag_ids: tagIds.value.join(',') } : {}),
+        ...regionParams(region)
+    }
+    const fallbackTitle = [
+        date.value,
+        districtName.value || cityName.value,
+        catText,
+        keyword.value.trim()
+    ]
+        .filter(Boolean)
+        .join(' · ')
+    const { covers, avatars } = collectStaffListImages()
+    return {
+        title: summaryText.value || fallbackTitle || '精选服务团队',
+        path: '/packages/pkg-catalog/pages/staff-list/staff-list',
+        query,
+        // 好友 5:4 先横版封面再回退头像；朋友圈 1:1 先清晰人像头像
+        imageUrls: [...covers, ...avatars],
+        timelineImageUrls: [...avatars, ...covers]
+    }
+}
+
+onShareAppMessage(() => buildShare(staffListShareOptions()))
+onShareTimeline(() => buildTimelineShare(staffListShareOptions()))
 </script>
 
 <style lang="scss" scoped>

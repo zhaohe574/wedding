@@ -94,9 +94,10 @@
  * 替代老端的「动态」：后端 dynamic/publish 已硬关闭，评论区在送审模式下也被禁用。
  */
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
-import { navigate, safeDecodeParam } from '@/utils/link'
+import { back, navigate, safeDecodeParam } from '@/utils/link'
+import { buildShare, buildTimelineShare, enableShareMenu } from '@/utils/share'
 import { FB } from '@/constants/feedback'
 import { getCaseList, getCaseHotTags } from '@/api/content'
 import { normalizePage } from '@/request'
@@ -124,7 +125,7 @@ function onPrimary() {
         return
     }
     if (kind === 'reselect' || kind === 'back') {
-        uni.navigateBack()
+        back()
         return
     }
     if (kind === 'login') {
@@ -197,6 +198,7 @@ function goQuery() {
 }
 
 onLoad(async (options: any) => {
+    enableShareMenu()
     const incomingTag = options?.tag ? safeDecodeParam(options.tag) : ''
     if (incomingTag) tag.value = incomingTag
     try {
@@ -219,6 +221,52 @@ function onRefresh(done: () => void) {
 function onReachBottomLoad() {
     fetchPage(false)
 }
+
+/**
+ * 案例分享候选图：字段口径不统一，逐条案例按
+ * cover → image → video_cover → media_cover → images[] 提取，归一化去重后取前 6 张。
+ */
+function collectCaseCovers(): string[] {
+    const urls: string[] = []
+    const normalize = (candidate: any): string => {
+        if (typeof candidate === 'string') return candidate
+        if (candidate && typeof candidate === 'object') {
+            return String(
+                candidate.url || candidate.image || candidate.path || candidate.src || ''
+            )
+        }
+        return ''
+    }
+    for (const item of list.value) {
+        const candidates: any[] = [
+            item.cover,
+            item.image,
+            item.video_cover,
+            item.media_cover
+        ]
+        if (Array.isArray(item.images)) candidates.push(...item.images)
+        for (const candidate of candidates) {
+            const url = imageUrl(normalize(candidate))
+            if (!url || urls.includes(url)) continue
+            urls.push(url)
+            if (urls.length >= 6) return urls
+        }
+    }
+    return urls
+}
+
+/** 分享参数：落地页仍是案例列表，选了分类就把 tag 带回去 */
+function caseListShareOptions() {
+    return {
+        title: tag.value ? `${tag.value} · 婚礼案例` : '精选婚礼案例',
+        path: '/packages/pkg-catalog/pages/case-list/case-list',
+        query: tag.value ? { tag: tag.value } : undefined,
+        imageUrls: collectCaseCovers()
+    }
+}
+
+onShareAppMessage(() => buildShare(caseListShareOptions()))
+onShareTimeline(() => buildTimelineShare(caseListShareOptions()))
 </script>
 
 <style lang="scss" scoped>

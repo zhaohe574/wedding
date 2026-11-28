@@ -400,7 +400,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline, onShow } from '@dcloudio/uni-app'
 import {
     findWidget,
     normalizeCustomerServiceContent,
@@ -422,6 +422,7 @@ import { resolveBookingContext } from '@/utils/booking-context'
 import { navigate } from '@/utils/link'
 import { report } from '@/platform/report'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { buildShare, buildTimelineShare, enableShareMenu } from '@/utils/share'
 import { toast } from '@/composables/useToast'
 
 const appStore = useAppStore()
@@ -814,6 +815,7 @@ function normalizeConsultScene(raw: string): ConsultScene {
 }
 
 onLoad((options?: Record<string, any>) => {
+    enableShareMenu()
     const sceneRaw = String(options?.scene || 'home').trim()
     const staffId = Number(options?.staff_id || options?.staffId || 0)
     const orderId = Number(options?.order_id || options?.orderId || 0)
@@ -825,6 +827,34 @@ onLoad((options?: Record<string, any>) => {
 })
 
 onShow(() => load(loaded.value))
+
+/**
+ * 分享参数。
+ *
+ * 隐私底线：订单场景进入的客服页，分享时必须降级为 home，且**绝不**携带 order_id ——
+ * 订单号是私有凭证，随卡片外泄等于把别人的订单信息送到陌生人手里。
+ */
+function serviceShareOptions() {
+    const isOrderScene =
+        consultParams.scene === 'order_detail' || (consultParams.scene as string) === 'order'
+    const publicScene = isOrderScene ? 'home' : consultParams.scene
+    const validAvatar = avatarUrl.value && !avatarFailed.value ? avatarUrl.value : ''
+    return {
+        title: contact.name ? `${contact.name} · ${roleBadge.value}` : '婚礼专属客服管家',
+        path: '/pages/customer-service/customer-service',
+        query: {
+            ...(publicScene && publicScene !== 'home' ? { scene: publicScene } : {}),
+            ...(consultParams.staff_id ? { staff_id: consultParams.staff_id } : {}),
+            ...(consultParams.category_id ? { category_id: consultParams.category_id } : {})
+        },
+        // 专属顾问展示顾问图；平台兜底客服不拉伸小头像，回落品牌首屏横图
+        imageUrls: entryType.value === 'advisor' && validAvatar ? [validAvatar] : [],
+        timelineImageUrls: validAvatar ? [validAvatar] : []
+    }
+}
+
+onShareAppMessage(() => buildShare(serviceShareOptions()))
+onShareTimeline(() => buildTimelineShare(serviceShareOptions()))
 </script>
 
 <style lang="scss" scoped>

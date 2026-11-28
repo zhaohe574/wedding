@@ -16,10 +16,13 @@
                     class="nav__back"
                     hover-class="is-pressed"
                     aria-role="button"
-                    :aria-label="backLabel"
+                    :aria-label="resolvedBackLabel"
                     @tap="onBack"
                 >
-                    <tn-icon name="left" :size="36" />
+                    <tn-icon
+                        :name="showHomeIcon ? 'home' : 'left'"
+                        :size="showHomeIcon ? 34 : 36"
+                    />
                 </view>
             </view>
 
@@ -217,8 +220,28 @@ watch(
     () => syncStatusBarColor(false, true)
 )
 
+/**
+ * 栈深状态：分享卡片 / 扫码直达的页面没有上一页，返回键点了只会回首页。
+ * 这种「根入口」把箭头换成房子图标，让「点一下会去哪」在视觉上先说清楚。
+ * getCurrentPages 在极早期偶发不可用，取值失败按非根页处理（保持常规返回箭头）。
+ */
+const isRootEntry = ref(false)
+
+function syncStackState() {
+    try {
+        isRootEntry.value = getCurrentPages().length <= 1
+    } catch {
+        isRootEntry.value = false
+    }
+}
+
+/** auto 模式 + 栈底：返回键承担「回到首页」语义；backMode='none' 的关闭语义不受影响 */
+const showHomeIcon = computed(() => props.backMode === 'auto' && isRootEntry.value)
+const resolvedBackLabel = computed(() => (showHomeIcon.value ? '回到首页' : props.backLabel))
+
 onMounted(() => {
     pageActive.value = true
+    syncStackState()
     syncStatusBarColor(false, false)
 })
 
@@ -226,6 +249,7 @@ onMounted(() => {
 // 必须按当前 effectiveTone 重设一次（force 跳过去重）。
 onShow(() => {
     pageActive.value = true
+    syncStackState()
     syncStatusBarColor(true, false)
 })
 

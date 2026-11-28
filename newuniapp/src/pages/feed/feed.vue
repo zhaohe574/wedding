@@ -340,13 +340,13 @@
  *  · 只读：没有发布入口、没有编辑/删除入口。
  */
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
-import { onLoad, onShareAppMessage, onShow, onUnload } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline, onShow, onUnload } from '@dcloudio/uni-app'
 import { getCaseList, toggleCaseLike } from '@/api/content'
 import { normalizePage, toArray } from '@/request'
 import { navigate, safeDecodeParam } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import { haptic } from '@/utils/haptics'
-import { buildShare } from '@/utils/share'
+import { buildShare, buildTimelineShare, enableShareMenu } from '@/utils/share'
 import { useUserStore } from '@/stores/user'
 import { useInteractionStore } from '@/stores/interaction'
 import { useTabQueryStore } from '@/stores/tabQuery'
@@ -923,9 +923,18 @@ function syncHiddenChange() {
 
 const onHiddenChanged = () => syncHiddenChange()
 
-onLoad(() => {
+onLoad((options?: Record<string, any>) => {
     lastHiddenSig = hiddenSignature()
     uni.$on('feed:hidden-changed', onHiddenChanged)
+    enableShareMenu()
+    // 分享卡片带着筛选参数直接落在 tab 页：先写进 tabQuery 中转，再由 applyPending 统一消费
+    const hasEntryQuery =
+        !!options &&
+        ['dynamic_type', 'order_by', 'tag', 'keyword'].some((key) => {
+            const value = options[key]
+            return value !== undefined && value !== ''
+        })
+    if (hasEntryQuery) tabQuery.setQuery('feed', options as Record<string, any>)
     applyPending()
     fetchList(true)
 })
@@ -959,6 +968,64 @@ onUnload(() => {
 })
 
 /**
+ * 单条动态的分享候选图：视频封面 → 未破图画廊图 → 补足未渲染的 image_urls → 媒体封面。
+ * 画廊里已加载失败的格子必须跳过，否则转发卡直接命中破图。
+ */
+function collectPostShareImages(post?: FeedRow): string[] {
+    if (!post) return []
+    const images: string[] = []
+    const mediaImages = post.media_images || []
+    if (post.video_cover) images.push(post.video_cover)
+    for (const img of mediaImages) {
+        if (!img.broken) images.push(img.url)
+    }
+    if (mediaImages.length) {
+        // 画廊只渲染前 9 张：仅补充没进画廊、也未被标记破图的 URL
+        const rendered = new Set(mediaImages.map((img) => img.url))
+        for (const url of post.image_urls || []) {
+            if (url && !rendered.has(url)) images.push(url)
+        }
+    } else {
+        images.push(...(post.image_urls || []))
+    }
+    if (post.media_cover) images.push(post.media_cover)
+    return [...new Set(images.map((url) => String(url || '').trim()))].filter(Boolean)
+}
+
+/** 列表分享候选图：取前 6 条动态的图片扁平化，去重后最多 8 张 */
+function collectFeedListShareImages(): string[] {
+    const images: string[] = []
+    for (const row of list.value.slice(0, 6)) {
+        images.push(...collectPostShareImages(row))
+    }
+    return [...new Set(images)].slice(0, 8)
+}
+
+/**
+ * 列表自身的分享参数：落地页仍是动态 tab，筛选条件随 query 带回去，
+ * 接收方打开就是同一批内容，而不是回到「全部 · 最新」。
+ */
+function feedListShareOptions() {
+    const query = {
+        ...(activeCat.value > 0 ? { dynamic_type: activeCat.value } : {}),
+        ...(sortKey.value === 'hot' ? { order_by: 'hot' } : {}),
+        ...(activeTag.value ? { tag: activeTag.value } : {}),
+        ...(activeKeyword.value ? { keyword: activeKeyword.value } : {})
+    }
+    let title = '婚礼动态'
+    if (activeTag.value) title = `#${activeTag.value} · 婚礼动态`
+    else if (activeKeyword.value) title = `「${activeKeyword.value}」· 婚礼动态`
+    else if (sortKey.value === 'hot') title = '热门婚礼动态'
+    return {
+        title,
+        suffix: ' · 婚礼动态',
+        path: '/pages/feed/feed',
+        query,
+        imageUrls: collectFeedListShareImages()
+    }
+}
+
+/**
  * 分享：由卡片里的 <button open-type="share"> 触发。
  * 微信只把 :data-id 放在 target.dataset 上，按 id 回列表找对应动态；
  * 找不到（例如列表已翻页刷新）就分享动态列表本身，不分享错的内容。
@@ -967,14 +1034,18 @@ onShareAppMessage((res: any) => {
     const targetId = Number(res?.target?.dataset?.id || 0)
     const target = targetId ? list.value.find((p) => Number(p.id) === targetId) : undefined
     if (!target) {
-        return buildShare({ title: '婚礼动态', path: '/pages/feed/feed' })
+        return buildShare(feedListShareOptions())
     }
     return buildShare({
         title: target.title || target.content || '婚礼动态',
-        path: `/packages/pkg-catalog/pages/feed-detail/feed-detail?id=${target.id}`,
-        imageUrl: target.media_cover || undefined
+        suffix: ' · 婚礼动态',
+        path: '/packages/pkg-catalog/pages/feed-detail/feed-detail',
+        query: { id: target.id },
+        imageUrls: collectPostShareImages(target)
     })
 })
+
+onShareTimeline(() => buildTimelineShare(feedListShareOptions()))
 </script>
 
 <style lang="scss" scoped>

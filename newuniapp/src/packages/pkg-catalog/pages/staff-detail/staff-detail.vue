@@ -393,14 +393,26 @@
  * 数据：优先 v2 聚合 getStaffDetailV2（1 次请求），失败降级 v1（detail + works + reviews 并发）。
  */
 import { computed, nextTick, ref } from 'vue'
-import { onLoad, onPageScroll, onShareAppMessage, onShow } from '@dcloudio/uni-app'
+import {
+    onLoad,
+    onPageScroll,
+    onShareAppMessage,
+    onShareTimeline,
+    onShow
+} from '@dcloudio/uni-app'
 import { toast } from '@/composables/useToast'
 import { getNavBarHeight } from '@/platform/device'
+import { useAppStore } from '@/stores/app'
 import { resolveBookingContext, saveBookingContext } from '@/utils/booking-context'
 import cache from '@/utils/cache'
-import { navigate, resolveLink } from '@/utils/link'
+import { navigate } from '@/utils/link'
 import { EMPTY_REGION, regionParams, type RegionContext } from '@/utils/region'
-import { buildShare } from '@/utils/share'
+import {
+    buildShare,
+    buildTimelineShare,
+    enableShareMenu,
+    extractFirstHtmlImage
+} from '@/utils/share'
 import { DEFAULT_BANNER_CONFIG, bannerStageHeight } from './banner'
 import LongDetail from './components/long-detail.vue'
 import StaffBanner from './components/staff-banner.vue'
@@ -416,6 +428,7 @@ import {
 } from './useStaffDetail'
 
 const navTotalPx = getNavBarHeight()
+const appStore = useAppStore()
 
 const TABS: Array<{ key: StaffDetailTabKey; label: string }> = [
     { key: 'about', label: '详情' },
@@ -694,24 +707,48 @@ onPageScroll((e: any) => {
     syncBannerScroll()
 })
 
-onShareAppMessage(() =>
-    buildShare({
-        title: staff.value.name ? `${staff.value.name} · 婚礼主持` : '',
-        suffix: '婚礼主持',
-        path:
-            resolveLink({
-                path: '/packages/pkg-catalog/pages/staff-detail/staff-detail',
-                query: {
-                    id: staffId.value,
-                    ...(date.value ? { date: date.value } : {}),
-                    ...regionParams(region.value)
-                }
-            }) || ''
-    })
-)
+/**
+ * 分享卡片：标题「姓名 · 角色」，落地页带上档期与地区。
+ *
+ * 封面候选链按渠道分开：
+ *  - 好友 5:4：全部轮播横图 → 人员封面 → 作品封面 → 长详情首图 → 头像；
+ *  - 朋友圈 1:1：头像优先（清晰人像在小方图里最认得出），再用轮播 / 封面 / 作品。
+ * 轮播要遍历全部项：首项若是没有 poster 的视频，不能让后面的图一起丢掉。
+ */
+function staffShareOptions() {
+    const bannerImages = bannerItems.value
+        .map((item) => (item.type === 'video' ? item.poster : item.src))
+        .filter(Boolean)
+    const workCovers = works.value.map((w: any) => imageUrl(w?.cover || w?.image || ''))
+    const detailImg = imageUrl(extractFirstHtmlImage(longDetail.value))
+    const staffCover = imageUrl(staff.value.cover)
+    const staffAvatar = imageUrl(staff.value.avatar)
+
+    const role = String(staff.value.role_name || staff.value.category_name || '').trim()
+    const name = String(staff.value.name || '').trim()
+    const title = name ? (role ? `${name} · ${role}` : name) : ''
+    const suffix = role ? ` · ${role}` : ' · 婚礼服务'
+    return {
+        title,
+        suffix,
+        path: '/packages/pkg-catalog/pages/staff-detail/staff-detail',
+        query: {
+            id: staffId.value,
+            ...(date.value ? { date: date.value } : {}),
+            ...regionParams(region.value)
+        },
+        imageUrls: [...bannerImages, staffCover, ...workCovers, detailImg, staffAvatar],
+        timelineImageUrls: [staffAvatar, ...bannerImages, staffCover, ...workCovers]
+    }
+}
+
+onShareAppMessage(() => buildShare(staffShareOptions()))
+
+onShareTimeline(() => buildTimelineShare(staffShareOptions()))
 
 onLoad((options: any) => {
-    staffId.value = Number(options?.id || 0)
+    enableShareMenu()
+    staffId.value = Number(options?.id || options?.staff_id || options?.staffId || 0)
     pickRole.value = String(options?.pick_role || '')
     pickPackageId.value = Number(options?.pick_package_id || 0)
     // 入口带了套餐就先生效，列表回来后再按「是否仍可售」校准
@@ -722,6 +759,8 @@ onLoad((options: any) => {
         loading.value = false
         return
     }
+    // 分享直达时全局配置可能还没拉过：抢在首屏前补一次，品牌名 / 域名才能用于分享与图片
+    if (!appStore.configLoaded) appStore.getConfig().catch(() => undefined)
     const entryDate = String(options?.date || '')
     resolveBookingContext(options || {}).then(async (ctx) => {
         date.value = /^\d{4}-\d{2}-\d{2}$/.test(entryDate) ? ctx.date : tomorrowKey()

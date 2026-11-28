@@ -27,6 +27,8 @@ interface BrandCache {
     name: string
     logo: string
     slogan: string
+    /** 运营装修首屏横图，供全站子页分享复用；旧版 v1 缓存没有该字段 */
+    shareCover?: string
     savedAt: number
 }
 
@@ -34,6 +36,8 @@ interface AppState {
     config: Record<string, any>
     /** 上次成功下发的品牌（同步读，仅作首帧占位） */
     cachedBrand: BrandCache | null
+    /** 运营装修首屏横图（分享封面）；空串表示未同步过 */
+    shareCover: string
     /** 本次进程内是否已成功拉到配置 */
     configLoaded: boolean
     /** 本次进程内是否拉取失败过（用于埋点 / 排查，不参与渲染分支） */
@@ -57,6 +61,7 @@ function readBrandCache(): BrandCache | null {
             name: text(data.name),
             logo: text(data.logo),
             slogan: text(data.slogan),
+            shareCover: text(data.shareCover),
             savedAt: Number(data.savedAt) || 0
         }
     } catch {
@@ -65,12 +70,13 @@ function readBrandCache(): BrandCache | null {
     }
 }
 
-function toBrandCache(brand: BrandProfile): BrandCache {
+function toBrandCache(brand: BrandProfile, shareCover = ''): BrandCache {
     return {
         v: BRAND_CACHE_VERSION,
         name: brand.name,
         logo: brand.logo,
         slogan: brand.slogan,
+        shareCover: text(shareCover),
         savedAt: Date.now()
     }
 }
@@ -91,14 +97,18 @@ let inflight: Promise<void> | null = null
 
 export const useAppStore = defineStore({
     id: 'appStore',
-    state: (): AppState => ({
-        config: {
-            domain: ''
-        },
-        cachedBrand: readBrandCache(),
-        configLoaded: false,
-        configFailed: false
-    }),
+    state: (): AppState => {
+        const cachedBrand = readBrandCache()
+        return {
+            config: {
+                domain: ''
+            },
+            cachedBrand,
+            shareCover: cachedBrand?.shareCover || '',
+            configLoaded: false,
+            configFailed: false
+        }
+    },
     getters: {
         getWebsiteConfig: (state) => state.config.website || {},
         getLoginConfig: (state) => state.config.login || {},
@@ -130,7 +140,14 @@ export const useAppStore = defineStore({
             if (text(website.shop_name)) return 'remote'
             if (state.cachedBrand?.name) return 'cache'
             return 'fallback'
-        }
+        },
+
+        /**
+         * 分享封面唯一出口：本进程同步到的首屏横图 → 缓存里的历史值。
+         * 子页分享卡片的横版 5:4 封面都从这里取，页面不要再自己拼。
+         */
+        shareCoverUrl: (state): string =>
+            text(state.shareCover) || text(state.cachedBrand?.shareCover) || ''
     },
     actions: {
         getImageUrl(url: string) {
@@ -174,7 +191,10 @@ export const useAppStore = defineStore({
             merged.website = mergedWebsite
 
             this.config = merged
-            this.cachedBrand = toBrandCache(this.brand)
+            this.cachedBrand = toBrandCache(
+                this.brand,
+                this.shareCover || this.cachedBrand?.shareCover || ''
+            )
             writeBrandCache(this.cachedBrand)
         },
         /**
@@ -196,7 +216,10 @@ export const useAppStore = defineStore({
                     this.configLoaded = true
                     this.configFailed = false
                     // 只把品牌写缓存：其它配置项（登录开关 / tabbar / 版本）每次都要拿新的
-                    this.cachedBrand = toBrandCache(this.brand)
+                    this.cachedBrand = toBrandCache(
+                        this.brand,
+                        this.shareCover || this.cachedBrand?.shareCover || ''
+                    )
                     writeBrandCache(this.cachedBrand)
                 } catch (error) {
                     this.configFailed = true
@@ -207,6 +230,21 @@ export const useAppStore = defineStore({
             })()
 
             return inflight
+        },
+        /**
+         * 同步运营装修首屏横图，供全站子页分享复用。
+         * 只接受真实图片地址：本地占位 / data: 内联图对微信分享卡片无意义，也不该刷缓存。
+         */
+        setShareCover(url: string) {
+            const cleaned = text(url)
+            if (!cleaned) return
+            if (cleaned.startsWith('/static/')) return
+            if (/^data:/i.test(cleaned)) return
+            if (cleaned === this.shareCover) return
+
+            this.shareCover = cleaned
+            this.cachedBrand = toBrandCache(this.brand, cleaned)
+            writeBrandCache(this.cachedBrand)
         }
     }
 })

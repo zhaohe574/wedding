@@ -276,6 +276,7 @@ import { useBrand } from '@/composables/useBrand'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { buildShare, enableShareMenu } from '@/utils/share'
 
 const {
     guardPhase,
@@ -409,25 +410,41 @@ function onCardErrorPrimary(): void {
 }
 
 onShareAppMessage(() => {
-    const staffName = card.value?.staff?.name || '婚礼服务老师'
-    const role = card.value?.staff?.category_name || ''
-    return {
-        title: `${staffName}${role ? `（${role}）` : ''} 的专属档期名片`,
-        path: card.value?.share_path || '/pages/index/index',
-        imageUrl: card.value?.staff?.cover || card.value?.staff?.avatar || ''
+    if (card.value?.staff) {
+        const staffName = String(card.value.staff.name || '').trim() || '婚礼服务老师'
+        const role = String(card.value.staff.category_name || '').trim()
+        // 好友卡片 5:4：横版封面 → 精选作品封面 → 头像 → 品牌首屏横图（兜底在 share.ts 里）
+        const imageUrls = [
+            card.value.staff.cover,
+            ...(card.value.works || []).map((w) => w?.cover),
+            card.value.staff.avatar
+        ]
+        return buildShare({
+            title: `${staffName}${role ? ` · ${role}` : ''} 的专属档期名片`,
+            path:
+                card.value.share_path ||
+                `/packages/pkg-catalog/pages/staff-detail/staff-detail?id=${card.value.staff.id}`,
+            imageUrls
+        })
     }
+    return buildShare({ path: '/pages/index/index', suffix: ' · 婚礼服务预约' })
 })
 
 async function init(forceGuard = false): Promise<void> {
     if (!(await verify(forceGuard))) return
     if (activeTab.value === 'card') {
         await fetchCard()
+    } else if (!card.value) {
+        // 档期海报 tab 不能因为名片没拉过就丢了转发数据：后台静默补一次，不阻塞海报渲染
+        void fetchCard()
     }
     hasLoadedOnce.value = true
 }
 
 onLoad((options?: Record<string, any>) => {
     firstShow = true
+    // 本页受 StaffGuard 保护，朋友圈单页模式下无法跳转登录，只开放「发送给朋友」
+    enableShareMenu({ timeline: false })
     if (options?.tab === 'poster') {
         activeTab.value = 'poster'
     }

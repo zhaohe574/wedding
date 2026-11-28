@@ -241,9 +241,9 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref } from 'vue'
-import { onLoad, onReachBottom, onShareAppMessage } from '@dcloudio/uni-app'
+import { onLoad, onReachBottom, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { getCaseDetail, toggleCaseLike } from '@/api/content'
-import { navigate } from '@/utils/link'
+import { back, navigate } from '@/utils/link'
 import { haptic } from '@/utils/haptics'
 import { toast } from '@/composables/useToast'
 import { useUserStore } from '@/stores/user'
@@ -251,7 +251,7 @@ import { useAppStore } from '@/stores/app'
 import { useInteractionStore } from '@/stores/interaction'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { report } from '@/platform/report'
-import { buildShare } from '@/utils/share'
+import { buildShare, buildTimelineShare, enableShareMenu } from '@/utils/share'
 import FeedComments from './components/feed-comments.vue'
 import { useFeedComments } from './useFeedComments'
 
@@ -401,7 +401,7 @@ function onPrimary() {
         load()
         return
     }
-    if (kind === 'reselect' || kind === 'back') uni.navigateBack()
+    if (kind === 'reselect' || kind === 'back') back()
 }
 
 async function load() {
@@ -517,7 +517,8 @@ function onRegisterFinished() {
 }
 
 onLoad((options: any) => {
-    id.value = Number(options?.id || 0)
+    enableShareMenu()
+    id.value = Number(options?.id || options?.dynamic_id || 0)
     if (!id.value) {
         rawError.value = { code: 'PARAM', message: '缺少动态 id' }
         loading.value = false
@@ -531,14 +532,32 @@ onLoad((options: any) => {
 
 onReachBottom(() => loadMore())
 
-onShareAppMessage(() =>
-    buildShare({
-        title: post.value?.title,
-        suffix: '婚礼主持',
-        path: `/packages/pkg-catalog/pages/feed-detail/feed-detail?id=${id.value}`,
-        imageUrl: cover.value || undefined
-    })
-)
+/**
+ * 分享卡片：标题取动态标题，纯文字动态回落到正文。
+ *
+ * 封面候选：视频封面 → 媒体封面 → 图集全部图片。
+ * 好友 5:4 不为纯文字动态拉伸作者小头像（自动回退品牌首屏横图）；
+ * 朋友圈 1:1 才把作者头像排进候选，纯文字动态也有个像样的方图。
+ */
+function feedShareOptions() {
+    const mediaImages = [
+        imgUrl(post.value?.video_cover),
+        imgUrl(post.value?.media_cover),
+        ...imageUrls.value
+    ]
+    return {
+        title: String(post.value?.title || post.value?.content || '').trim(),
+        suffix: ' · 婚礼动态',
+        path: '/packages/pkg-catalog/pages/feed-detail/feed-detail',
+        query: { id: id.value },
+        imageUrls: mediaImages,
+        timelineImageUrls: [...mediaImages, authorAvatar.value]
+    }
+}
+
+onShareAppMessage(() => buildShare(feedShareOptions()))
+
+onShareTimeline(() => buildTimelineShare(feedShareOptions()))
 </script>
 
 <style lang="scss" scoped>

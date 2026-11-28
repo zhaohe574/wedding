@@ -25,6 +25,7 @@ import { redirectNotFound } from './utils/link'
 import { report } from './platform/report'
 import { bootTrace } from './utils/boot-trace'
 import { setupPrivacyGuard, promptPrivacyOnLaunch } from './composables/usePrivacyGuard'
+import { isSinglePageMode } from './utils/share'
 
 const appStore = useAppStore()
 const userStore = useUserStore()
@@ -87,7 +88,7 @@ function syncDocumentTitle() {
     // #endif
 }
 
-onLaunch(() => {
+onLaunch((options?: any) => {
     bootTrace('app:onLaunch')
     // 外观模式：尽早初始化 —— 系统暗色由 CSS @media 首帧生效，这里只负责
     // 读取用户上次的手动选择并同步 H5 DOM / 注册系统明暗变化监听。
@@ -97,7 +98,10 @@ onLaunch(() => {
     setupPrivacyGuard()
     // 用户裁决（P0-1 / P1-8）：首次启动主动展示隐私弹窗，不再只等隐私接口按需触发。
     // 已同意则静默通过；未同意会走 setupPrivacyGuard 注册的队列弹窗。
-    promptPrivacyOnLaunch()
+    // 朋友圈单页模式（scene=1154）例外：弹窗会直接盖住分享内容，且单页下无法完成授权。
+    if (!isSinglePageMode(options?.scene)) {
+        promptPrivacyOnLaunch()
+    }
 
     // 配色由 tokens.css 静态决定：原先的运行时主题链路生成的 --color-* 从未被任何样式消费，
     // 只会让人误以为「主题可配」。颜色是设计资产，不接受运行时下发。

@@ -447,7 +447,7 @@
  *  - 本期推荐与吉日卡：**无数据（含请求失败）时整块不渲染**，连 section-header 一起隐藏。
  */
 import { computed, onUnmounted, reactive, ref, watch } from 'vue'
-import { onLoad, onReady, onShareAppMessage, onShow } from '@dcloudio/uni-app'
+import { onLoad, onReady, onShareAppMessage, onShareTimeline, onShow } from '@dcloudio/uni-app'
 import {
     HOME_FLOW_DEFAULTS,
     HOME_SERVICE_CATEGORIES_DEFAULTS,
@@ -474,7 +474,7 @@ import { useBrand } from '@/composables/useBrand'
 import { useTabQueryStore } from '@/stores/tabQuery'
 import { useBadgeStore } from '@/stores/badge'
 import { isDecorateLinkConfigured, isWechatContactLink, navigate } from '@/utils/link'
-import { buildShare } from '@/utils/share'
+import { buildShare, buildTimelineShare, enableShareMenu } from '@/utils/share'
 import { report } from '@/platform/report'
 import { getDeviceInfo, getNavBarHeight } from '@/platform/device'
 import { bootTrace } from '@/utils/boot-trace'
@@ -668,6 +668,20 @@ const navTitle = computed(() =>
 const HERO_FALLBACK_IMAGE = '/static/images/hero-ceremony.jpg'
 
 const heroImage = computed(() => imageUrl(bannerItem.value?.image) || HERO_FALLBACK_IMAGE)
+
+/**
+ * 运营装修的首屏横图即全站最合适的分享封面：
+ * 同步到 store（随品牌缓存落盘），子页分享卡片就不用各自找横图。
+ * 用 watch 而不是只在 loadHome 里写：装修数据晚到 / 下拉刷新换了图都能跟上。
+ */
+watch(
+    () => imageUrl(bannerItem.value?.image),
+    (url) => {
+        if (url) appStore.setShareCover(url)
+    },
+    { immediate: true }
+)
+
 const heroSloganColor = computed(() => String(bannerItem.value?.slogan_color || ''))
 
 /**
@@ -1157,6 +1171,8 @@ watch(() => brand.value.name, syncNavTitle)
 
 onLoad(() => {
     bootTrace('index:onLoad')
+    // 显式打开「发送给朋友 + 分享到朋友圈」两个入口；缺省时部分基础库只给转发按钮
+    enableShareMenu()
     loadAll()
     // 装修解析异常只是降级，不阻断首屏；落一次上报便于排查
     if (page.skipped.length)
@@ -1175,15 +1191,24 @@ function onRefresh(done: () => void) {
 }
 
 /**
- * 首页转发。
- * 标题 / 封面缺省值统一由品牌配置补（buildShare），页面里不写死品牌名。
+ * 首页转发参数：标题「品牌名 · 宣传语」，封面走候选链（见 utils/share）。
+ * 好友 5:4 直接取横版首屏主图；朋友圈 1:1 优先清晰品牌标。
  */
-onShareAppMessage(() =>
-    buildShare({
+function getHomeShareOptions() {
+    const heroImageUrl = imageUrl(bannerItem.value?.image)
+    return {
+        title: brand.value.slogan
+            ? `${brand.value.name} · ${brand.value.slogan}`
+            : brand.value.name,
         path: '/pages/index/index',
-        suffix: '婚礼主持'
-    })
-)
+        imageUrls: [heroImageUrl, HERO_FALLBACK_IMAGE],
+        timelineImageUrls: [brand.value.logo, heroImageUrl, HERO_FALLBACK_IMAGE]
+    }
+}
+
+onShareAppMessage(() => buildShare(getHomeShareOptions()))
+
+onShareTimeline(() => buildTimelineShare(getHomeShareOptions()))
 </script>
 
 <style lang="scss" scoped>

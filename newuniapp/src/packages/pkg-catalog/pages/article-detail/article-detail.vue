@@ -36,12 +36,23 @@
                 </view>
 
                 <view class="article__actions">
-                    <base-button
-                        :text="collected ? '已收藏' : '收藏这篇文章'"
-                        :variant="collected ? 'ghost' : 'ink'"
-                        size="md"
-                        @click="toggleCollect"
-                    />
+                    <view class="article__collect">
+                        <base-button
+                            :text="collected ? '已收藏' : '收藏这篇文章'"
+                            :variant="collected ? 'ghost' : 'ink'"
+                            size="md"
+                            @click="toggleCollect"
+                        />
+                    </view>
+                    <button
+                        class="article__share"
+                        open-type="share"
+                        hover-class="is-pressed"
+                        aria-label="分享这篇文章"
+                    >
+                        <tn-icon name="share" :size="26" class="article__share-ic" />
+                        <text class="article__share-text">分享</text>
+                    </button>
                 </view>
             </view>
         </view>
@@ -52,12 +63,18 @@
 <script setup lang="ts">
 /** 资讯详情 */
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { getArticleDetail, addArticleCollect, cancelArticleCollect } from '@/api/content'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
-import { navigate } from '@/utils/link'
+import { back, navigate } from '@/utils/link'
+import {
+    buildShare,
+    buildTimelineShare,
+    enableShareMenu,
+    extractFirstHtmlImage
+} from '@/utils/share'
 import { FB } from '@/constants/feedback'
 
 const appStore = useAppStore()
@@ -89,7 +106,7 @@ function onPrimary() {
         return
     }
     if (kind === 'reselect' || kind === 'back') {
-        uni.navigateBack()
+        back()
         return
     }
     if (kind === 'login') {
@@ -160,14 +177,35 @@ async function toggleCollect() {
 }
 
 onLoad((options: any) => {
-    id.value = Number(options?.id || 0)
+    enableShareMenu()
+    id.value = Number(options?.id || options?.article_id || 0)
     if (!id.value) {
         error.value = true
         loading.value = false
         return
     }
+    // 分享直达时全局配置可能还没拉过：补一次，品牌名 / 域名才能用于分享与图片
+    if (!appStore.configLoaded) appStore.getConfig().catch(() => undefined)
     load()
 })
+
+/** 分享卡片：标题取文章标题，封面先取文章封面，无封面时抓正文首张配图 */
+function articleShareOptions() {
+    return {
+        title: String(data.value?.title || '').trim(),
+        suffix: ' · 婚礼资讯',
+        path: '/packages/pkg-catalog/pages/article-detail/article-detail',
+        query: { id: id.value },
+        imageUrls: [
+            imageUrl(data.value?.image),
+            imageUrl(extractFirstHtmlImage(data.value?.content))
+        ]
+    }
+}
+
+onShareAppMessage(() => buildShare(articleShareOptions()))
+
+onShareTimeline(() => buildTimelineShare(articleShareOptions()))
 </script>
 
 <style lang="scss" scoped>
@@ -234,7 +272,44 @@ onLoad((options: any) => {
     }
 
     &__actions {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
         margin: var(--sp-5) 0 var(--sp-6);
+    }
+
+    /* base-button 默认 block=true（width:100%），外面套一层吃掉剩余宽度，与右侧分享同高并排 */
+    &__collect {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__share {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6rpx;
+        height: 88rpx;
+        padding: 0 var(--sp-4);
+        margin: 0;
+        border: 1rpx solid var(--c-line-strong);
+        border-radius: var(--r-pill);
+        background: var(--c-surface);
+        color: var(--c-ink);
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        line-height: var(--lh-none);
+
+        &::after {
+            border: 0;
+        }
+    }
+
+    &__share-ic,
+    &__share-text {
+        color: inherit;
+        line-height: var(--lh-none);
     }
 }
 </style>

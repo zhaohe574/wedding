@@ -212,7 +212,7 @@
  * 历史记录存本地（最多 10 条），不上报。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onReachBottom } from '@dcloudio/uni-app'
+import { onLoad, onReachBottom, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { getHotSearch } from '@/api/home'
 import { getStaffList } from '@/api/catalog'
 import { getArticleList } from '@/api/content'
@@ -220,6 +220,7 @@ import { normalizePage } from '@/request'
 import { useAppStore } from '@/stores/app'
 import { navigate, safeDecodeParam } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { buildShare, buildTimelineShare, enableShareMenu } from '@/utils/share'
 import { toast } from '@/composables/useToast'
 import { FB } from '@/constants/feedback'
 
@@ -497,6 +498,7 @@ function goArticle(item: any) {
 }
 
 onLoad((options: any) => {
+    enableShareMenu()
     loadHistory()
     loadHot()
     const tab = String(options?.tab || '').trim()
@@ -513,6 +515,44 @@ onLoad((options: any) => {
 onReachBottom(() => {
     if (searched.value) runQuery(false)
 })
+
+/** 分享参数：关键词与当前 tab 一起带回去，接收方打开即是同一组结果 */
+function searchShareOptions() {
+    const kw = submitted.value.trim()
+    const covers: string[] = []
+    const avatars: string[] = []
+    const articleImages: string[] = []
+
+    if (searched.value && activeTab.value === 'staff') {
+        for (const item of staffList.value) {
+            const cover = imageUrl(item.cover)
+            if (cover && covers.length < 5 && !covers.includes(cover)) covers.push(cover)
+            const avatar = imageUrl(item.avatar)
+            if (avatar && avatars.length < 5 && !avatars.includes(avatar)) avatars.push(avatar)
+        }
+    } else if (searched.value && activeTab.value === 'article') {
+        for (const item of articleList.value) {
+            const img = imageUrl(item.image || item.cover)
+            if (img && articleImages.length < 6 && !articleImages.includes(img)) {
+                articleImages.push(img)
+            }
+        }
+    }
+
+    return {
+        title: kw ? `搜索「${kw}」` : '搜索主持人与婚礼资讯',
+        path: '/pages/search/search',
+        query: kw ? { keyword: kw, tab: activeTab.value } : { tab: activeTab.value },
+        // 结果为空时传空数组，交给分享层走好友横图 / 朋友圈品牌 Logo 兜底
+        imageUrls: activeTab.value === 'staff' ? [...covers, ...avatars] : articleImages,
+        ...(activeTab.value === 'staff'
+            ? { timelineImageUrls: [...avatars, ...covers] }
+            : {})
+    }
+}
+
+onShareAppMessage(() => buildShare(searchShareOptions()))
+onShareTimeline(() => buildTimelineShare(searchShareOptions()))
 </script>
 
 <style lang="scss" scoped>
