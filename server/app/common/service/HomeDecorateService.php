@@ -8,10 +8,11 @@ declare(strict_types=1);
 namespace app\common\service;
 
 /**
- * 首页装修 5 个组件的数据契约（服务端镜像）。
+ * 首页装修 7 个组件的数据契约（服务端镜像）。
  *
  * ⚠ 字段定义与 `shared/contracts/decorate.ts` 的
  *   HomeHeroContent / HomeBrandContent / HomeServiceCategoriesContent /
+ *   HomeRecommendContent / HomeLuckyDaysContent /
  *   HomeFlowContent / HomePopupAdContent 一一对应，改字段时两边一起改。
  *
  * 为什么要有这个类：
@@ -33,6 +34,8 @@ class HomeDecorateService
         'banner',
         'home-brand',
         'home-service-categories',
+        'home-recommend',
+        'home-lucky-days',
         'home-flow',
         'home-popup-ad',
     ];
@@ -46,6 +49,8 @@ class HomeDecorateService
         'banner' => '首屏主图',
         'home-brand' => '数据条',
         'home-service-categories' => '四宫格入口',
+        'home-recommend' => '本期推荐',
+        'home-lucky-days' => '近期吉日',
         'home-flow' => '服务承诺',
         'home-popup-ad' => '首页弹窗广告',
     ];
@@ -55,6 +60,10 @@ class HomeDecorateService
 
     /** 服务承诺步骤上限 */
     private const FLOW_MAX_ITEMS = 6;
+
+    /** 四宫格单卡自定义高度（rpx，750 设计宽基准；0 = 跟随版式默认） */
+    private const CATEGORY_ITEM_HEIGHT_MIN = 100;
+    private const CATEGORY_ITEM_HEIGHT_MAX = 600;
 
     /**
      * 首屏主图高度（rpx，750 设计宽基准），
@@ -76,6 +85,8 @@ class HomeDecorateService
             'banner' => self::buildDefaultBanner(),
             'home-brand' => self::buildDefaultBrand(),
             'home-service-categories' => self::buildDefaultCategories(),
+            'home-recommend' => self::buildDefaultRecommend(),
+            'home-lucky-days' => self::buildDefaultLuckyDays(),
             'home-flow' => self::buildDefaultFlow(),
             'home-popup-ad' => self::buildDefaultPopup(),
             default => self::buildEmptyWidget($widgetName),
@@ -152,6 +163,8 @@ class HomeDecorateService
             'banner' => self::normalizeHeroContent($content),
             'home-brand' => self::normalizeBrandContent($content),
             'home-service-categories' => self::normalizeCategoriesContent($content),
+            'home-recommend' => self::normalizeRecommendContent($content),
+            'home-lucky-days' => self::normalizeLuckyDaysContent($content),
             'home-flow' => self::normalizeFlowContent($content),
             'home-popup-ad' => self::normalizePopupContent($content),
             default => $content,
@@ -351,8 +364,28 @@ class HomeDecorateService
             'size' => in_array($size, ['large', 'small', 'wide'], true) ? $size : 'small',
             'text_position' => in_array($textPosition, ['top', 'middle', 'bottom'], true) ? $textPosition : 'bottom',
             'text_align' => in_array($textAlign, ['left', 'center', 'right'], true) ? $textAlign : 'left',
+            'height' => self::normalizeCategoryItemHeight($item['height'] ?? null),
             'link' => self::normalizeLink($item['link'] ?? []),
         ];
+    }
+
+    /**
+     * @notes 四宫格单卡高度：0 = 跟随版式默认；正数夹在 [100, 600]
+     * @param mixed $value
+     * @return int
+     */
+    private static function normalizeCategoryItemHeight($value): int
+    {
+        if ($value === null || $value === '' || !is_numeric($value)) {
+            return 0;
+        }
+
+        $num = (int)round((float)$value);
+        if ($num <= 0) {
+            return 0;
+        }
+
+        return max(self::CATEGORY_ITEM_HEIGHT_MIN, min(self::CATEGORY_ITEM_HEIGHT_MAX, $num));
     }
 
     /**
@@ -416,6 +449,66 @@ class HomeDecorateService
     private static function normalizeCategoryLayout($value): string
     {
         return (string)$value === 'grid' ? 'grid' : 'bento';
+    }
+
+    /* ------------------------------------------------------------------ *
+     * 本期推荐（home-recommend）/ 近期吉日（home-lucky-days）
+     * ------------------------------------------------------------------ */
+
+    /**
+     * @notes 本期推荐内容：仅后台显隐开关
+     * @param array $content
+     * @return array
+     */
+    private static function normalizeRecommendContent(array $content): array
+    {
+        return [
+            'enabled' => self::int01($content['enabled'] ?? 1),
+        ];
+    }
+
+    /**
+     * @notes 默认本期推荐组件
+     * @return array
+     */
+    private static function buildDefaultRecommend(): array
+    {
+        return [
+            'id' => uniqid('home_recommend_', true),
+            'title' => self::WIDGET_TITLES['home-recommend'],
+            'name' => 'home-recommend',
+            'pageScope' => ['home'],
+            'content' => ['enabled' => 1],
+            'styles' => [],
+        ];
+    }
+
+    /**
+     * @notes 近期吉日内容：仅后台显隐开关
+     * @param array $content
+     * @return array
+     */
+    private static function normalizeLuckyDaysContent(array $content): array
+    {
+        return [
+            'enabled' => self::int01($content['enabled'] ?? 1),
+        ];
+    }
+
+    /**
+     * @notes 默认近期吉日组件
+     * @return array
+     */
+    private static function buildDefaultLuckyDays(): array
+    {
+        return [
+            'id' => uniqid('home_lucky_days_', true),
+            'title' => self::WIDGET_TITLES['home-lucky-days'],
+            'name' => 'home-lucky-days',
+            'pageScope' => ['home'],
+            'content' => ['enabled' => 1],
+            'styles' => [],
+        ];
     }
 
     /* ------------------------------------------------------------------ *

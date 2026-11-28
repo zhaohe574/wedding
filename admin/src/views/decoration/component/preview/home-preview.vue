@@ -74,7 +74,11 @@
             @click="select('home-service-categories')"
         >
             <span class="pv-block__tag">四宫格入口</span>
-            <div v-if="quickEntries.length" class="tile-grid" :class="`tile-grid--${categoryLayout}`">
+            <div
+                v-if="quickEntries.length"
+                class="tile-grid"
+                :class="`tile-grid--${categoryLayout}`"
+            >
                 <div
                     v-for="(entry, i) in quickEntries"
                     :key="i"
@@ -83,6 +87,7 @@
                         categoryLayout === 'bento' ? `tile--${entry.size}` : '',
                         { 'tile--no-image': !entry.image }
                     ]"
+                    :style="tileStyleOf(entry)"
                 >
                     <img v-if="entry.image" class="tile__image" :src="entry.image" alt="" />
                     <div class="tile__scrim" />
@@ -105,22 +110,39 @@
             </div>
         </div>
 
-        <!-- ============ 以下两块为接口内容，不在装修范围 ============ -->
-        <div class="pv-section">本期推荐</div>
-        <div class="pv-placeholder pv-placeholder--cards">
-            <div v-for="n in 2" :key="n" class="pv-card">
-                <div class="pv-card__ph" />
-                <div class="pv-card__line" />
-                <div class="pv-card__line pv-card__line--short" />
+        <!-- ============ 本期推荐（home-recommend） ============ -->
+        <div
+            class="pv-block"
+            :class="{ 'is-active': selected === indexOf('home-recommend') }"
+            @click="select('home-recommend')"
+        >
+            <span class="pv-block__tag">本期推荐</span>
+            <div class="pv-section">本期推荐</div>
+            <div class="pv-placeholder pv-placeholder--cards">
+                <div v-for="n in 2" :key="n" class="pv-card">
+                    <div class="pv-card__ph" />
+                    <div class="pv-card__line" />
+                    <div class="pv-card__line pv-card__line--short" />
+                </div>
+                <span class="pv-placeholder__note">推荐人员来自接口；关闭或无数据时整块不渲染（含区块标题）</span>
             </div>
-            <span class="pv-placeholder__note">推荐人员来自接口；无数据时整块不渲染（含区块标题）</span>
+            <div v-if="isHidden('home-recommend')" class="pv-hidden-mask">该组件已隐藏</div>
         </div>
 
-        <div class="pv-section">近期吉日 · 可约情况</div>
-        <div class="pv-placeholder">
-            <div class="pv-darkcard">
-                <span class="pv-placeholder__note">档期数据来自接口；无数据时整块不渲染（含区块标题）</span>
+        <!-- ============ 近期吉日（home-lucky-days） ============ -->
+        <div
+            class="pv-block"
+            :class="{ 'is-active': selected === indexOf('home-lucky-days') }"
+            @click="select('home-lucky-days')"
+        >
+            <span class="pv-block__tag">近期吉日</span>
+            <div class="pv-section">近期吉日 · 可约情况</div>
+            <div class="pv-placeholder">
+                <div class="pv-darkcard">
+                    <span class="pv-placeholder__note">档期数据来自接口；关闭或无数据时整块不渲染（含区块标题）</span>
+                </div>
             </div>
+            <div v-if="isHidden('home-lucky-days')" class="pv-hidden-mask">该组件已隐藏</div>
         </div>
 
         <!-- ============ 服务承诺（home-flow） ============ -->
@@ -190,11 +212,12 @@
  * 与小程序 `pages/index/index.vue` 的关系：
  *   - **几何参数同源**：所有尺寸直接抄小程序的 rpx 数字，用 `rpx()` 换算成 px；
  *   - **装驱动的部分**：banner(首屏含上浮文字) / home-brand(数据条) /
- *     home-service-categories(四宫格) / home-flow(服务承诺) / home-popup-ad(弹窗)；
+ *     home-service-categories(四宫格，含单卡高度) / home-recommend(本期推荐，仅显隐) /
+ *     home-lucky-days(近期吉日，仅显隐) / home-flow(服务承诺) / home-popup-ad(弹窗)；
  *   - **兜底文案同源**：首屏文案与断行规则来自 `shared/contracts/decorate.ts`，
  *     不再在这里维护第二份 `FIXED_COPY`；
- *   - **接口内容用占位块表示**：本期推荐 / 近期吉日来自接口，不是装修配置，
- *     且两者无数据时真机整块不渲染（含标题），预览沿用同一口径。
+ *   - **接口内容用占位块表示**：本期推荐 / 近期吉日的内容来自接口，
+ *     装修只控制「显示本区块」开关；关闭或无数据时真机整块不渲染（含标题），预览沿用同一口径。
  *   - **首屏左上角无品牌位**：与真机一致（2026-11-19 真机已移除 logo 与牌面底衬），
  *     这里也不画；品牌仍出现在首屏文案与页脚。
  *
@@ -315,6 +338,17 @@ const categoryLayout = computed(() =>
     contentOf('home-service-categories')?.layout === 'grid' ? 'grid' : 'bento'
 )
 
+/** 单卡高度（rpx → 壳内 px）：0 = 跟随版式默认 */
+function tileStyleOf(entry: { height: number }) {
+    return entry.height > 0
+        ? {
+              height: `calc(${entry.height} * var(--pv-rpx, 0.5px))`,
+              minHeight: '0',
+              alignSelf: 'start'
+          }
+        : undefined
+}
+
 const quickEntries = computed(() => {
     const content = contentOf('home-service-categories')
     // 组件缺失 → 用契约默认四条兜底（与真机 QUICK_FALLBACK 同文案同路由）；
@@ -326,7 +360,8 @@ const quickEntries = computed(() => {
             image: '',
             size: item.size,
             textPosition: item.text_position,
-            textAlign: item.text_align
+            textAlign: item.text_align,
+            height: 0
         }))
     }
     if (Number(content.enabled) !== 1) return []
@@ -343,7 +378,8 @@ const quickEntries = computed(() => {
             image: toUrl(item.image),
             size: item.size,
             textPosition: item.text_position,
-            textAlign: item.text_align
+            textAlign: item.text_align,
+            height: item.height
         }))
 })
 
@@ -609,7 +645,7 @@ const popupEnabled = computed(() => Number(contentOf('home-popup-ad')?.enabled) 
 .tile-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: rpx(168);
+    align-items: start;
     gap: rpx(18);
     padding: rpx(36) rpx(42) 0;
 
@@ -617,13 +653,16 @@ const popupEnabled = computed(() => Number(contentOf('home-popup-ad')?.enabled) 
     &--grid .tile {
         grid-row: span 1;
         grid-column: span 1;
+        align-self: start;
+        height: rpx(168);
+        min-height: 0;
     }
 }
 
 .tile {
     position: relative;
     min-width: 0;
-    height: 100%;
+    height: rpx(168);
     overflow: hidden;
     border-radius: $r-md;
     background: $ink;
@@ -632,6 +671,9 @@ const popupEnabled = computed(() => Number(contentOf('home-popup-ad')?.enabled) 
 
     &--large {
         grid-row: span 2;
+        align-self: stretch;
+        height: 100%;
+        min-height: rpx(354);
     }
 
     &--wide {

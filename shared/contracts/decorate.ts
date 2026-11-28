@@ -91,6 +91,8 @@ export const DECORATE_PAGES: DecoratePageDef[] = [
             'banner',
             'home-brand',
             'home-service-categories',
+            'home-recommend',
+            'home-lucky-days',
             'home-flow',
             'home-popup-ad'
         ],
@@ -155,6 +157,8 @@ export const HOME_WIDGET_TITLES: Record<string, string> = {
     banner: '首屏主图',
     'home-brand': '数据条',
     'home-service-categories': '四宫格入口',
+    'home-recommend': '本期推荐',
+    'home-lucky-days': '近期吉日',
     'home-flow': '服务承诺',
     'home-popup-ad': '首页弹窗广告'
 }
@@ -750,6 +754,8 @@ export interface HomeServiceCategoryItem {
     size: HomeServiceCategorySize
     text_position: HomeServiceCategoryTextPosition
     text_align: HomeServiceCategoryTextAlign
+    /** 单卡自定义高度（rpx，750 设计宽基准）；0 = 跟随版式默认 */
+    height: number
     link: DecorateLink
 }
 
@@ -763,6 +769,26 @@ export const HOME_SERVICE_CATEGORIES_LAYOUTS: Array<{
     { value: 'bento', label: 'Bento 错落' },
     { value: 'grid', label: '均分双列' }
 ]
+
+/**
+ * 四宫格单个入口自定义高度（rpx，750 设计宽基准）。
+ * 0 = 跟随版式默认（小图/通栏 168rpx，Bento 大图跨两行默认 354rpx）；
+ * 正数区间 [HOME_SERVICE_CATEGORY_ITEM_HEIGHT_MIN, HOME_SERVICE_CATEGORY_ITEM_HEIGHT_MAX]。
+ */
+export const HOME_SERVICE_CATEGORY_ITEM_HEIGHT_MIN = 100
+export const HOME_SERVICE_CATEGORY_ITEM_HEIGHT_MAX = 600
+export const HOME_SERVICE_CATEGORY_DEFAULT_HEIGHT = 168
+export const HOME_SERVICE_CATEGORY_LARGE_DEFAULT_HEIGHT = 354
+
+export function normalizeHomeServiceCategoryItemHeight(raw: unknown): number {
+    if (raw === null || raw === undefined || raw === '') return 0
+    const n = Number(raw)
+    if (!Number.isFinite(n) || n <= 0) return 0
+    return Math.min(
+        HOME_SERVICE_CATEGORY_ITEM_HEIGHT_MAX,
+        Math.max(HOME_SERVICE_CATEGORY_ITEM_HEIGHT_MIN, Math.round(n))
+    )
+}
 
 export interface HomeServiceCategoriesContent {
     enabled: Int01
@@ -787,6 +813,7 @@ export const HOME_SERVICE_CATEGORIES_DEFAULTS: HomeServiceCategoriesContent = {
             size: 'large',
             text_position: 'bottom',
             text_align: 'left',
+            height: 0,
             link: { path: '/pages/query/query', type: 'shop', name: '查档期', canTab: true }
         },
         {
@@ -797,6 +824,7 @@ export const HOME_SERVICE_CATEGORIES_DEFAULTS: HomeServiceCategoriesContent = {
             size: 'small',
             text_position: 'bottom',
             text_align: 'left',
+            height: 0,
             link: {
                 path: '/packages/pkg-catalog/pages/staff-list/staff-list',
                 type: 'shop',
@@ -811,6 +839,7 @@ export const HOME_SERVICE_CATEGORIES_DEFAULTS: HomeServiceCategoriesContent = {
             size: 'small',
             text_position: 'bottom',
             text_align: 'left',
+            height: 0,
             link: {
                 path: '/packages/pkg-catalog/pages/case-list/case-list',
                 type: 'shop',
@@ -825,6 +854,7 @@ export const HOME_SERVICE_CATEGORIES_DEFAULTS: HomeServiceCategoriesContent = {
             size: 'wide',
             text_position: 'bottom',
             text_align: 'left',
+            height: 0,
             link: {
                 path: '/pages/customer-service/customer-service',
                 type: 'shop',
@@ -848,6 +878,7 @@ export function normalizeHomeServiceCategoryItem(raw: unknown): HomeServiceCateg
         size: size === 'large' || size === 'wide' ? size : 'small',
         text_position: textPosition === 'top' || textPosition === 'middle' ? textPosition : 'bottom',
         text_align: textAlign === 'center' || textAlign === 'right' ? textAlign : 'left',
+        height: normalizeHomeServiceCategoryItemHeight(source.height),
         link: normalizeLink(source.link)
     }
 }
@@ -863,6 +894,40 @@ export function normalizeHomeServiceCategoriesContent(
         layout: source.layout === 'grid' ? 'grid' : 'bento',
         // 不合并默认值：运营删空就是删空，真机不该凭空冒出四条
         data: list.map((item) => normalizeHomeServiceCategoryItem(item))
+    }
+}
+
+/* ------------------------------------------------------------------ *
+ * 5.3 首页「本期推荐」与「近期吉日」（仅后台显隐开关）
+ * ------------------------------------------------------------------ */
+
+export interface HomeRecommendContent {
+    enabled: Int01
+}
+
+export const HOME_RECOMMEND_DEFAULTS: HomeRecommendContent = {
+    enabled: 1
+}
+
+export function normalizeHomeRecommendContent(raw: unknown): HomeRecommendContent {
+    const source = (raw && typeof raw === 'object' ? raw : {}) as Record<string, any>
+    return {
+        enabled: toInt01(source.enabled, 1)
+    }
+}
+
+export interface HomeLuckyDaysContent {
+    enabled: Int01
+}
+
+export const HOME_LUCKY_DAYS_DEFAULTS: HomeLuckyDaysContent = {
+    enabled: 1
+}
+
+export function normalizeHomeLuckyDaysContent(raw: unknown): HomeLuckyDaysContent {
+    const source = (raw && typeof raw === 'object' ? raw : {}) as Record<string, any>
+    return {
+        enabled: toInt01(source.enabled, 1)
     }
 }
 

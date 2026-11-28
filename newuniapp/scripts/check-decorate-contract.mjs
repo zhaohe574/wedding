@@ -12,7 +12,7 @@
  *   1. 开屏广告字段：TS `SplashAdContent` 与 PHP `normalizeContent()` 的键集合必须相等
  *   2. 首页组件白名单：TS `DECORATE_PAGES[home].widgets` 与 PHP 两处 HOME_WIDGET_ORDER 必须相等
  *   3. 开屏页 ID：TS 与 PHP 的 PAGE_ID 必须相等
- *   4. 首页 5 个组件字段：TS 接口与 `HomeDecorateService` 的返回键必须相等
+ *   4. 首页 7 个组件字段：TS 接口与 `HomeDecorateService` 的返回键必须相等
  *   5. 首页组件显示名：TS `HOME_WIDGET_TITLES` 与 PHP `WIDGET_TITLES` 必须相等
  *
  * 用法：node scripts/check-decorate-contract.mjs
@@ -209,7 +209,7 @@ const tsHomeWidgets = tsPageWidgets(ts, 'home')
 diff('首页组件（IndexLogic::HOME_WIDGET_ORDER）', tsHomeWidgets, phpConstList(phpIndex, 'HOME_WIDGET_ORDER'))
 diff('首页组件（DecoratePageLogic::HOME_WIDGET_ORDER）', tsHomeWidgets, phpConstList(phpPage, 'HOME_WIDGET_ORDER'))
 
-/* 2.1 首页 5 个组件字段（TS 接口 ↔ HomeDecorateService 归一化返回键） */
+/* 2.1 首页 7 个组件字段（TS 接口 ↔ HomeDecorateService 归一化返回键） */
 const HOME_FIELD_PAIRS = [
     ['首屏主图内容（HomeHeroContent）', 'HomeHeroContent', 'normalizeHeroContent', 'private static function normalizeHeroItem'],
     ['首屏主图数据项（HomeHeroItem）', 'HomeHeroItem', 'normalizeHeroItem', 'private static function buildDefaultBanner'],
@@ -217,6 +217,8 @@ const HOME_FIELD_PAIRS = [
     ['数据条统计项（HomeBrandStat）', 'HomeBrandStat', 'normalizeBrandStat', 'private static function buildDefaultBrand'],
     ['四宫格内容（HomeServiceCategoriesContent）', 'HomeServiceCategoriesContent', 'normalizeCategoriesContent', 'private static function normalizeCategoryItem'],
     ['四宫格入口项（HomeServiceCategoryItem）', 'HomeServiceCategoryItem', 'normalizeCategoryItem', 'private static function buildDefaultCategories'],
+    ['本期推荐内容（HomeRecommendContent）', 'HomeRecommendContent', 'normalizeRecommendContent', 'private static function buildDefaultRecommend'],
+    ['近期吉日内容（HomeLuckyDaysContent）', 'HomeLuckyDaysContent', 'normalizeLuckyDaysContent', 'private static function buildDefaultLuckyDays'],
     ['服务承诺内容（HomeFlowContent）', 'HomeFlowContent', 'normalizeFlowContent', 'private static function normalizeFlowItem'],
     ['服务承诺步骤（HomeFlowItem）', 'HomeFlowItem', 'normalizeFlowItem', 'private static function buildDefaultFlow'],
     ['首页弹窗内容（HomePopupAdContent）', 'HomePopupAdContent', 'normalizePopupContent', 'private static function buildDefaultPopup']

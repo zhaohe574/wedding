@@ -240,10 +240,11 @@
  *
  * 定位：**结构同构**的近似预览，不是像素级仿真。
  *   - 覆盖装修真正驱动的部分：首页（banner 含图片上浮文字 / home-brand / home-service-categories /
- *     home-flow / home-popup-ad）与开屏页（splash-ad）；
+ *     home-recommend / home-lucky-days / home-flow / home-popup-ad）与开屏页（splash-ad）；
  *   - 尺寸取自小程序源码的 rpx 数字（`rpx()` 换算），版式骨架一致；
  *   - 兜底文案与断行规则来自 `shared/contracts/decorate.ts`，与小程序同源；
- *   - 接口内容（本期推荐 / 近期吉日）画成中性占位，明确"不可配"；两者无数据时真机整块不渲染。
+ *   - 接口内容（本期推荐 / 近期吉日）画成中性占位：内容不可配，但已支持后台「显示本区块」
+ *     开关；关闭或无数据时真机整块不渲染（含标题）。
  *
  * 可接受的差异见 docs §11；编辑与保存逻辑零改动（props / emits 与改造前一致）。
  */

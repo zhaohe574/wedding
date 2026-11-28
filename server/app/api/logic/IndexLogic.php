@@ -45,6 +45,8 @@ class IndexLogic extends BaseLogic
         'banner',
         'home-brand',
         'home-service-categories',
+        'home-recommend',
+        'home-lucky-days',
         'home-flow',
         'home-popup-ad',
     ];

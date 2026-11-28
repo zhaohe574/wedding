@@ -6,6 +6,7 @@
             :key="index"
             class="tile"
             :class="[layout === 'bento' ? `tile--${item.size}` : '', { 'tile--no-image': !item.image }]"
+            :style="tileStyleOf(item)"
         >
             <decoration-img
                 v-if="item.image"
@@ -57,6 +58,16 @@ const props = defineProps({
 
 const layout = computed(() => (props.content.layout === 'grid' ? 'grid' : 'bento'))
 
+/** 单卡高度（rpx × 0.5 = 375 壳内的 px）；0 = 跟随版式默认 */
+const tileStyleOf = (item: { height: number }) =>
+    item.height > 0
+        ? {
+              height: `${Math.round(item.height * 0.5)}px`,
+              minHeight: '0',
+              alignSelf: 'start'
+          }
+        : undefined
+
 const showList = computed(() => {
     const list = Array.isArray(props.content.data) ? props.content.data : []
     return list
@@ -72,7 +83,7 @@ const showList = computed(() => {
 .tile-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 84px;
+    align-items: start;
     gap: 9px;
     padding: 18px 21px 0;
 
@@ -80,6 +91,9 @@ const showList = computed(() => {
         /* 均分双列：所有入口同尺寸，不再按 size 跨行跨列 */
         grid-row: span 1;
         grid-column: span 1;
+        align-self: start;
+        height: 84px;
+        min-height: 0;
     }
 
     &__empty {
@@ -93,7 +107,7 @@ const showList = computed(() => {
 .tile {
     position: relative;
     min-width: 0;
-    height: 100%;
+    height: 84px;
     overflow: hidden;
     border-radius: 16px;
     background: #181614;
@@ -105,6 +119,9 @@ const showList = computed(() => {
 
     &--large {
         grid-row: span 2;
+        align-self: stretch;
+        height: 100%;
+        min-height: 177px;
     }
 
     &--wide {

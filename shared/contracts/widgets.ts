@@ -15,6 +15,8 @@ export type DecorateWidgetName =
     | 'home-brand'
     | 'home-feature-carousel'
     | 'home-service-categories'
+    | 'home-recommend'
+    | 'home-lucky-days'
     | 'home-flow'
     | 'home-popup-ad'
     | 'splash-ad'
@@ -51,6 +53,8 @@ export const HOME_WIDGET_ORDER: DecorateWidgetName[] = [
     'banner',
     'home-brand',
     'home-service-categories',
+    'home-recommend',
+    'home-lucky-days',
     'home-flow',
     'home-popup-ad'
 ]

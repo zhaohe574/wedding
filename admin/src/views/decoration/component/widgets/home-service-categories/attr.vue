@@ -44,7 +44,7 @@
                                 </template>
                             </material-picker>
                             <div class="mt-2 text-xs text-tx-secondary">
-                                建议尺寸：大图 335×354px、小图 335×168px、通栏 690×168px；不上传时显示深色渐变底。
+                                建议尺寸：{{ suggestedWidthOf(item) }}×{{ effectiveHeightOf(item) }}px；不上传时显示深色渐变底。
                             </div>
                             <el-form-item class="mt-[18px]" label="标题">
                                 <el-input
@@ -72,6 +72,40 @@
                                         {{ opt.label }}
                                     </el-radio-button>
                                 </el-radio-group>
+                            </el-form-item>
+                            <el-form-item class="mt-[18px]" label="卡片高度">
+                                <div class="w-full">
+                                    <div class="flex items-center gap-3 w-full">
+                                        <el-slider
+                                            :model-value="effectiveHeightOf(item)"
+                                            :min="HOME_SERVICE_CATEGORY_ITEM_HEIGHT_MIN"
+                                            :max="HOME_SERVICE_CATEGORY_ITEM_HEIGHT_MAX"
+                                            :step="4"
+                                            class="flex-1"
+                                            @update:model-value="(val) => setItemHeight(item, val)"
+                                        />
+                                        <el-input-number
+                                            :model-value="item.height > 0 ? item.height : undefined"
+                                            :min="HOME_SERVICE_CATEGORY_ITEM_HEIGHT_MIN"
+                                            :max="HOME_SERVICE_CATEGORY_ITEM_HEIGHT_MAX"
+                                            :step="4"
+                                            :placeholder="`默认 ${defaultHeightOf(item)}`"
+                                            controls-position="right"
+                                            class="!w-32"
+                                            @update:model-value="(val) => setItemHeight(item, val)"
+                                        />
+                                        <span class="text-xs text-tx-secondary">rpx</span>
+                                        <el-button
+                                            v-if="item.height > 0"
+                                            link
+                                            type="primary"
+                                            size="small"
+                                            @click="setItemHeight(item, 0)"
+                                        >
+                                            默认
+                                        </el-button>
+                                    </div>
+                                </div>
                             </el-form-item>
                             <el-form-item class="mt-[18px]" label="文字位置">
                                 <el-radio-group v-model="item.text_position">
@@ -137,9 +171,15 @@ import Draggable from 'vuedraggable'
 import {
     HOME_SERVICE_CATEGORIES_DEFAULTS,
     HOME_SERVICE_CATEGORIES_LAYOUTS,
+    HOME_SERVICE_CATEGORY_DEFAULT_HEIGHT,
+    HOME_SERVICE_CATEGORY_ITEM_HEIGHT_MAX,
+    HOME_SERVICE_CATEGORY_ITEM_HEIGHT_MIN,
+    HOME_SERVICE_CATEGORY_LARGE_DEFAULT_HEIGHT,
     HOME_SERVICE_CATEGORY_SIZES,
     HOME_SERVICE_CATEGORY_TEXT_ALIGNS,
-    HOME_SERVICE_CATEGORY_TEXT_POSITIONS
+    HOME_SERVICE_CATEGORY_TEXT_POSITIONS,
+    normalizeHomeServiceCategoryItemHeight,
+    type HomeServiceCategoryItem
 } from '@shared/contracts/decorate'
 
 import type options from './options'
@@ -169,7 +209,29 @@ const contentData = computed({
     }
 })
 
-/** 旧数据没有 layout：补回 Bento，避免单选组空白 */
+/** 版式默认高度：Bento 大图跨两行，其余按单行 */
+const defaultHeightOf = (item: Pick<HomeServiceCategoryItem, 'size'>) =>
+    contentData.value.layout === 'bento' && item.size === 'large'
+        ? HOME_SERVICE_CATEGORY_LARGE_DEFAULT_HEIGHT
+        : HOME_SERVICE_CATEGORY_DEFAULT_HEIGHT
+
+const effectiveHeightOf = (item: Pick<HomeServiceCategoryItem, 'size' | 'height'>) => {
+    const h = normalizeHomeServiceCategoryItemHeight(item.height)
+    return h > 0 ? h : defaultHeightOf(item)
+}
+
+const suggestedWidthOf = (item: Pick<HomeServiceCategoryItem, 'size'>) =>
+    contentData.value.layout === 'bento' && item.size === 'wide' ? 690 : 335
+
+const setItemHeight = (
+    item: HomeServiceCategoryItem,
+    value: number | number[] | null | undefined
+) => {
+    const raw = Array.isArray(value) ? value[0] : value
+    item.height = normalizeHomeServiceCategoryItemHeight(raw)
+}
+
+/** 旧数据缺 layout：一次回写默认值，避免渲染端猜 */
 watchEffect(() => {
     if (props.content.layout !== 'bento' && props.content.layout !== 'grid') {
         emits('update:content', {
@@ -192,6 +254,7 @@ const handleAdd = () => {
         size: 'small',
         text_position: 'bottom',
         text_align: 'left',
+        height: 0,
         link: {
             path: '',
             type: 'shop'
