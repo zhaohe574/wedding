@@ -97,7 +97,6 @@ import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate, safeDecodeParam } from '@/utils/link'
-import { haptic } from '@/utils/haptics'
 import { FB } from '@/constants/feedback'
 import { getCaseList, getCaseHotTags } from '@/api/content'
 import { normalizePage } from '@/request'
@@ -187,7 +186,6 @@ function reload() {
 
 function switchTag(t: string) {
     if (t === tag.value) return
-    haptic('light', 'case-tag')
     tag.value = t
     list.value = []
     reload()

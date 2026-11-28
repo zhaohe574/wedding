@@ -393,22 +393,18 @@ function switchMode(m: { key: 'change' | 'refund'; enabled: boolean }) {
         )
         return
     }
-    haptic('light', 'tc-mode')
     mode.value = m.key
 }
 
 function pickChangeReason(r: string) {
     form.changeReason = r
-    haptic('light', 'tc-reason')
 }
 
 function pickRefundReason(r: string) {
     form.refundReason = r
-    haptic('light', 'tc-reason')
 }
 
 function onPickDate(e: any) {
-    haptic('light', 'tc-date')
     const val = String(e?.detail?.value || '').trim()
     if (val) {
         form.newDate = val.slice(0, 10)

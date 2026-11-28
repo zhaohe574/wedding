@@ -150,7 +150,6 @@
 import { computed, reactive, watch } from 'vue'
 import type { StaffFollowupReminderItem, StaffFollowupTargetOption } from '@/api/staff'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 
 const props = withDefaults(
     defineProps<{
@@ -297,21 +296,18 @@ function close(): void {
 
 function selectGeneralTarget(): void {
     if (form.source_type === 'general') return
-    haptic('light', 'followup-target')
     form.source_type = 'general'
     form.target_id = 0
 }
 
 function selectTarget(t: StaffFollowupTargetOption): void {
     if (form.source_type === t.source_type && form.target_id === Number(t.target_id || 0)) return
-    haptic('light', 'followup-target')
     form.source_type = t.source_type
     form.target_id = Number(t.target_id || 0)
 }
 
 function pickRemindType(item: { value: string; label: string }): void {
     if (form.remind_type === item.value) return
-    haptic('light', 'followup-type')
     const prevLabel = props.remindTypes.find((r) => r.value === form.remind_type)?.label || ''
     form.remind_type = item.value
     if (!form.title.trim() || form.title.trim() === prevLabel) {
@@ -321,7 +317,6 @@ function pickRemindType(item: { value: string; label: string }): void {
 
 function pickQuickDate(date: string): void {
     if (form.remind_date === date) return
-    haptic('light', 'followup-date')
     form.remind_date = date
 }
 

@@ -334,7 +334,6 @@ function onPrimary() {
 function pickSingle(q: any, opt: string) {
     if (!editable.value) return
     answers[keyOf(q)] = answers[keyOf(q)] === opt ? '' : opt
-    haptic('light', 'q-option')
     onInput()
 }
 
@@ -358,14 +357,12 @@ function toggleMulti(q: any, opt: string) {
         cur.push(opt)
     }
     answers[k] = cur
-    haptic('light', 'q-option')
     onInput()
 }
 
 function pickRating(q: any, n: number) {
     if (!editable.value) return
     answers[keyOf(q)] = answers[keyOf(q)] === n ? 0 : n
-    haptic('light', 'q-star')
     onInput()
 }
 

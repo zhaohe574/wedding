@@ -423,7 +423,6 @@ import { navigate } from '@/utils/link'
 import { report } from '@/platform/report'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 
 const appStore = useAppStore()
 const userStore = useUserStore()
@@ -686,7 +685,6 @@ function onPrimary() {
 }
 
 function toggleFaq(i: number) {
-    haptic('light', 'cs-faq')
     openFaq.value = openFaq.value === i ? -1 : i
 }
 
@@ -695,12 +693,10 @@ function goLogin() {
 }
 
 function goOrders() {
-    haptic('light', 'cs-quick')
     navigate({ path: '/pages/order/order' })
 }
 
 function goAftersale() {
-    haptic('light', 'cs-quick')
     const pages = getCurrentPages()
     const prevRoute = pages.length >= 2 ? String((pages[pages.length - 2] as any)?.route || '') : ''
     if (prevRoute === 'packages/pkg-service/pages/aftersale/index') {
@@ -711,7 +707,6 @@ function goAftersale() {
 }
 
 function onFallbackChat() {
-    haptic('light', 'cs-chat')
     if (contact.mobile) {
         askCall()
         return
@@ -721,7 +716,6 @@ function onFallbackChat() {
 
 function copyMobile() {
     if (!contact.mobile) return
-    haptic('light', 'cs-copy')
     uni.setClipboardData({
         data: contact.mobile,
         success: () => toast.success('号码已复制'),
@@ -730,7 +724,6 @@ function copyMobile() {
 }
 
 function askCall() {
-    haptic('light', 'cs-call')
     if (!contact.mobile) return
     modalRef.value?.showModal({
         title: '拨打客服专线',
@@ -756,12 +749,10 @@ function openIntentionSheet() {
         goLogin()
         return
     }
-    haptic('light', 'cs-intent')
     intentionOpen.value = true
 }
 
 function pickBudget(opt: string) {
-    haptic('light', 'cs-chip')
     intentionForm.budget_range = intentionForm.budget_range === opt ? '' : opt
 }
 
@@ -771,7 +762,6 @@ function onPickWeddingDate(e: any) {
 }
 
 function toggleNeed(need: string) {
-    haptic('light', 'cs-chip')
     const idx = intentionForm.service_needs.indexOf(need)
     if (idx >= 0) {
         intentionForm.service_needs.splice(idx, 1)

@@ -70,6 +70,7 @@
                         text="保存"
                         variant="ink"
                         size="lg"
+                        haptic-level="medium"
                         :loading="saving"
                         @click="handleSave"
                     />
@@ -96,7 +97,6 @@ import { getMobileByMnp } from '@/api/auth'
 import { uploadImage } from '@/api/app'
 import { extractPhoneCode, isPhoneAuthDenied } from '@/platform/login'
 import { useUserStore } from '@/stores/user'
-import { haptic } from '@/utils/haptics'
 
 const GENDERS = [
     { label: '未设置', value: 0 },
@@ -139,7 +139,6 @@ async function load() {
 }
 
 async function chooseAvatar() {
-    haptic('light', 'profile-avatar')
     // 合规 S1：统一封装，含取消 / 权限被拒 / 异常三种 fail 处理
     const paths = await chooseImages({ count: 1 })
     const path = paths[0]
@@ -154,7 +153,6 @@ async function chooseAvatar() {
 
 async function handlePhone(e: any) {
     if (bindingPhone.value) return
-    haptic('light', 'profile-phone')
     if (isPhoneAuthDenied(e)) {
         toast.info('已取消授权')
         return

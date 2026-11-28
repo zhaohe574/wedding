@@ -186,7 +186,6 @@
 
 <script setup lang="ts">
 import { useAppStore } from '@/stores/app'
-import { haptic } from '@/utils/haptics'
 import type { CommentRow, ReplyState } from '../useFeedComments'
 
 defineProps<{
@@ -210,29 +209,23 @@ const emit = defineEmits<{
 
 const appStore = useAppStore()
 
-/* 评论区四个动作统一走 light 触觉：排序 / 点赞 / 回复 / 展开回复，键位互不吞震 */
 function onSwitchSort(next: 'hot' | 'new') {
-    haptic('light', 'feed-comment-sort')
     emit('switchSort', next)
 }
 
 function onLike(row: CommentRow) {
-    haptic('light', 'feed-comment-like')
     emit('like', row)
 }
 
 function onReply(target: CommentRow, rootId: number) {
-    haptic('light', 'feed-comment-reply')
     emit('reply', target, rootId)
 }
 
 function onToggleReplies(row: CommentRow) {
-    haptic('light', 'feed-comment-toggle')
     emit('toggleReplies', row)
 }
 
 function onLoadReplies(parentId: number, reset: boolean) {
-    haptic('light', 'feed-comment-load')
     emit('loadReplies', parentId, reset)
 }
 

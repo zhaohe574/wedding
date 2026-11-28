@@ -49,7 +49,6 @@
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { getDeviceInfo } from '@/platform/device'
-import { haptic } from '@/utils/haptics'
 import { useBadgeStore } from '@/stores/badge'
 import { useUserStore } from '@/stores/user'
 
@@ -161,7 +160,6 @@ function badgeOf(item: TabItem): number {
 
 function go(item: TabItem) {
     if (item.path === props.current) return
-    haptic('light', 'app-tabbar')
     playThumbStretch()
     uni.switchTab({ url: item.path })
 }

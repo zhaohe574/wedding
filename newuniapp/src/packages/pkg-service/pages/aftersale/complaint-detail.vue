@@ -279,7 +279,6 @@ async function load() {
 
 function pickStar(n: number) {
     score.value = n
-    haptic('light', 'complaint-star')
 }
 
 async function handleRate() {

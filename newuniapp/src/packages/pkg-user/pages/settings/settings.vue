@@ -118,6 +118,7 @@
                             text="确认修改"
                             variant="ink"
                             size="md"
+                            haptic-level="medium"
                             :loading="pwdSaving"
                             @click="submitPassword"
                         />
@@ -310,7 +311,6 @@ function stopRestoreBubble() {
 }
 
 function goHiddenDetail(id: number) {
-    haptic('light', 'settings-hidden-open')
     // 先关面板，避免从详情返回时它还浮着
     hiddenVisible.value = false
     navigate({
@@ -320,7 +320,6 @@ function goHiddenDetail(id: number) {
 }
 
 function openHidden() {
-    haptic('light', 'settings-hidden')
     refreshHidden()
     hiddenVisible.value = true
 }
@@ -390,7 +389,6 @@ async function loadOa() {
 }
 
 function openPassword() {
-    haptic('light', 'settings-password')
     pwdVisible.value = true
 }
 
@@ -403,12 +401,10 @@ const schemeOptions: { value: ColorSchemePreference; label: string }[] = [
 ]
 
 function openColorScheme() {
-    haptic('light', 'settings-scheme')
     schemeVisible.value = true
 }
 
 function pickColorScheme(val: ColorSchemePreference) {
-    haptic('light', 'settings-scheme-pick')
     colorScheme.setPreference(val)
     schemeVisible.value = false
 }
@@ -419,12 +415,10 @@ function onToggleHaptics(next: boolean) {
 }
 
 function openOa() {
-    haptic('light', 'settings-oa')
     navigate({ path: '/pages/oa_subscribe/oa_subscribe' })
 }
 
 function openAgreement(type: string) {
-    haptic('light', `settings-agreement-${type}`)
     navigate({ path: '/pages/agreement/agreement', query: { type } })
 }
 
@@ -447,7 +441,6 @@ async function submitPassword() {
 }
 
 async function handleLogout() {
-    haptic('medium', 'settings-logout')
     const confirmed = await new Promise<boolean>((resolve) => {
         // uni.showModal 是系统居中确认弹窗：退出登录需要打断当前动作，
         // 保留居中形态，不改成底部抽屉；confirmColor 走 schemeColor（原生参数不认 CSS 变量）
@@ -463,6 +456,7 @@ async function handleLogout() {
         })
     })
     if (!confirmed) return
+    haptic('medium', 'settings-logout')
     try {
         await logoutApi()
     } catch {

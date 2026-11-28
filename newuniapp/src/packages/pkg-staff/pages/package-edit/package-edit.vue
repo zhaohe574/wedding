@@ -510,7 +510,6 @@ async function loadRegionTree() {
 
 function openCreateRegionPrice() {
     if (!canWrite.value) return
-    haptic('light', 'pkg-region-add')
     editingRegionGroup.value = null
     regionSheetVisible.value = true
     if (!regionTree.value.length && !treeLoading.value) {
@@ -520,7 +519,6 @@ function openCreateRegionPrice() {
 
 function openEditRegionPrice(group: RegionPriceGroup) {
     if (!canWrite.value) return
-    haptic('light', 'pkg-region-edit')
     editingRegionGroup.value = group
     regionSheetVisible.value = true
     if (!regionTree.value.length && !treeLoading.value) {
@@ -549,7 +547,6 @@ function onDeleteRegionPrice(groupKey: string) {
 }
 
 function confirmDeleteGroup(group: RegionPriceGroup) {
-    haptic('heavy', 'pkg-region-group-delete')
     uni.showModal({
         title: '移除地区价格',
         content: `确认移除「${buildGroupTitle(group)}」地区价格？`,
@@ -559,6 +556,7 @@ function confirmDeleteGroup(group: RegionPriceGroup) {
         confirmColor: schemeColor('danger'),
         success: (res) => {
             if (!res.confirm) return
+            haptic('heavy', 'pkg-region-group-delete')
             regionPrices.value = removeGroupFromFlat(regionPrices.value, group.key)
             toast.success('已移除地区价格')
         }
@@ -571,7 +569,6 @@ function isAddonSelected(id: number): boolean {
 
 function toggleAddon(id: number) {
     if (!canWrite.value) return
-    haptic('light', 'pkg-addon-toggle')
     const numId = Number(id)
     if (isAddonSelected(numId)) {
         form.addon_ids = form.addon_ids.filter((x) => x !== numId)
@@ -582,36 +579,30 @@ function toggleAddon(id: number) {
 
 function selectAllAddons() {
     if (!canWrite.value) return
-    haptic('light', 'pkg-addon-all')
     form.addon_ids = addonOptions.value.map((ad) => ad.id)
 }
 
 function clearAddons() {
     if (!canWrite.value) return
-    haptic('light', 'pkg-addon-clear')
     form.addon_ids = []
 }
 
 function setShow(val: 0 | 1) {
     if (!canWrite.value || form.is_show === val) return
-    haptic('light', 'pkg-show')
     form.is_show = val
 }
 
 function setRecommend(val: 0 | 1) {
     if (!canWrite.value || form.is_recommend === val) return
-    haptic('light', 'pkg-recommend')
     form.is_recommend = val
 }
 
 function setRegionFilter(val: 0 | 1 | 2 | 3) {
     if (regionLevelFilter.value === val) return
-    haptic('light', 'pkg-region-filter')
     regionLevelFilter.value = val
 }
 
 function goCreateAddon() {
-    // 触觉由「新增附加项」base-button 统一发 light
     navigate({ path: '/packages/pkg-staff/pages/addon-edit/addon-edit' })
 }
 

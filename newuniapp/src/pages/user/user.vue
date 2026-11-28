@@ -204,7 +204,6 @@
                             @touchstart="onRowPressStart(row.key)"
                             @touchend="onRowPressEnd"
                             @touchcancel="onRowPressEnd"
-                            @tap="onRowHaptic"
                         >
                             <view class="lrow__ic"><tn-icon :name="row.icon" :size="34" /></view>
                             <view class="lrow__txt">
@@ -342,7 +341,6 @@ import { useUserStore } from '@/stores/user'
 import { useBadgeStore } from '@/stores/badge'
 import { useAppStore } from '@/stores/app'
 import { isDecorateLinkConfigured, isWechatContactLink, navigate } from '@/utils/link'
-import { haptic } from '@/utils/haptics'
 import { useBrand } from '@/composables/useBrand'
 
 interface MenuRow {
@@ -762,7 +760,6 @@ function goQuery() {
 
 /** 订单五格 → 22 屏带筛选状态（22 用 storage 消费，避免 query 与 tab 页冲突） */
 function goOrders(status?: string) {
-    haptic('light', 'user-order')
     uni.setStorageSync('order_tab_status', status ?? 'all')
     navigate({ path: '/pages/order/order' })
 }
@@ -778,12 +775,7 @@ function onRowPressEnd() {
     rowPressKey.value = ''
 }
 
-function onRowHaptic() {
-    haptic('light', 'user-row')
-}
-
 function onRow(row: MenuRow) {
-    haptic('light', 'user-row')
     if (row.action === 'staff-workbench') {
         onWorkbench()
         return

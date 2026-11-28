@@ -101,6 +101,7 @@
                     text="提交评价"
                     variant="ink"
                     size="lg"
+                    haptic-level="medium"
                     :loading="submitting"
                     @click="handleSubmit"
                 />
@@ -123,7 +124,6 @@ import { toast } from '@/composables/useToast'
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { publishReview, getReviewTags } from '@/api/content'
-import { haptic } from '@/utils/haptics'
 import { useAppStore } from '@/stores/app'
 
 /** 星级档位文案：星级只表达"几颗"，文字才表达"这意味着什么" ——
@@ -176,7 +176,6 @@ const canReview = computed(() => {
 const form = reactive({ staffName: '', packageName: '' })
 
 function toggleTag(id: number) {
-    haptic('light', 'review-tag')
     const i = selectedTags.value.indexOf(id)
     if (i >= 0) selectedTags.value.splice(i, 1)
     else selectedTags.value.push(id)

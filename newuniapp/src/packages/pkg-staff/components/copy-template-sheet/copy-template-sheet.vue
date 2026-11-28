@@ -92,7 +92,6 @@
 import { computed, reactive, watch } from 'vue'
 import type { StaffCopyTemplateCustom } from '@/api/staff'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 
 const TEMPLATE_VARIABLES = [
     { key: '{customer_name}', label: '客户称呼' },
@@ -166,12 +165,10 @@ function close(): void {
 
 function pickScene(value: string): void {
     if (form.scene === value) return
-    haptic('light', 'copy-template-scene')
     form.scene = value
 }
 
 function appendVariable(key: string): void {
-    haptic('light', 'copy-template-var')
     form.content = `${form.content}${key}`.slice(0, 1000)
 }
 

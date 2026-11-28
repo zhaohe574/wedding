@@ -150,7 +150,6 @@ import { useStaffGuard } from '@/composables/useStaffGuard'
 import { normalizePage } from '@/request'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 
 const {
     guardPhase,

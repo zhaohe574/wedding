@@ -267,7 +267,6 @@ import { useStaffGuard } from '@/composables/useStaffGuard'
 import { useStaffWriteGate, STAFF_WRITE_GATE_TIP } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import { schemeColor } from '@/utils/scheme-color'
 
 const editId = ref(0)
@@ -324,7 +323,6 @@ const videoProgress = ref(0)
 
 async function pickVideo() {
     if (videoUploading.value) return
-    haptic('light', 'dp-video-pick')
     // 与页面提示文案一致：100MB / 60s
     const picked = await chooseVideo({ maxDuration: 60, maxSizeMB: 100 })
     if (!picked) return
@@ -342,7 +340,6 @@ async function pickVideo() {
 }
 
 function removeVideo() {
-    haptic('light', 'dp-video-remove')
     videoUrl.value = ''
     videoProgress.value = 0
 }

@@ -284,7 +284,6 @@ import { useStaffGuard } from '@/composables/useStaffGuard'
 import { useStaffWriteGate, STAFF_WRITE_GATE_TIP } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import { schemeColor } from '@/utils/scheme-color'
 
 const editId = ref(0)
@@ -349,7 +348,6 @@ function onPickDate(e: any) {
 }
 
 function clearShootDate() {
-    haptic('light', 'work-edit-clear-date')
     form.shoot_date = ''
 }
 
@@ -360,7 +358,6 @@ const videoProgress = ref(0)
 
 async function pickVideo() {
     if (videoUploading.value) return
-    haptic('light', 'work-edit-video-pick')
     const picked = await chooseVideo({ maxDuration: 60, maxSizeMB: 100 })
     if (!picked) return
     videoUploading.value = true
@@ -377,7 +374,6 @@ async function pickVideo() {
 }
 
 function removeVideo() {
-    haptic('light', 'work-edit-video-remove')
     videoUrl.value = ''
     videoProgress.value = 0
 }

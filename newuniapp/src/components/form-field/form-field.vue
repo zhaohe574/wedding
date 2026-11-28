@@ -252,7 +252,6 @@ import { computed, ref, getCurrentInstance } from 'vue'
 import { chooseImages } from '@/composables/useChooseImage'
 import { uploadImage } from '@/api/app'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 
 const props = withDefaults(
     defineProps<{
@@ -322,7 +321,6 @@ const onBlur = () => {
 const ratingValue = computed(() => Number(props.modelValue) || 0)
 function onRate(n: number) {
     if (props.disabled || props.readonly) return
-    haptic('light', 'form-rating')
     emit('update:modelValue', n)
     emit('change', n)
 }

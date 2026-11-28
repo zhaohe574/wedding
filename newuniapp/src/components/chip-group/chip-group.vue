@@ -50,7 +50,6 @@
  *  - 横向滚动（scroll）用于筛选条超出屏宽的场景，滚动容器本身不带内边距，由页面控制。
  */
 import { computed } from 'vue'
-import { haptic } from '@/utils/haptics'
 
 type ChipValue = string | number
 type ChipItem = string | { label: string; value: ChipValue }
@@ -77,7 +76,6 @@ const normalized = computed(() =>
 
 function pick(v: ChipValue) {
     if (v === props.modelValue) return
-    haptic('light', 'chip-group')
     emit('update:modelValue', v)
     emit('change', v)
 }

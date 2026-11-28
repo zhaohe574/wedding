@@ -780,7 +780,6 @@ const letterOutdated = computed(() => Number(latestLetter.value?.is_outdated || 
 function dialContactMobile() {
     const mobile = String(order.value.contact_mobile || '').trim()
     if (!mobile) return
-    haptic('light', 'staff-order-dial')
     uni.makePhoneCall({ phoneNumber: mobile, fail: () => {} })
 }
 
@@ -822,12 +821,10 @@ async function fetchTemplateVersions() {
 function selectTemplateVersion(configId: number) {
     const id = Number(configId || 0)
     if (id <= 0 || id === selectedConfigId.value) return
-    haptic('light', 'staff-order-template')
     selectedConfigId.value = id
 }
 
 function toggleHistory() {
-    haptic('light', 'staff-order-history')
     historyExpanded.value = !historyExpanded.value
 }
 
@@ -1258,7 +1255,6 @@ function cancelSuccessText(label: string) {
 function onFulfillAction() {
     const action = fulfillAction.value
     if (!guardAllowed.value || acting.value || !action || !orderId.value) return
-    haptic('medium', 'staff-order-fulfill')
     // 确认类二次弹窗保留居中形态：uni.showModal 是系统原生模态，不做可下拉关闭的抽屉
     uni.showModal({
         title: action.modalTitle,
@@ -1267,6 +1263,7 @@ function onFulfillAction() {
         cancelText: '取消',
         success: async (r) => {
             if (!r.confirm) return
+            haptic('medium', 'staff-order-fulfill')
             acting.value = true
             try {
                 if (action.key === 'confirm') {
@@ -1290,7 +1287,6 @@ function onFulfillAction() {
 
 function openCancelSheet() {
     if (!canCancel.value || cancelSubmitting.value) return
-    haptic('heavy', 'staff-order-cancel')
     cancelReason.value = ''
     cancelError.value = ''
     cancelSheetVisible.value = true
@@ -1308,7 +1304,6 @@ function onCancelPopupChange(visible: boolean) {
 
 function pickQuickReason(reason: string) {
     if (cancelSubmitting.value) return
-    haptic('light', 'staff-order-cancel-reason')
     cancelReason.value = cancelReason.value === reason ? '' : reason
     cancelError.value = ''
 }
@@ -1396,7 +1391,6 @@ const orderChanges = computed(() => {
 })
 
 function copyOrderSn() {
-    haptic('light', 'staff-order-copy')
     uni.setClipboardData({
         data: String(order.value.order_sn || ''),
         success: () => toast.success('订单编号已复制')

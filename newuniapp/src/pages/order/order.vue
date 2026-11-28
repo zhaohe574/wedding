@@ -126,14 +126,9 @@
                     </view>
                     <view
                         class="card__btn press-spring"
-                        :class="{
-                            'is-solid': primaryAction(item).solid,
-                            'is-pressing': actionPressId === item.id
-                        }"
-                        hover-stop-propagation="true"
-                        @touchstart.stop="onActionPressStart(item.id)"
-                        @touchend.stop="onActionPressEnd"
-                        @touchcancel.stop="onActionPressEnd"
+                        :class="{ 'is-solid': primaryAction(item).solid }"
+                        hover-class="is-pressing"
+                        :hover-stop-propagation="true"
                         @tap.stop="onAction(item)"
                     >
                         <text class="card__btn-text">{{ primaryAction(item).text }}</text>
@@ -247,17 +242,6 @@ watch(
         if (len) playStagger()
     }
 )
-
-/* ---- 主操作按钮按压（§3.1）：只有按钮自身微缩，卡片保持静止 ---- */
-const actionPressId = ref(0)
-
-function onActionPressStart(id: number) {
-    actionPressId.value = id
-}
-
-function onActionPressEnd() {
-    actionPressId.value = 0
-}
 
 onUnmounted(() => {
     if (staggerTimer) clearTimeout(staggerTimer)
@@ -434,7 +418,6 @@ function refreshKeepingCount() {
 
 function switchTab(key: string) {
     if (key === activeKey.value) return
-    haptic('light', 'order-tab')
     activeKey.value = key
     list.value = []
     reload()
@@ -445,9 +428,10 @@ function goDetail(id: number) {
 }
 
 function onAction(item: any) {
-    haptic('medium', 'order-action')
     const status = Number(item.order_status)
     if (status === 1) {
+        // 只有「去支付」是资金动作，需要确认落手感；普通查看详情不震
+        haptic('medium', 'order-action')
         navigate({
             path: '/packages/pkg-order/pages/detail/detail',
             query: { id: item.id, pay: '1' }

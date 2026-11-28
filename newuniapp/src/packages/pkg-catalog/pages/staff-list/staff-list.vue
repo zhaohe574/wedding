@@ -63,7 +63,6 @@
                                     hover-class="is-pressed"
                                     class="filters__chip hit-88"
                                     :class="{ 'is-active': !!date }"
-                                    @tap="onFilterTap"
                                 >
                                     <text class="filters__text">{{ date || '日期' }}</text>
                                     <!-- v1 u-icon → v2 tn-icon：arrow-down → down-arrow -->
@@ -80,7 +79,6 @@
                                     hover-class="is-pressed"
                                     class="filters__chip hit-88"
                                     :class="{ 'is-active': categoryId > 0 }"
-                                    @tap="onFilterTap"
                                 >
                                     <text class="filters__text ellipsis">{{ categoryName }}</text>
                                     <!-- v1 u-icon → v2 tn-icon：arrow-down → down-arrow -->
@@ -679,7 +677,6 @@ function changeSort(key: string) {
 }
 
 function openSort() {
-    haptic('light', 'staff-sort')
     uni.showActionSheet({
         itemList: SORTS.map((s) =>
             fromQuery.value && s.key === 'default' ? '推荐排序' : s.label
@@ -695,11 +692,6 @@ function onDateChange(e: any) {
     date.value = String(e?.detail?.value || '')
     saveBookingContext({ date: date.value })
     reloadFromTop()
-}
-
-/** 三个 picker 触发器共用一处 light 触觉：连点由 haptic 内部 300ms 节流兜底 */
-function onFilterTap() {
-    haptic('light', 'staff-filter')
 }
 
 function onCategoryChange(e: any) {
@@ -769,7 +761,6 @@ function goDetail(item: any) {
     const now = Date.now()
     if (now - lastNavAt < 300) return
     lastNavAt = now
-    haptic('light', 'staff-open')
     saveBookingContext({ date: date.value, region: currentRegion() })
     // 地区六字段必须一起带走：详情页/预约/报价靠它复算同一个区县价，丢了就会退回全国价
     navigate({

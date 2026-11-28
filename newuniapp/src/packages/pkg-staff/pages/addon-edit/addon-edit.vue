@@ -255,7 +255,6 @@ import { useStaffWriteGate, STAFF_WRITE_GATE_TIP } from '@/composables/useStaffW
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import { schemeColor } from '@/utils/scheme-color'
 
 const editId = ref(0)
@@ -309,7 +308,6 @@ function isPackageSelected(id: number): boolean {
 
 function togglePackage(id: number) {
     if (!canWrite.value) return
-    haptic('light', 'addon-pkg-toggle')
     const numId = Number(id)
     if (isPackageSelected(numId)) {
         form.package_ids = form.package_ids.filter((x) => x !== numId)
@@ -320,24 +318,20 @@ function togglePackage(id: number) {
 
 function selectAllPackages() {
     if (!canWrite.value) return
-    haptic('light', 'addon-pkg-all')
     form.package_ids = packageOptions.value.map((pkg) => pkg.id)
 }
 
 function clearPackages() {
     if (!canWrite.value) return
-    haptic('light', 'addon-pkg-clear')
     form.package_ids = []
 }
 
 function setShow(val: 0 | 1) {
     if (!canWrite.value || form.is_show === val) return
-    haptic('light', 'addon-show')
     form.is_show = val
 }
 
 function goCreatePackage() {
-    // 触觉由「去新增套餐」base-button 统一发 light
     navigate({ path: '/packages/pkg-staff/pages/package-edit/package-edit' })
 }
 

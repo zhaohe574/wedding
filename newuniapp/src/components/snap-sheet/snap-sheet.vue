@@ -376,7 +376,6 @@ function settleTo(snap: SnapKey) {
     if (snap === 'closed') {
         activeSnap.value = 'closed'
         if (prev !== 'closed') {
-            haptic('light')
             emit('update:modelValue', false)
             emit('close')
             playClose()
@@ -390,7 +389,7 @@ function settleTo(snap: SnapKey) {
     if (prev !== snap) {
         activeSnap.value = snap
         emit('snapChange', snap)
-        haptic(snap === 'full' ? 'medium' : 'light')
+        if (snap === 'full') haptic('light', 'snap-full')
     }
     offset.value = snapOffset(snap)
     syncSettledLift()

@@ -867,7 +867,6 @@ async function fetchReselectCandidates() {
 
 function selectReselectCandidate(candidate: ReselectCandidate) {
     if (!candidate.schedule_available || reselectSubmitting.value) return
-    haptic('light', 'order-reselect')
     selectedCandidateStaffId.value =
         selectedCandidateStaffId.value === candidate.staff_id ? 0 : candidate.staff_id
 }
@@ -886,6 +885,7 @@ async function submitReselect() {
     const item = reselectItem.value
     const candidate = selectedCandidate.value
     if (!item || !candidate || reselectSubmitting.value || !orderId.value) return
+    haptic('medium', 'order-reselect')
     reselectSubmitting.value = true
     try {
         await reselectOrderCollaborator({
@@ -1114,7 +1114,6 @@ function onPrimary() {
 function copySn() {
     const sn = String(order.value?.order_sn || '')
     if (!sn) return
-    haptic('light', 'order-copy')
     uni.setClipboardData({
         data: sn,
         success: () => toast.info('订单号已复制')
@@ -1318,6 +1317,7 @@ async function handlePay() {
         // 暂停时直接退出，paying 由 finally 释放，不留一个转圈的支付键
         if (!(await remindBeforeOaAction())) return
 
+        haptic('medium', 'order-pay')
         const pre = await prepay({ from: 'order', order_id: orderId.value, pay_way: 2 })
         if (!pre || !pre.config) throw new Error('预支付参数缺失')
 
@@ -1356,6 +1356,7 @@ async function handleCancel() {
         })
     })
     if (!confirmed) return
+    haptic('medium', 'order-cancel')
     try {
         await cancelOrder({ id: orderId.value })
         // 取消后待支付数归零，标脏下一次 refresh 立即回源

@@ -95,7 +95,7 @@
 
             <!-- 主通道：微信原生客服会话（唯一能真正"发出消息"的通道） -->
             <!-- #ifdef MP-WEIXIN -->
-            <button v-if="chatEnabled" class="cta" open-type="contact" @tap="onChatTap">
+            <button v-if="chatEnabled" class="cta" open-type="contact">
                 <tn-icon name="wechat" :size="32" />
                 <text class="cta__text">进入微信客服</text>
             </button>
@@ -200,7 +200,6 @@ import { navigate } from '@/utils/link'
 import { report } from '@/platform/report'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 
 const CUSTOMER_SERVICE_PATH = '/pages/customer-service/customer-service'
 
@@ -355,16 +354,10 @@ function onPrimary() {
 }
 
 function goLogin() {
-    haptic('light', 'cc-login')
     navigate({ path: '/pages/login/login' })
 }
 
-function onChatTap() {
-    haptic('light', 'cc-chat')
-}
-
 function onFallbackChat() {
-    haptic('light', 'cc-chat')
     if (contact.mobile) {
         askCall()
         return
@@ -374,18 +367,15 @@ function onFallbackChat() {
 
 function goOrder() {
     if (!orderId.value) return
-    haptic('light', 'cc-order')
     navigate({ path: '/packages/pkg-order/pages/detail/detail', query: { id: orderId.value } })
 }
 
 function goConcierge() {
-    haptic('light', 'cc-guide')
     navigate({ path: CUSTOMER_SERVICE_PATH })
 }
 
 function askCall() {
     if (!contact.mobile) return
-    haptic('light', 'cc-call')
     // 确认类二次弹窗保留居中形态（tn-modal），不做底部抽屉
     modalRef.value?.showModal({
         title: '拨打客服电话',
@@ -407,7 +397,6 @@ function askCall() {
 
 function copyMobile() {
     if (!contact.mobile) return
-    haptic('light', 'cc-copy')
     uni.setClipboardData({
         data: contact.mobile,
         success: () => toast.success('号码已复制'),

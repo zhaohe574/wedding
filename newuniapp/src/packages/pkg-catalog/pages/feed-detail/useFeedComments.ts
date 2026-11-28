@@ -2,6 +2,7 @@ import { computed, nextTick, reactive, ref, type Ref } from 'vue'
 import { addComment, getCommentList, likeComment } from '@/api/content'
 import { normalizePage } from '@/request'
 import { navigate } from '@/utils/link'
+import { haptic } from '@/utils/haptics'
 import { toast } from '@/composables/useToast'
 import { useUserStore } from '@/stores/user'
 import { report } from '@/platform/report'
@@ -290,6 +291,7 @@ export function useFeedComments(id: Ref<number>, post: Ref<any>) {
             navigate({ path: '/pages/login/login' })
             return
         }
+        haptic('light', 'feed-comment-like')
         const liked = !c.is_liked
         c.is_liked = liked
         c.like_count = Math.max(0, Number(c.like_count || 0) + (liked ? 1 : -1))

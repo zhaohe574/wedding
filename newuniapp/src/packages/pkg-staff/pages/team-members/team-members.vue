@@ -366,7 +366,6 @@ function reload(): void {
 }
 
 function toggleEditTeam(): void {
-    haptic('light', 'team-edit-toggle')
     editingTeam.value = !editingTeam.value
     if (editingTeam.value && data.value?.team) {
         teamFormName.value = data.value.team.name || ''
@@ -395,13 +394,11 @@ async function handleSaveTeamInfo(): Promise<void> {
 }
 
 function toggleScheduleExpand(staffId: number): void {
-    haptic('light', 'team-heat-toggle')
     expandedIds[staffId] = !expandedIds[staffId]
 }
 
 function dialPhone(mobile: string): void {
     if (!mobile) return
-    haptic('light', 'team-dial')
     uni.makePhoneCall({ phoneNumber: mobile, fail: () => {} })
 }
 

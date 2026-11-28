@@ -212,7 +212,6 @@ import { useStaffGuard } from '@/composables/useStaffGuard'
 import { useStaffWriteGate, STAFF_WRITE_GATE_TIP } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import { schemeColor } from '@/utils/scheme-color'
 
 const editId = ref(0)
@@ -284,12 +283,10 @@ function onPickExpireDate(e: any) {
 }
 
 function clearIssueDate() {
-    haptic('light', 'cert-clear-issue-date')
     form.issue_date = ''
 }
 
 function clearExpireDate() {
-    haptic('light', 'cert-clear-expire-date')
     form.expire_date = ''
 }
 

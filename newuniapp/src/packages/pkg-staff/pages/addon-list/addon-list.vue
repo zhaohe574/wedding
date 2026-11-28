@@ -299,7 +299,6 @@ function attachedCount(item: StaffAddonListItem): number {
 
 function goCreate() {
     if (!guardAllowed.value) return
-    // 触觉由底栏 base-button 统一发 light，页面不重复触发（避免双震）
     navigate({ path: '/packages/pkg-staff/pages/addon-edit/addon-edit' })
 }
 
@@ -309,7 +308,6 @@ function goEdit(item: StaffAddonListItem) {
         toast.warning('附加项编号缺失，请刷新后重试')
         return
     }
-    haptic('light', 'addon-list-edit')
     navigate({
         path: '/packages/pkg-staff/pages/addon-edit/addon-edit',
         query: { id: item.id }
@@ -323,7 +321,7 @@ function goEdit(item: StaffAddonListItem) {
 async function onToggleShow(item: StaffAddonListItem) {
     if (!guardAllowed.value || togglingId.value > 0) return
     if (!item?.id) return
-    haptic('light', 'addon-list-toggle')
+    haptic('medium', 'addon-list-toggle')
     const nextShow = Number(item.is_show) === 1 ? 0 : 1
     togglingId.value = Number(item.id)
     try {
@@ -352,7 +350,6 @@ function onDelete(item: StaffAddonListItem) {
         toast.warning('附加项编号缺失，请刷新后重试')
         return
     }
-    haptic('heavy', 'addon-list-delete')
     uni.showModal({
         title: '删除附加项',
         content: '删除后不可恢复，并会解除套餐关联，确认删除？',
@@ -375,7 +372,6 @@ function onDelete(item: StaffAddonListItem) {
 
 function switchTab(key: string | number) {
     if (!guardAllowed.value) return
-    // 触觉由 chip-group 内部统一发 light，页面不重复触发（避免双震）
     active.value = key
 }
 

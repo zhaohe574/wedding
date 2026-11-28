@@ -200,7 +200,6 @@ import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { navigate } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
-import { haptic } from '@/utils/haptics'
 
 const FILTER_ITEMS = [
     { label: '全部档案', value: 'all' },
@@ -288,19 +287,16 @@ onUnmounted(() => {
 function onFilterChange(val: string | number): void {
     const next = String(val || 'all')
     if (next === activeFilter.value) return
-    /* chip-group 内部已发 light 触觉，这里不再补，避免双震 */
     activeFilter.value = next
     void fetchList()
 }
 
 function clearKeyword(): void {
-    haptic('light', 'couple-clear-keyword')
     keyword.value = ''
     void fetchList()
 }
 
 function openDetail(item: StaffCoupleSummaryItem): void {
-    haptic('light', 'couple-open-detail')
     navigate({
         path: '/packages/pkg-staff/pages/couple-detail/couple-detail',
         query: {
@@ -311,7 +307,6 @@ function openDetail(item: StaffCoupleSummaryItem): void {
 }
 
 function goFollowups(): void {
-    haptic('light', 'couple-open-followups')
     navigate('/packages/pkg-staff/pages/followups/followups')
 }
 

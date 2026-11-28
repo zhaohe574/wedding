@@ -74,7 +74,6 @@
                             @touchstart="onHeroPressStart"
                             @touchend="onHeroPressEnd"
                             @touchcancel="onHeroPressCancel"
-                            @tap="onHeroCtaHaptic"
                         >
                             <text class="hero__primary-text">{{ heroText.primaryText }}</text>
                             <tn-icon name="right" :size="28" />
@@ -165,7 +164,7 @@
         <view
             v-if="quickEntries.length"
             class="tile-grid"
-            :class="[tileLayoutClass, { stagger: quickStaggerOn, 'is-in': quickStaggerIn }]"
+            :class="[`tile-grid--${quickLayout}`, { stagger: quickStaggerOn, 'is-in': quickStaggerIn }]"
         >
             <template v-for="(entry, index) in quickEntries" :key="entry.key">
                 <!-- #ifdef MP-WEIXIN -->
@@ -173,12 +172,11 @@
                     v-if="isWechatContactLink(entry.link)"
                     open-type="contact"
                     class="tile tile--btn press-spring"
-                    :class="tileClassOf(entry, index)"
-                    :style="{ '--i': index }"
+                    :class="tileClassOf(entry)"
+                    :style="tileStyleOf(entry, index)"
                     @touchstart="onPressStart(entry.key)"
                     @touchend="onPressEnd"
                     @touchcancel="onPressCancel"
-                    @tap="onTileHaptic"
                 >
                     <image
                         v-if="entry.image"
@@ -203,8 +201,8 @@
                 <view
                     v-else
                     class="tile press-spring"
-                    :class="tileClassOf(entry, index)"
-                    :style="{ '--i': index }"
+                    :class="tileClassOf(entry)"
+                    :style="tileStyleOf(entry, index)"
                     @touchstart="onPressStart(entry.key)"
                     @touchend="onPressEnd"
                     @touchcancel="onPressCancel"
@@ -234,8 +232,8 @@
                 <!-- #ifndef MP-WEIXIN -->
                 <view
                     class="tile press-spring"
-                    :class="tileClassOf(entry, index)"
-                    :style="{ '--i': index }"
+                    :class="tileClassOf(entry)"
+                    :style="tileStyleOf(entry, index)"
                     @touchstart="onPressStart(entry.key)"
                     @touchend="onPressEnd"
                     @touchcancel="onPressCancel"
@@ -267,13 +265,18 @@
 
         <!-- ============ 本期推荐 ============ -->
         <!-- 无推荐人（含请求失败）时整块不渲染：不留标题、不留占位，避免首页出现空区块 -->
-        <view v-if="loadingHome || staff.length" class="sec">
+        <view v-if="recommendEnabled && (loadingHome || staff.length)" class="sec">
             <!-- 推荐位改为横向平铺，全部推荐人员都在这一条里，不再有「查看全部」二级入口 -->
             <section-header title="本期推荐" align="end" flush />
         </view>
 
         <!-- 推荐位骨架：只占推荐位高度，Hero 与数据条不闪白 -->
-        <scroll-view v-if="loadingHome" scroll-x class="hosts" :show-scrollbar="false">
+        <scroll-view
+            v-if="recommendEnabled && loadingHome"
+            scroll-x
+            class="hosts"
+            :show-scrollbar="false"
+        >
             <view class="hosts__track">
                 <view v-for="n in 2" :key="n" class="host-sk">
                     <view class="host-sk__ph" />
@@ -286,7 +289,7 @@
         <!-- 竖版人像卡横向滑动：3:4 画框与竖版素材同比例，不再把脸裁掉。
              snap 吸附 + 中心卡聚焦：两侧轻缩，视线自动落在屏幕中线那一张。 -->
         <scroll-view
-            v-else-if="staff.length"
+            v-else-if="recommendEnabled && staff.length"
             scroll-x
             class="hosts"
             :show-scrollbar="false"
@@ -451,6 +454,8 @@ import {
     findWidget,
     normalizeHomeBrandContent,
     normalizeHomeFlowContent,
+    normalizeHomeLuckyDaysContent,
+    normalizeHomeRecommendContent,
     normalizeHomeServiceCategoriesContent,
     parseDecoratePage,
     resolveHomeHeroHeight,
@@ -472,7 +477,6 @@ import { isDecorateLinkConfigured, isWechatContactLink, navigate } from '@/utils
 import { buildShare } from '@/utils/share'
 import { report } from '@/platform/report'
 import { getDeviceInfo, getNavBarHeight } from '@/platform/device'
-import { haptic } from '@/utils/haptics'
 import { bootTrace } from '@/utils/boot-trace'
 import { claimSplashEntry } from '@/utils/splash'
 
@@ -491,6 +495,8 @@ interface HomeQuick {
     textPosition: HomeServiceCategoryTextPosition
     /** 卡片文字的水平对齐 */
     textAlign: HomeServiceCategoryTextAlign
+    /** 单卡自定义高度（rpx）；0 = 跟随版式默认 */
+    height: number
     link: DecorateLink
 }
 
@@ -523,6 +529,7 @@ const QUICK_FALLBACK: HomeQuick[] = HOME_SERVICE_CATEGORIES_DEFAULTS.data.map(
         size: item.size,
         textPosition: item.text_position,
         textAlign: item.text_align,
+        height: item.height,
         link: item.link
     })
 )
@@ -723,11 +730,17 @@ const quickEntries = computed<HomeQuick[]>(() => {
                 size: item.size,
                 textPosition: item.text_position,
                 textAlign: item.text_align,
+                height: item.height,
                 link: item.link
             } as HomeQuick
         })
         .filter((item: HomeQuick | null): item is HomeQuick => !!item)
 })
+
+/** 本期推荐显隐开关：装修 home-recommend.enabled，缺省显示 */
+const recommendEnabled = computed(
+    () => normalizeHomeRecommendContent(findWidget<any>(page as any, 'home-recommend')).enabled === 1
+)
 
 /**
  * 服务承诺：装修 home-flow 驱动。
@@ -795,22 +808,27 @@ const quickLayout = computed<'bento' | 'grid'>(() => {
 })
 
 const isBento = computed(() => quickLayout.value === 'bento')
-const tileLayoutClass = computed(() =>
-    isBento.value ? 'tile-grid--editorial' : 'tile-grid--standard'
-)
 
-function tileClassOf(entry: HomeQuick, index: number) {
+function tileClassOf(entry: HomeQuick) {
     return [
-        `tile--${entry.size}`,
+        isBento.value ? `tile--${entry.size}` : '',
         {
             'tile--no-image': !entry.image,
-            'tile--bento-hero': isBento.value && index === 0,
-            'tile--bento-cell': isBento.value && index > 0 && index < 3,
-            'tile--bento-wide': isBento.value && index === 3,
             'is-pressing': pressKey.value === entry.key,
             'is-rebound': reboundKey.value === entry.key
         }
     ]
+}
+
+/** 单卡高度（rpx）：0 = 跟随版式默认；正数覆盖并让相邻行自动撑开 */
+function tileStyleOf(entry: HomeQuick, index: number) {
+    const style: Record<string, string | number> = { '--i': index }
+    if (entry.height > 0) {
+        style.height = `${entry.height}rpx`
+        style.minHeight = '0'
+        style.alignSelf = 'start'
+    }
+    return style
 }
 
 /* ---- 两段式按压（§3.1）：宫格 / 推荐卡 / Hero 主按钮共用同一套 key 状态 ---- */
@@ -877,17 +895,8 @@ function onHeroPressCancel() {
     onPressCancel()
 }
 
-function onHeroCtaHaptic() {
-    haptic('medium', 'home-cta')
-}
-
 function onHeroPrimary() {
-    onHeroCtaHaptic()
     goQuery()
-}
-
-function onTileHaptic() {
-    haptic('light', 'home-tile')
 }
 
 /* ---- 宫格错峰入场（§3.3）：首帧先挂 .stagger，下一拍再放 .is-in，动画才有起点 ---- */
@@ -954,11 +963,18 @@ const luckyState = ref<'loading' | 'ready' | 'error'>('loading')
 const luckySlots = ref<LuckySlot[]>([])
 const luckyRangeText = ref('')
 
+/** 近期吉日显隐开关：装修 home-lucky-days.enabled，缺省显示 */
+const luckyDaysEnabled = computed(
+    () => normalizeHomeLuckyDaysContent(findWidget<any>(page as any, 'home-lucky-days')).enabled === 1
+)
+
 /** 吉日整块可见：加载中出骨架，成功且有数据出卡；空数据与请求失败都不渲染 */
 const luckyVisible = computed(
     () =>
-        luckyState.value === 'loading' ||
-        (luckyState.value === 'ready' && luckySlots.value.length > 0)
+        luckyDaysEnabled.value &&
+        !loadingHome.value &&
+        (luckyState.value === 'loading' ||
+            (luckyState.value === 'ready' && luckySlots.value.length > 0))
 )
 
 function imageUrl(url?: string) {
@@ -1080,7 +1096,6 @@ function loadAll() {
 // ---------------------------------------------------------------- 跳转
 
 function onQuick(entry: HomeQuick) {
-    haptic('light', 'home-tile')
     navigate(entry.link)
 }
 
@@ -1102,7 +1117,6 @@ function goQueryWithDate(date: string) {
 }
 
 function goStaffDetail(id: number) {
-    haptic('light', 'home-host')
     navigate({ path: '/packages/pkg-catalog/pages/staff-detail/staff-detail', query: { id } })
 }
 
@@ -1404,36 +1418,25 @@ onShareAppMessage(() =>
 /* ---------------- 四宫格 / 编辑部拼版 ---------------- */
 .tile-grid {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
     gap: 18rpx;
     padding: 36rpx 42rpx 0;
-    grid-auto-rows: 168rpx;
 
-    /* 编辑部非对称拼版（§4.1）：宽 1.32fr / 窄 1fr，大卡吃满左侧两行 */
-    &--editorial {
-        grid-template-columns: 1.32fr 1fr;
-        grid-auto-rows: 148rpx;
-    }
-
-    /* 均分双列：契约 layout='grid' 的既有版式 —— 所有入口同权，不吃 size 的跨行/跨列 */
-    &--standard {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-
-        .tile--large {
-            grid-row: span 1;
-            grid-column: span 1;
-        }
-
-        .tile--wide {
-            grid-column: span 1;
-            grid-row: span 1;
-        }
+    /* 均分双列（layout='grid'）：所有入口同尺寸，不跨行跨列；行内 entry.height 仍可覆写 */
+    &--grid .tile {
+        grid-row: span 1;
+        grid-column: span 1;
+        align-self: start;
+        height: 168rpx;
+        min-height: 0;
     }
 }
 
 .tile {
     position: relative;
     min-width: 0;
-    height: 100%;
+    height: 168rpx;
     overflow: hidden;
     border-radius: var(--r-md);
     background: var(--c-dark-2);
@@ -1443,26 +1446,13 @@ onShareAppMessage(() =>
 
     &--large {
         grid-row: span 2;
+        align-self: stretch;
+        height: 100%;
+        min-height: 354rpx;
     }
 
     &--wide {
         grid-column: span 2;
-    }
-
-    /* Bento 几何由位置决定，不跟运营配置的 size 打架（写在这些规则之后覆盖） */
-    &--bento-hero {
-        grid-row: span 2;
-        grid-column: span 1;
-    }
-
-    &--bento-cell {
-        grid-row: span 1;
-        grid-column: span 1;
-    }
-
-    &--bento-wide {
-        grid-column: span 2;
-        grid-row: span 1;
     }
 
     &--no-image {
@@ -1472,7 +1462,6 @@ onShareAppMessage(() =>
     &--btn {
         display: block;
         width: 100%;
-        height: 100%;
         margin: 0;
         padding: 0;
         text-align: left;

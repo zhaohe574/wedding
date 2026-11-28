@@ -234,7 +234,6 @@ import type {
 } from '@/api/types/wallet'
 import { FB } from '@/constants/feedback'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import { navigate } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import WalletDetailSheet from './components/wallet-detail-sheet.vue'
@@ -501,18 +500,15 @@ function switchFilter(value: string | number) {
 /** 点「退款中」提示条：直接切到退款筛选 */
 function switchToRefund() {
     if (activeFilter.value === 'in') return
-    haptic('light', 'wallet-refunding')
     activeFilter.value = 'in'
     void load(true)
 }
 
 function openMonthSheet() {
-    haptic('light', 'wallet-month')
     monthSheetOpen.value = true
 }
 
 function pickMonth(month: string) {
-    haptic('light', 'wallet-month-pick')
     monthSheetOpen.value = false
     if (selectedMonth.value === month) return
     selectedMonth.value = month
@@ -520,7 +516,6 @@ function pickMonth(month: string) {
 }
 
 function openDetail(item: WalletFlowItemVO) {
-    haptic('light', 'wallet-flow')
     activeFlow.value = item
     detailOpen.value = true
 }

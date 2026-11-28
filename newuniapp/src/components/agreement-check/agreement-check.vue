@@ -44,17 +44,13 @@
  * 文案由页面通过默认插槽给（协议名要能单独点击时，页面在插槽里放 <text @tap>）。
  *
  * v10 §3.6：方框底色 180ms 过渡，对勾一笔描出 240ms（不再瞬间跳出一个 tn-icon）。
- * v10 §3.11：勾选是 light 级触觉的典型场景。
  * v10 §2.5：整行热区抬到 88rpx，文案里的协议链接仍可各自点击（row 的 tap 会被子节点 stop）。
  */
-import { haptic } from '@/utils/haptics'
-
 const props = withDefaults(defineProps<{ modelValue: boolean; error?: string }>(), { error: '' })
 
 const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
 
 function toggle() {
-    haptic('light', 'agreement-check')
     emit('update:modelValue', !props.modelValue)
 }
 </script>

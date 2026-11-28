@@ -100,7 +100,6 @@
 /** 工单列表 */
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { haptic } from '@/utils/haptics'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { FB } from '@/constants/feedback'
 import {
@@ -176,7 +175,6 @@ function statusTone(item: any) {
 
 function selectTab(key: TabKey) {
     if (activeTab.value === key) return
-    haptic('light', 'ticket-tab')
     activeTab.value = key
     loading.value = true
     fetchPage(true)
@@ -245,7 +243,6 @@ onUnmounted(() => {
 })
 
 function goDetail(item: any) {
-    haptic('light', 'ticket-item')
     navigate({
         path: '/packages/pkg-service/pages/aftersale/ticket-detail',
         query: { id: item.id }

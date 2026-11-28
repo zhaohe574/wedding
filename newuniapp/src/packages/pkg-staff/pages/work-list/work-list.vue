@@ -235,7 +235,6 @@ function rejectText(item: any) {
 
 function goCreate() {
     if (!guardAllowed.value) return
-    haptic('light', 'work-create')
     navigate({ path: '/packages/pkg-staff/pages/work-edit/work-edit' })
 }
 
@@ -245,7 +244,6 @@ function goEdit(item: any) {
         toast.warning('作品编号缺失，请刷新后重试')
         return
     }
-    haptic('light', 'work-edit')
     navigate({
         path: '/packages/pkg-staff/pages/work-edit/work-edit',
         query: { id: item.id }
@@ -258,7 +256,6 @@ function onDelete(item: any) {
         toast.warning('作品编号缺失，请刷新后重试')
         return
     }
-    haptic('heavy', 'work-delete')
     uni.showModal({
         title: '删除作品',
         content: '删除后不可恢复，确认删除这个作品？',
@@ -268,6 +265,7 @@ function onDelete(item: any) {
         confirmColor: schemeColor('danger'),
         success: async (r) => {
             if (!r.confirm) return
+            haptic('heavy', 'work-delete')
             try {
                 await staffWorkDelete({ id: Number(item.id) })
                 toast.success('已删除')
@@ -283,7 +281,6 @@ function onDelete(item: any) {
 
 function switchTab(key: string | number) {
     if (!guardAllowed.value) return
-    // 触觉由 chip-group 内部统一发 light，页面不重复触发（避免双震）
     active.value = key
     reload()
 }

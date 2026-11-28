@@ -114,7 +114,6 @@ import type {
     WalletRefundSubItemVO
 } from '@/api/types/wallet'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import { navigate } from '@/utils/link'
 
 interface DetailRow {
@@ -256,7 +255,6 @@ watch(
 function copyValue(value?: string) {
     const data = String(value || '').trim()
     if (!data) return
-    haptic('light', 'wallet-detail-copy')
     uni.setClipboardData({
         data,
         success: () => toast.success('已复制')
@@ -265,7 +263,6 @@ function copyValue(value?: string) {
 
 function previewVoucher() {
     if (!voucherUrl.value) return
-    haptic('light', 'wallet-detail-voucher')
     uni.previewImage({ urls: [voucherUrl.value], current: voucherUrl.value })
 }
 

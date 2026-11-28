@@ -68,13 +68,14 @@ const barRatio = computed(() =>
 )
 
 /**
- * 触觉只挂在「可松手 / 已更新」两个跨过阈值的瞬间。
+ * 触觉只挂在「刚跨过阈值、可以松手」这一个瞬间。
+ * done 只是刷新完成的视觉反馈，不是用户动作，不震；
  * watch 本身只在状态变化时触发，停留在同一状态不会重复震。
  */
 watch(
     () => props.state,
     (next) => {
-        if (next === 'ready' || next === 'done') haptic('light', 'pull-refresh')
+        if (next === 'ready') haptic('light', 'pull-refresh')
     }
 )
 

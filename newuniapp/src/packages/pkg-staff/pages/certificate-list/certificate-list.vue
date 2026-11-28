@@ -233,7 +233,6 @@ function rejectText(item: any) {
 
 function goCreate() {
     if (!guardAllowed.value) return
-    haptic('light', 'cert-create')
     navigate({ path: '/packages/pkg-staff/pages/certificate-edit/certificate-edit' })
 }
 
@@ -249,7 +248,6 @@ function goEdit(item: any) {
         toast.warning('证书编号缺失，请刷新后重试')
         return
     }
-    haptic('light', 'cert-edit')
     navigate({
         path: '/packages/pkg-staff/pages/certificate-edit/certificate-edit',
         query: {
@@ -271,7 +269,6 @@ function onDelete(item: any) {
         toast.warning('证书编号缺失，请刷新后重试')
         return
     }
-    haptic('heavy', 'cert-delete')
     uni.showModal({
         title: '删除证书',
         content: '删除后不可恢复，确认删除这个证书？',
@@ -281,6 +278,7 @@ function onDelete(item: any) {
         confirmColor: schemeColor('danger'),
         success: async (r) => {
             if (!r.confirm) return
+            haptic('heavy', 'cert-delete')
             try {
                 await staffCertificateDelete({ id: Number(item.id) })
                 toast.success('已删除')
@@ -296,7 +294,6 @@ function onDelete(item: any) {
 
 function switchTab(key: string | number) {
     if (!guardAllowed.value) return
-    // 触觉由 chip-group 内部统一发 light，页面不重复触发（避免双震）
     active.value = key
     reload()
 }

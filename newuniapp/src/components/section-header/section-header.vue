@@ -31,8 +31,6 @@
  *  - align="end"：标题与右侧「更多」基线对齐（设计稿 .sec-head）
  *  - flush：去掉自身上下留白，由页面控制区块间距（设计稿用 margin 控间距）
  */
-import { haptic } from '@/utils/haptics'
-
 withDefaults(
     defineProps<{
         title: string
@@ -57,9 +55,8 @@ withDefaults(
 
 const emit = defineEmits<{ (e: 'more'): void }>()
 
-/** 轻触反馈先行，再交给页面跳转；emit 契约不变 */
+/** 只转发点击，触觉与跳转都交给页面决定；emit 契约不变 */
 function onMore() {
-    haptic('light', 'section-more')
     emit('more')
 }
 </script>

@@ -529,7 +529,6 @@ import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { toast } from '@/composables/useToast'
 import { navigate } from '@/utils/link'
-import { haptic } from '@/utils/haptics'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 
 const CHECKLIST_ITEMS = [
@@ -637,7 +636,6 @@ function loadChecklist(dateStr: string): void {
 }
 
 function toggleChecklist(key: string): void {
-    haptic('light', 'service-day-check')
     const next = !checklistState[key]
     checklistState[key] = next
     const dateStr = panel.value?.date || activeDate.value
@@ -703,7 +701,6 @@ function reload(): void {
 
 function selectDate(dateStr: string): void {
     if (!dateStr || dateStr === activeDate.value || loading.value) return
-    haptic('light', 'service-day-date')
     activeDate.value = dateStr
     void fetchPanel()
 }
@@ -711,7 +708,6 @@ function selectDate(dateStr: string): void {
 function onPickDate(e: any): void {
     const picked = String(e?.detail?.value || '').trim().slice(0, 10)
     if (!picked || picked === activeDate.value) return
-    haptic('light', 'service-day-date-pick')
     activeDate.value = picked
     void fetchPanel()
 }

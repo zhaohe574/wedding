@@ -257,13 +257,11 @@
                 <view class="post__stats">
                     <view
                         class="pstat"
-                        :class="{ 'is-liked': isLiked(post), 'is-pressing': likePressedId === post.id }"
-                        hover-stop-propagation="true"
+                        :class="{ 'is-liked': isLiked(post) }"
+                        hover-class="pstat--pressed"
+                        :hover-stop-propagation="true"
                         aria-role="button"
                         :aria-label="isLiked(post) ? '取消点赞' : '点赞'"
-                        @touchstart.stop="onLikePressStart(post.id)"
-                        @touchend.stop="onLikePressEnd"
-                        @touchcancel.stop="onLikePressEnd"
                         @tap.stop="onLike(post)"
                     >
                         <view class="pstat__icon">
@@ -274,10 +272,10 @@
                     </view>
                     <view
                         class="pstat"
-                        hover-stop-propagation="true"
+                        hover-class="pstat--pressed"
+                        :hover-stop-propagation="true"
                         aria-role="button"
                         aria-label="查看评论"
-                        @touchstart.stop
                         @tap.stop="goDetail(post)"
                     >
                         <view class="pstat__icon">
@@ -290,9 +288,8 @@
                         class="pstat pstat--share"
                         open-type="share"
                         :data-id="post.id"
-                        hover-stop-propagation="true"
-                        @touchstart.stop
-                        @tap.stop="onShareTap"
+                        hover-class="pstat--pressed"
+                        :hover-stop-propagation="true"
                     >
                         <view class="pstat__icon">
                             <tn-icon name="share" :size="29" />
@@ -334,12 +331,13 @@
  *  · 只读：没有发布入口、没有编辑/删除入口。
  */
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShow, onUnload } from '@dcloudio/uni-app'
 import { getCaseList, toggleCaseLike } from '@/api/content'
 import { normalizePage, toArray } from '@/request'
 import { navigate, safeDecodeParam } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import { haptic } from '@/utils/haptics'
+import { buildShare } from '@/utils/share'
 import { useUserStore } from '@/stores/user'
 import { useInteractionStore } from '@/stores/interaction'
 import { useTabQueryStore } from '@/stores/tabQuery'
@@ -447,21 +445,7 @@ const segThumbStyle = computed(() => ({
     transform: `translate3d(${activeCatIndex.value * 100}%, 0, 0)`
 }))
 
-/* ---- 点赞按压态与卡片彻底隔离：只有图标自身微缩，卡片不参与 ---- */
-const likePressedId = ref(0)
-
-function onLikePressStart(id: number) {
-    likePressedId.value = id
-}
-
-function onLikePressEnd() {
-    likePressedId.value = 0
-}
-
-/** 分享按钮：原生面板由 open-type 打开，这里只阻断冒泡 + 单次轻触觉 */
-function onShareTap() {
-    haptic('light', 'feed-share')
-}
+/* ---- 点赞按压态与卡片彻底隔离：只由 hover-class 驱动图标微缩，卡片不参与 ---- */
 
 /* ---- 首屏 6 张卡错峰入场（§3.3）：先挂 .stagger，下一拍再放 .is-in ---- */
 const postStaggerOn = ref(false)
@@ -715,7 +699,6 @@ function onRefresh(done: () => void) {
 
 function selectCat(key: number) {
     if (activeCat.value === key) return
-    haptic('light', 'feed-cat')
     activeCat.value = key
     sorterOpen.value = false
     list.value = []
@@ -786,16 +769,18 @@ async function onLike(post: FeedRow) {
         navigate({ path: '/pages/login/login' })
         return
     }
-    haptic('medium', 'like')
+    haptic('light', 'like')
     const liked = isLiked(post)
     // 乐观更新：先变色变数，失败回滚；同时写会话快照，详情页读同一份状态
     post.is_liked = !liked
     post.like_count = Math.max(0, Number(post.like_count || 0) + (liked ? -1 : 1))
     interactionStore.setDynamicLike(post.id, post.is_liked, post.like_count)
     try {
-        const res = await toggleCaseLike({ id: post.id })
-        if (res && typeof res.is_like === 'number') {
-            post.is_liked = res.is_like === 1
+        const res: any = await toggleCaseLike({ id: post.id })
+        // 后端 DynamicController::like() 返回 { is_liked: bool }，老版本是 { is_like: 0|1 }
+        const serverLiked = res?.is_liked ?? res?.is_like
+        if (serverLiked !== undefined) {
+            post.is_liked = typeof serverLiked === 'boolean' ? serverLiked : Number(serverLiked) === 1
             interactionStore.setDynamicLike(post.id, post.is_liked, post.like_count)
         }
     } catch {
@@ -924,6 +909,24 @@ onShow(() => {
 onUnload(() => {
     // 传同一函数引用，避免把其它监听一起清掉
     uni.$off('feed:hidden-changed', onHiddenChanged)
+})
+
+/**
+ * 分享：由卡片里的 <button open-type="share"> 触发。
+ * 微信只把 :data-id 放在 target.dataset 上，按 id 回列表找对应动态；
+ * 找不到（例如列表已翻页刷新）就分享动态列表本身，不分享错的内容。
+ */
+onShareAppMessage((res: any) => {
+    const targetId = Number(res?.target?.dataset?.id || 0)
+    const target = targetId ? list.value.find((p) => Number(p.id) === targetId) : undefined
+    if (!target) {
+        return buildShare({ title: '婚礼动态', path: '/pages/feed/feed' })
+    }
+    return buildShare({
+        title: target.title || target.content || '婚礼动态',
+        path: `/packages/pkg-catalog/pages/feed-detail/feed-detail?id=${target.id}`,
+        imageUrl: target.media_cover || undefined
+    })
 })
 </script>
 
@@ -1501,7 +1504,7 @@ onUnload(() => {
     }
 
     /* 只有图标自身微缩，卡片与字号都不动 */
-    &.is-pressing .pstat__icon {
+    &.pstat--pressed .pstat__icon {
         transform: scale(0.84);
     }
 

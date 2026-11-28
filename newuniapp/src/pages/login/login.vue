@@ -140,6 +140,7 @@
                         text="登录"
                         variant="ink"
                         size="lg"
+                        haptic-level="medium"
                         :loading="phoneLoading"
                         @click="submitPhone"
                     />
@@ -352,9 +353,8 @@ function openAgreement(type: string) {
     navigate({ path: '/pages/agreement/agreement', query: { type } })
 }
 
-/** 协议勾选：默认未勾（合规底线），整行可点，触觉轻提示 */
+/** 协议勾选：默认未勾（合规底线），整行可点 */
 function toggleAgree() {
-    haptic('light', 'login-agree')
     agreed.value = !agreed.value
 }
 
@@ -505,7 +505,6 @@ function onMobileCancel() {
 }
 
 function openPhone() {
-    haptic('medium', 'login-btn')
     phonePopup.value = true
 }
 
@@ -525,7 +524,6 @@ function startCountdown() {
 
 async function sendCode() {
     if (counting.value || sending.value) return
-    haptic('light', 'pp-send')
     mobileError.value = ''
     if (!/^1\d{10}$/.test(mobile.value)) {
         mobileError.value = '请输入正确的 11 位手机号'

@@ -227,7 +227,6 @@ import { useStaffWriteGate } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import type { LoadPhase } from '@/api/types'
 
 const certificatePath = '/packages/pkg-staff/pages/certificate-list/certificate-list'
@@ -245,13 +244,11 @@ const {
 } = useStaffGuard(() => load(true))
 
 function go(path: string) {
-    haptic('light', 'staff-profile-nav')
     navigate({ path })
 }
 
 /** 编辑资料入口（P0 写能力） */
 function goEditProfile() {
-    haptic('light', 'staff-profile-edit')
     navigate({ path: '/packages/pkg-staff/pages/profile-edit/profile-edit' })
 }
 

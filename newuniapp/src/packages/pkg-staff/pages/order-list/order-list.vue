@@ -133,7 +133,6 @@ import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { normalizePage } from '@/request'
 import { navigate } from '@/utils/link'
-import { haptic } from '@/utils/haptics'
 
 const {
     guardPhase,
@@ -248,7 +247,6 @@ function reload() {
 
 function switchTab(key: string) {
     if (!guardAllowed.value || key === active.value) return
-    haptic('light', 'staff-order-tab')
     active.value = key
     list.value = []
     reload()
@@ -256,7 +254,6 @@ function switchTab(key: string) {
 
 function goDetail(item: any) {
     if (!guardAllowed.value) return
-    haptic('light', 'staff-order-detail')
     navigate({
         path: '/packages/pkg-staff/pages/order-detail/order-detail',
         query: { id: item.order_id || item.id }

@@ -482,7 +482,6 @@ async function loadCategories() {
 
 function openCategoryPopup() {
     // tn-popup 互斥：打开前先关掉其他弹层
-    haptic('light', 'profile-edit-category')
     mobilePopup.value = false
     categoryConfirm.value = false
     errors.category = ''
@@ -494,7 +493,6 @@ function closeCategoryPopup() {
 }
 
 function pickCategory(c: { id: number; name: string }) {
-    if (form.category_id !== c.id) haptic('light', 'profile-edit-category-pick')
     form.category_id = c.id
     errors.category = ''
     categoryPopup.value = false
@@ -523,7 +521,6 @@ async function loadTags() {
 }
 
 function toggleTag(id: number) {
-    haptic('light', 'profile-edit-tag')
     const i = selectedTagIds.value.indexOf(id)
     if (i >= 0) selectedTagIds.value.splice(i, 1)
     else selectedTagIds.value.push(id)
@@ -532,7 +529,6 @@ function toggleTag(id: number) {
 /* ---------------- 头像 ---------------- */
 
 async function chooseAvatar() {
-    haptic('light', 'profile-edit-avatar')
     const paths = await chooseImages({ count: 1 })
     const path = paths[0]
     if (!path) return
@@ -557,7 +553,6 @@ let smsTimer: ReturnType<typeof setInterval> | null = null
 const mobilePending = ref(false)
 
 function openMobilePopup() {
-    haptic('light', 'profile-edit-mobile')
     categoryPopup.value = false
     categoryConfirm.value = false
     mobilePopupErr.value = ''
@@ -589,7 +584,6 @@ async function sendCode() {
         mobilePopupErr.value = '请输入 11 位手机号'
         return
     }
-    haptic('light', 'profile-edit-sms')
     mobilePopupErr.value = ''
     try {
         await sendSmsCode({ mobile })

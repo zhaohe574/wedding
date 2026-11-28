@@ -282,7 +282,6 @@ const sumCards = computed(() => [
 ])
 
 function onSumTap(scope: string): void {
-    haptic('light', 'followup-sum')
     switchScope(scope)
 }
 
@@ -347,7 +346,6 @@ function switchScope(scope: string): void {
 }
 
 function onScopeChange(val: string | number): void {
-    /* chip-group 内部已发 light 触觉，这里不再补，避免双震 */
     switchScope(String(val || 'pending'))
 }
 

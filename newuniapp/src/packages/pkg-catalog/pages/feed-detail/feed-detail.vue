@@ -178,15 +178,26 @@
                         <text class="bar__off-text">评论暂不可用</text>
                     </view>
 
+                    <!-- 显式发送键：真机 / 无发送键键盘也能直接提交，不必依赖键盘 confirm -->
                     <view
-                        class="bar__act hit-88"
+                        v-if="canComment && draft.trim()"
+                        class="bar__send"
+                        hover-class="is-pressed"
+                        aria-role="button"
+                        aria-label="发送评论"
+                        @tap="submitComment"
+                    >
+                        <text class="bar__send-text">发送</text>
+                    </view>
+
+                    <view
+                        class="bar__act"
                         :class="{ 'is-on': post.is_liked }"
                         hover-class="is-pressed"
-                        hover-stop-propagation="true"
+                        :hover-stop-propagation="true"
                         aria-role="button"
                         :aria-label="post.is_liked ? '取消点赞' : '点赞'"
-                        @touchstart.stop
-                        @tap.stop="onLikePost"
+                        @tap="onLikePost"
                     >
                         <view class="bar__act-icon">
                             <tn-icon :name="post.is_liked ? 'like-fill' : 'like'" :size="30" />
@@ -198,9 +209,10 @@
                     </view>
 
                     <button
-                        class="bar__act bar__act--btn hit-88"
+                        class="bar__act bar__act--btn"
                         open-type="share"
-                        hover-stop-propagation="true"
+                        hover-class="is-pressed"
+                        :hover-stop-propagation="true"
                     >
                         <tn-icon name="share" :size="28" class="ic-ink-2" />
                         <text class="bar__act-text">分享</text>
@@ -427,15 +439,17 @@ async function onLikePost() {
     }
     const p = post.value
     if (!p) return
-    haptic('medium', 'feed-like')
+    haptic('light', 'feed-like')
     const liked = !p.is_liked
     p.is_liked = liked
     p.like_count = Math.max(0, Number(p.like_count || 0) + (liked ? 1 : -1))
     interactionStore.setDynamicLike(p.id, p.is_liked, p.like_count)
     try {
         const res: any = await toggleCaseLike({ id: p.id })
-        if (res && typeof res.is_like === 'number') {
-            p.is_liked = res.is_like === 1
+        // 后端返回 { is_liked: bool }，老版本是 { is_like: 0|1 }；两种都要认
+        const serverLiked = res?.is_liked ?? res?.is_like
+        if (serverLiked !== undefined) {
+            p.is_liked = typeof serverLiked === 'boolean' ? serverLiked : Number(serverLiked) === 1
             interactionStore.setDynamicLike(p.id, p.is_liked, p.like_count)
         }
     } catch {
@@ -471,6 +485,8 @@ onLoad((options: any) => {
         loading.value = false
         return
     }
+    // 分享直达详情时全局配置可能还没拉过：读不到 feature_switch 会把 canComment 误判成关闭
+    if (!appStore.configLoaded) appStore.getConfig().catch(() => undefined)
     load()
     loadComments(true)
 })
@@ -763,7 +779,7 @@ onShareAppMessage(() =>
     &__in {
         display: flex;
         align-items: center;
-        gap: 18rpx;
+        gap: 8rpx;
     }
 
     &__input {
@@ -811,13 +827,35 @@ onShareAppMessage(() =>
         color: var(--c-ink-3);
     }
 
+    /* 显式发送键：与输入框同高，只在有草稿时出现，避免长期占用操作区 */
+    &__send {
+        flex: none;
+        height: 64rpx;
+        padding: 0 24rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-action-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__send-text {
+        font-size: var(--fs-22);
+        font-weight: var(--fw-medium);
+        color: var(--c-action-fg);
+    }
+
     &__act {
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center;
         gap: 2rpx;
         flex: none;
-        padding: 0 6rpx;
+        /* 自身实体热区 ≥ 88rpx：不靠 ::before 伪元素越界，避免与相邻按钮串区 */
+        min-width: 88rpx;
+        min-height: 88rpx;
+        padding: 0 8rpx;
         color: var(--c-ink-3);
 
         &.is-on {
@@ -828,7 +866,6 @@ onShareAppMessage(() =>
             background: transparent;
             border: 0;
             line-height: 1;
-            padding: 0 6rpx;
 
             &::after {
                 border: 0;

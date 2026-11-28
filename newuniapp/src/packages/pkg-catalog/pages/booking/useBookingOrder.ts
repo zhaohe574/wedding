@@ -4,6 +4,7 @@ import { createOrder, previewBooking, previewOrder } from '@/api/order'
 import { toast } from '@/composables/useToast'
 import { report } from '@/platform/report'
 import { useBadgeStore } from '@/stores/badge'
+import { haptic } from '@/utils/haptics'
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import {
     money,
@@ -208,6 +209,7 @@ export function useBookingOrder(options: {
         }
 
         submitting.value = true
+        haptic('medium', 'booking-submit')
         try {
             const params: Record<string, any> = {
                 ...buildParams(),

@@ -159,11 +159,9 @@ const today = (() => {
 
 function pickType(v: number) {
     form.pause_type = v
-    haptic('light', 'pause-type')
 }
 
 function onStartDate(e: any) {
-    haptic('light', 'pause-date')
     form.start_date = String(e?.detail?.value || '')
     // 原来这里静默清空 end_date —— 用户只看到结束变回「请选择」，不知道为什么。
     // 现补一句就地说明：既不丢失数据（清空是对的），也解释了原因。
@@ -176,7 +174,6 @@ function onStartDate(e: any) {
 }
 
 function onEndDate(e: any) {
-    haptic('light', 'pause-date')
     form.end_date = String(e?.detail?.value || '')
     rangeError.value = ''
 }

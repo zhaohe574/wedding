@@ -119,7 +119,6 @@
  * 月历不显示农历小字，农历只在已选日期行出现（35 个农历字会让网格密度翻倍）。
  */
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
-import { haptic } from '@/utils/haptics'
 import type { CalendarMeta, DayAvailability, DayStatus } from './types'
 
 const props = withDefaults(
@@ -308,7 +307,6 @@ const showMinNote = computed(() => hasLocked.value && !!props.minSelectable)
 
 function onCell(cell: Cell) {
     if (!cell.date || cell.disabled) return
-    haptic('light', 'cal-day')
     emit('select', cell.date)
 }
 </script>

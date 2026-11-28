@@ -210,12 +210,10 @@ function imageUrl(url?: string) {
 }
 
 function onDateChange(e: any) {
-    haptic('light', 'addon-date')
     form.service_date = String(e?.detail?.value || '')
 }
 
 async function openStaffPicker() {
-    haptic('light', 'addon-staff')
     staffVisible.value = true
     if (!staffList.value.length) await searchStaff()
 }
@@ -238,7 +236,6 @@ async function searchStaff() {
 }
 
 function chooseStaff(s: any) {
-    haptic('light', 'addon-pick')
     selectedStaff.value = s
     selectedPackage.value = null
     staffVisible.value = false
@@ -248,7 +245,6 @@ function chooseStaff(s: any) {
 /** 套餐行点击：未选人员时直接返回 —— placeholder 已说明原因，再弹 toast 就是双反馈 */
 function onPackageRowTap() {
     if (!selectedStaff.value) return
-    haptic('light', 'addon-package')
     openPackagePicker()
 }
 
@@ -265,7 +261,6 @@ async function openPackagePicker() {
 }
 
 function choosePackage(p: any) {
-    haptic('light', 'addon-pick')
     selectedPackage.value = {
         id: p.package_id || p.id,
         name: p.package?.name || p.name,

@@ -178,7 +178,6 @@ onUnmounted(() => {
 
 function pickCat(key: string) {
     if (activeCat.value === key) return
-    haptic('light', 'favorite-cat')
     activeCat.value = key
 }
 

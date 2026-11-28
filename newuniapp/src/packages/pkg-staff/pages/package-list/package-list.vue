@@ -313,7 +313,6 @@ function regionPriceCount(item: StaffPackageListItem): number {
 
 function goCreate() {
     if (!guardAllowed.value) return
-    // 触觉由底栏 base-button 统一发 light，页面不重复触发（避免双震）
     navigate({ path: '/packages/pkg-staff/pages/package-edit/package-edit' })
 }
 
@@ -323,7 +322,6 @@ function goEdit(item: StaffPackageListItem) {
         toast.warning('套餐编号缺失，请刷新后重试')
         return
     }
-    haptic('light', 'pkg-list-edit')
     navigate({
         path: '/packages/pkg-staff/pages/package-edit/package-edit',
         query: { id: item.id }
@@ -338,7 +336,7 @@ function goEdit(item: StaffPackageListItem) {
 async function onToggleShow(item: StaffPackageListItem) {
     if (!guardAllowed.value || togglingId.value > 0) return
     if (!item?.id) return
-    haptic('light', 'pkg-list-toggle')
+    haptic('medium', 'pkg-list-toggle')
     const nextShow = Number(item.is_show) === 1 ? 0 : 1
     togglingId.value = Number(item.id)
     try {
@@ -369,7 +367,6 @@ function onDelete(item: StaffPackageListItem) {
         toast.warning('套餐编号缺失，请刷新后重试')
         return
     }
-    haptic('heavy', 'pkg-list-delete')
     uni.showModal({
         title: '删除套餐',
         content: '删除后不可恢复，确认删除这个套餐？',
@@ -379,6 +376,7 @@ function onDelete(item: StaffPackageListItem) {
         confirmColor: schemeColor('danger'),
         success: async (r) => {
             if (!r.confirm) return
+            haptic('heavy', 'pkg-list-delete')
             try {
                 await staffPackageRemove({ package_id: Number(item.id) })
                 toast.success('已删除')
@@ -392,7 +390,6 @@ function onDelete(item: StaffPackageListItem) {
 
 function switchTab(key: string | number) {
     if (!guardAllowed.value) return
-    // 触觉由 chip-group 内部统一发 light，页面不重复触发（避免双震）
     active.value = key
 }
 

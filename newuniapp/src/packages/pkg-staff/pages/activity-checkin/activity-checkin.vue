@@ -155,7 +155,6 @@ import {
     previewStaffActivityCheckin
 } from '@/api/staff-center'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import {
     formatClockTime,
     formatShortTime,
@@ -204,7 +203,6 @@ function resetPreview() {
 }
 
 function onScan() {
-    haptic('light', 'act-checkin-scan')
     uni.scanCode({
         onlyFromCamera: false,
         scanType: ['qrCode'],
@@ -229,8 +227,6 @@ async function onQueryCode() {
         toast.info('请输入或扫描核销码')
         return
     }
-    /* 查询按钮设为 haptic-level="none"，键盘 confirm 与按钮点击统一在这里震一次 */
-    haptic('light', 'act-checkin-query')
     querying.value = true
     try {
         const res = await previewStaffActivityCheckin({ code })

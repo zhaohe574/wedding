@@ -268,7 +268,6 @@ import {
 import { uploadImage } from '@/api/app'
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
-import { haptic } from '@/utils/haptics'
 
 /** 与后端 StaffScheduleConfirmLetterService::sanitizeTemplateText() 白名单保持一致，避免插入无效变量 */
 const DYNAMIC_VARIABLES = [
@@ -452,17 +451,14 @@ async function loadConfig(configId?: number): Promise<void> {
 
 function switchVersion(configId: number): void {
     if (!configId || configId === form.config_id || saving.value) return
-    haptic('light', 'poster-version')
     void loadConfig(configId)
 }
 
 function appendVariable(variableKey: string): void {
-    haptic('light', 'poster-variable')
     form.content_template = `${form.content_template}${variableKey}`.slice(0, 300)
 }
 
 function setBackgroundType(type: 'color' | 'image'): void {
-    haptic('light', 'poster-bg-type')
     form.background_type = type
 }
 
@@ -471,14 +467,12 @@ function isColorActive(value: string): boolean {
 }
 
 function pickColor(value: string): void {
-    haptic('light', 'poster-bg-color')
     form.background_color = value
     void refreshPreview(true)
 }
 
 function chooseBackgroundImage(): void {
     if (uploading.value) return
-    haptic('light', 'poster-bg-upload')
     uni.chooseImage({
         count: 1,
         sizeType: ['compressed'],
@@ -505,7 +499,6 @@ function chooseBackgroundImage(): void {
 
 function openPreviewImage(): void {
     if (!previewImageSrc.value) return
-    haptic('light', 'poster-preview-open')
     uni.previewImage({
         urls: [previewImageSrc.value],
         current: previewImageSrc.value

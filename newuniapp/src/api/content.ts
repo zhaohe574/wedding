@@ -67,7 +67,11 @@ export function getCaseHotTags() {
 
 /** @endpoint dynamic.like */
 export function toggleCaseLike(params: { id: number }) {
-    return request.post<{ is_like: number }>('/dynamic/like', params, { auth: true })
+    return request.post<{ is_liked?: boolean | number; is_like?: boolean | number }>(
+        '/dynamic/like',
+        params,
+        { auth: true }
+    )
 }
 
 /** @endpoint review.staffReviews */

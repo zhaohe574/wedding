@@ -239,7 +239,6 @@
                                 <button
                                     open-type="share"
                                     class="share-native-btn"
-                                    @tap="onShareTap"
                                 >
                                     转发给客户
                                 </button>
@@ -277,7 +276,6 @@ import { useBrand } from '@/composables/useBrand'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
-import { haptic } from '@/utils/haptics'
 
 const {
     guardPhase,
@@ -322,7 +320,6 @@ async function fetchCard(): Promise<void> {
 
 function switchTab(tab: 'card' | 'poster'): void {
     if (tab === activeTab.value) return
-    haptic('light', 'card-poster-tab')
     activeTab.value = tab
     if (tab === 'card' && !card.value && !cardLoading.value) {
         void fetchCard()
@@ -331,13 +328,7 @@ function switchTab(tab: 'card' | 'poster'): void {
 
 function previewUrl(url: string): void {
     if (!url) return
-    haptic('light', 'card-poster-preview')
     uni.previewImage({ urls: [url], current: url })
-}
-
-/** open-type="share" 由原生按钮触发分享，这里只补一次轻触觉，不拦默认行为 */
-function onShareTap(): void {
-    haptic('light', 'card-poster-share')
 }
 
 function saveToAlbumWithAuth(filePath: string): Promise<void> {

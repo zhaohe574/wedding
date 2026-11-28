@@ -78,7 +78,6 @@
                             class="idcard__act hit-88"
                             open-type="share"
                             aria-label="分享这位主持人"
-                            @tap="onShareTap"
                         >
                             <tn-icon name="share" :size="26" class="idcard__act-ic" />
                             <text class="idcard__act-text">分享</text>
@@ -399,7 +398,6 @@ import { toast } from '@/composables/useToast'
 import { getNavBarHeight } from '@/platform/device'
 import { resolveBookingContext, saveBookingContext } from '@/utils/booking-context'
 import cache from '@/utils/cache'
-import { haptic } from '@/utils/haptics'
 import { navigate, resolveLink } from '@/utils/link'
 import { EMPTY_REGION, regionParams, type RegionContext } from '@/utils/region'
 import { buildShare } from '@/utils/share'
@@ -577,14 +575,12 @@ function confirmPick() {
 
 /** 套餐卡点击：选人模式同步 pick_package_id，避免下方「选择 TA」沿用旧套餐价 */
 function onSelectPackage(id: number) {
-    if (Number(id) !== Number(selectedPackageId.value)) haptic('light', 'staff-package')
     selectPackage(id)
     if (pickMode.value) pickPackageId.value = Number(id || 0)
 }
 
 function switchTab(key: StaffDetailTabKey) {
     if (tab.value === key) return
-    haptic('light', 'staff-tab')
     tab.value = key
     nextTick(() => stickyRef.value?.scrollIntoView?.())
     if (key === 'works' && !works.value.length) loadWorks(true)
@@ -598,12 +594,7 @@ function onBannerExpand(expanded: boolean) {
 
 /** 收藏/分享：动作在身份卡内，按压态由各自节点承担，不带动整块卡片 */
 function onFavoriteTap() {
-    haptic('light', 'staff-detail-fav')
     toggleFavorite()
-}
-
-function onShareTap() {
-    haptic('light', 'staff-detail-share')
 }
 
 function onPrimary() {

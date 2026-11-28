@@ -506,7 +506,6 @@ function selectLevel(next: 1 | 2 | 3) {
         return
     }
     if (level.value === next) return
-    haptic('light', 'region-price-level')
     level.value = next
     syncDefaultsForLevel(next)
 }
@@ -517,13 +516,11 @@ function pickProvinceOption(p: RegionProvinceVO) {
         return
     }
     if (selectedProvinceCode.value === p.province_code) return
-    haptic('light', 'region-price-region')
     selectedProvinceCode.value = p.province_code
 }
 
 function onProvinceFilterTap(provinceCode: string) {
     if (selectedProvinceCode.value === provinceCode) return
-    haptic('light', 'region-price-province')
     selectedProvinceCode.value = provinceCode
     const cities = props.regionTree.find((p) => p.province_code === provinceCode)?.cities || []
     if (level.value === REGION_LEVEL_CITY) {
@@ -541,14 +538,12 @@ function pickCityOption(c: CityNodeVO) {
         return
     }
     if (selectedCityCode.value === c.city_code) return
-    haptic('light', 'region-price-region')
     selectedProvinceCode.value = c.province_code
     selectedCityCode.value = c.city_code
 }
 
 function selectDistrictCity(c: CityNodeVO) {
     if (selectedCityCode.value === c.city_code) return
-    haptic('light', 'region-price-city')
     selectedProvinceCode.value = c.province_code
     selectedCityCode.value = c.city_code
     selectedDistrictCodes.value = []
@@ -559,7 +554,6 @@ function toggleDistrict(d: DistrictNodeVO) {
         toast.info('该区县已配置价格，请直接点击对应规则编辑')
         return
     }
-    haptic('light', 'region-price-district')
     const idx = selectedDistrictCodes.value.indexOf(d.district_code)
     if (idx >= 0) {
         selectedDistrictCodes.value = selectedDistrictCodes.value.filter(
@@ -571,24 +565,20 @@ function toggleDistrict(d: DistrictNodeVO) {
 }
 
 function selectAllAvailableDistricts() {
-    haptic('light', 'region-price-district-all')
     selectedDistrictCodes.value = availableDistricts.value.map((d) => d.district_code)
 }
 
 function clearDistricts() {
-    haptic('light', 'region-price-district-clear')
     selectedDistrictCodes.value = []
 }
 
 function applyQuickPrice(delta: number) {
-    haptic('light', 'region-price-quick')
     const base = Number.isFinite(props.basePrice) && props.basePrice > 0 ? props.basePrice : 0
     const next = Math.max(0, Math.round((base + delta) * 100) / 100)
     priceInput.value = formatMoneyNum(next)
 }
 
 function onRetryTree() {
-    haptic('light', 'region-price-retry')
     emit('retry-tree')
 }
 
@@ -603,7 +593,6 @@ function close() {
 function onDeleteTap() {
     if (!props.editingGroup) return
     const key = props.editingGroup.key
-    haptic('heavy', 'region-price-delete')
     uni.showModal({
         title: '移除地区价格',
         content: '确认移除这条地区价格规则？修改将在点击底部保存后生效',
@@ -611,6 +600,7 @@ function onDeleteTap() {
         cancelText: '取消',
         success: (res) => {
             if (!res.confirm) return
+            haptic('heavy', 'region-price-delete')
             emit('delete', key)
         }
     })

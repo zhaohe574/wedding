@@ -12,6 +12,7 @@ import { getReviewTags, getStaffReviews } from '@/api/content'
 import { report } from '@/platform/report'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
+import { haptic } from '@/utils/haptics'
 import { navigate } from '@/utils/link'
 import { hasRegionContext, regionCodeParams, regionParams, type RegionContext } from '@/utils/region'
 import { resolveErrorView } from '@/utils/resolveErrorView'
@@ -530,6 +531,7 @@ export function useStaffDetail(options: {
             navigate({ path: '/pages/login/login' })
             return
         }
+        haptic('light', 'staff-detail-fav')
         try {
             const res: any = await toggleStaffFavorite({ id: staffId.value })
             const next =

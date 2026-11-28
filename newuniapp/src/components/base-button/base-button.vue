@@ -52,7 +52,7 @@
  * v10 §3.1：两段式弹簧按压（压实 ≥75ms → 松手 440ms 过冲回弹），
  *           hover-class 的透明度变暗已移除（与 disabled/loading 叠加会脏）。
  * v10 §3.12：落点跟手波纹，从手指真实落点扩散，不从按钮中心呆板散开。
- * v10 §3.11：有效点击触发分级触觉，text 变体（纯文字链）不震。
+ * v10 §3.11：触觉默认关闭（只允许关键节点由页面显式指定等级），text 变体（纯文字链）不震。
  */
 import { computed, getCurrentInstance, onUnmounted, ref } from 'vue'
 import { haptic } from '@/utils/haptics'
@@ -79,7 +79,7 @@ const props = withDefaults(
         iconSide?: 'none' | 'left' | 'right'
         /** 图鸟图标名；也可用 #icon-left / #icon-right 插槽放自定义内容 */
         icon?: string
-        /** 触觉等级，none 关闭；variant='text' 一律不震 */
+        /** 触觉等级，none 关闭（默认不震，只有关键动作才由页面显式指定）；variant='text' 一律不震 */
         hapticLevel?: 'light' | 'medium' | 'heavy' | 'none'
         /** 落点波纹开关（disabled / loading / 锁定期不播） */
         ripple?: boolean
@@ -95,7 +95,7 @@ const props = withDefaults(
         lockMs: 500,
         iconSide: 'none',
         icon: '',
-        hapticLevel: 'light',
+        hapticLevel: 'none',
         ripple: true
     }
 )

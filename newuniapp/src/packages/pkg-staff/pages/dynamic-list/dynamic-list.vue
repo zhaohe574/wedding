@@ -237,7 +237,6 @@ function canEdit(item: any) {
 
 function goPublish() {
     if (!guardAllowed.value) return
-    haptic('light', 'dyn-publish')
     navigate({ path: '/packages/pkg-staff/pages/dynamic-publish/dynamic-publish' })
 }
 
@@ -247,7 +246,6 @@ function goEdit(item: any) {
         toast.warning('动态编号缺失，请刷新后重试')
         return
     }
-    haptic('light', 'dyn-edit')
     navigate({
         path: '/packages/pkg-staff/pages/dynamic-publish/dynamic-publish',
         query: { id: item.id }
@@ -260,7 +258,6 @@ function onDelete(item: any) {
         toast.warning('动态编号缺失，请刷新后重试')
         return
     }
-    haptic('heavy', 'dyn-delete')
     uni.showModal({
         title: '删除动态',
         content: '删除后不可恢复，确认删除这条动态？',
@@ -270,6 +267,7 @@ function onDelete(item: any) {
         confirmColor: schemeColor('danger'),
         success: async (r) => {
             if (!r.confirm) return
+            haptic('heavy', 'dyn-delete')
             try {
                 await staffDynamicDelete({ id: Number(item.id) })
                 toast.success('已删除')
@@ -285,7 +283,6 @@ function onDelete(item: any) {
 
 function switchTab(key: string | number) {
     if (!guardAllowed.value) return
-    // 触觉由 chip-group 内部统一发 light，页面不重复触发（避免双震）
     active.value = key
     reload()
 }

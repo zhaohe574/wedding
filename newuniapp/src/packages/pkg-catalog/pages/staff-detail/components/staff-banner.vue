@@ -184,7 +184,6 @@
  */
 import { computed, ref, watch } from 'vue'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import {
     bannerStageHeight,
     canExpandBanner,
@@ -361,7 +360,6 @@ function onChange(e: any) {
 
 function toggleExpand() {
     if (!canExpand.value) return
-    haptic('light', 'banner-expand')
     expanded.value = !expanded.value
     emit('expand', expanded.value)
 }

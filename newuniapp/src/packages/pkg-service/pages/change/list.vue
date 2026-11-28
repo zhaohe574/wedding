@@ -106,7 +106,6 @@ import { toast } from '@/composables/useToast'
 /** 变更记录：改期/加项 与 暂停 两条独立列表（后端也是两套接口） */
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { haptic } from '@/utils/haptics'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { FB } from '@/constants/feedback'
 import {
@@ -245,7 +244,6 @@ function reload() {
 
 function switchTab(key: string) {
     if (key === active.value) return
-    haptic('light', 'change-tab')
     active.value = key
     list.value = []
     reload()
@@ -278,7 +276,6 @@ onUnmounted(() => {
 })
 
 function goDetail(item: any) {
-    haptic('light', 'change-item')
     navigate({
         path: '/packages/pkg-service/pages/change/detail',
         query: { id: item.id, type: active.value }
@@ -296,7 +293,6 @@ async function handleCancel(item: any) {
         })
     })
     if (!confirmed) return
-    haptic('medium', 'change-cancel')
     try {
         if (active.value === 'pause') await cancelPause({ id: item.id })
         else await cancelChange({ id: item.id })

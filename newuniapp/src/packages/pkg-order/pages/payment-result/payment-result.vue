@@ -380,7 +380,6 @@ import { getOrderDetailV2 } from '@/api/order'
 import { formatDate, formatMoney, parseDateValue } from '@shared/utils/format'
 import { FB, fbPollText } from '@/constants/feedback'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import { report } from '@/platform/report'
 import { useBadgeStore } from '@/stores/badge'
 
@@ -692,7 +691,6 @@ function onStepTap(step: StepView) {
 
 function copyOrderSn() {
     if (!orderSnText.value) return
-    haptic('light', 'pay-copy')
     uni.setClipboardData({
         data: orderSnText.value,
         success: () => toast.info('已复制订单号')
@@ -701,7 +699,6 @@ function copyOrderSn() {
 
 function copyPaymentSn() {
     if (!paymentSnText.value) return
-    haptic('light', 'pay-copy')
     uni.setClipboardData({
         data: paymentSnText.value,
         success: () => toast.info('已复制支付流水号')

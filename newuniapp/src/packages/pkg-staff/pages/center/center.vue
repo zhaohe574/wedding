@@ -301,7 +301,6 @@ import { useStaffWriteGate } from '@/composables/useStaffWriteGate'
 import { useBadgeStore } from '@/stores/badge'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
-import { haptic } from '@/utils/haptics'
 import { toast } from '@/composables/useToast'
 import type { LoadPhase } from '@/api/types'
 
@@ -649,17 +648,14 @@ onUnmounted(() => {
 })
 
 function go(path: string) {
-    haptic('light', 'staff-center-nav')
     navigate({ path })
 }
 
 function goProfile() {
-    haptic('light', 'staff-center-profile')
     navigate({ path: '/packages/pkg-staff/pages/profile/profile' })
 }
 
 function goOrderList(status?: number) {
-    haptic('light', 'staff-center-orders')
     navigate({
         path: '/packages/pkg-staff/pages/order-list/order-list',
         query: status === undefined ? {} : { status }
@@ -671,7 +667,6 @@ function goOrderDetail(order: { id: number }) {
         toast.warning('订单编号缺失，请刷新后重试')
         return
     }
-    haptic('light', 'staff-center-order-detail')
     navigate({
         path: '/packages/pkg-staff/pages/order-detail/order-detail',
         query: { id: order.id }

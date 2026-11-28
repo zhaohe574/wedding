@@ -80,7 +80,6 @@
                     variant="ink"
                     size="lg"
                     block
-                    haptic-level="medium"
                     :loading="dayLoading || neighborsLoading"
                     :loading-text="
                         dayLoading ? '正在查询档期…' : neighborsLoading ? '正在查找可约日…' : ''

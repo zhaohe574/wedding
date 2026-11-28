@@ -367,10 +367,9 @@ async function refresh() {
     }
 }
 
-/** 顶部「刷新」：只有用户主动点才震，onShow 的自动刷新不震 */
+/** 顶部「刷新」：纯查询动作，不震；onShow 的自动刷新也走同一个 refresh() */
 function onRefreshTap() {
     if (busy.status) return
-    haptic('light', 'oa-refresh')
     void refresh()
 }
 
@@ -398,7 +397,6 @@ async function confirmBinding() {
 
 async function unbind() {
     if (busy.unbind) return
-    haptic('light', 'oa-unbind')
     const confirmed = await new Promise<boolean>((resolve) => {
         uni.showModal({
             title: '解除绑定',
@@ -410,6 +408,8 @@ async function unbind() {
         })
     })
     if (!confirmed) return
+    // 解绑是不可逆动作：确认之后才震，弹窗前不震
+    haptic('medium', 'oa-unbind')
     busy.unbind = true
     try {
         await unbindOaSubscribe()
@@ -425,7 +425,6 @@ async function unbind() {
 }
 
 function copyAccount(successText = '已复制') {
-    haptic('light', 'oa-copy')
     uni.setClipboardData({
         data: status.official_account || status.official_name,
         success: () => toast.success(typeof successText === 'string' ? successText : '已复制'),

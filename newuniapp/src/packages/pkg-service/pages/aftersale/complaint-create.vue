@@ -169,12 +169,10 @@ function levelTone(lv: number) {
 
 function pickType(v: number) {
     form.type = v
-    haptic('light', 'cc-type')
 }
 
 function pickLevel(v: number) {
     form.level = v
-    haptic('light', 'cc-level')
 }
 
 async function handleSubmit() {

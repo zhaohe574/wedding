@@ -124,7 +124,6 @@ const today = (() => {
 })()
 
 function onDateChange(e: any) {
-    haptic('light', 'apply-date-pick')
     form.new_date = String(e?.detail?.value || '')
 }
 

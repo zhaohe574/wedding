@@ -217,7 +217,6 @@
 import { computed } from 'vue'
 import type { ActivityRegistrationVO } from '@/api/types/activity'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import ActivityQrCanvas from './activity-qr-canvas.vue'
 import {
     activityLocation,
@@ -306,7 +305,6 @@ const cancelBtnText = computed(() => {
 function copyCode() {
     const code = String(props.item?.checkin_code || '').trim()
     if (!code) return
-    haptic('light', 'activity-detail-code')
     uni.setClipboardData({
         data: code,
         success: () => toast.success('核销码已复制')
@@ -316,17 +314,15 @@ function copyCode() {
 function copyLocation() {
     const loc = locationText.value
     if (!loc) return
-    haptic('light', 'activity-detail-location')
     uni.setClipboardData({
         data: loc,
         success: () => toast.success('活动地点已复制')
     })
 }
 
-/** 跳转原活动：视图按钮 / 底部按钮共用同一个触发口，避免两处手写 haptic 漂移 */
+/** 跳转原活动：视图按钮 / 底部按钮共用同一个触发口，避免两处手写跳转参数漂移 */
 function onOpenActivity() {
     if (!props.item) return
-    haptic('light', 'activity-detail-open')
     emit('openActivity', props.item)
 }
 

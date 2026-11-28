@@ -358,7 +358,6 @@ async function load() {
 
 function pickStar(n: number) {
     satisfaction.value = n
-    haptic('light', 'ticket-star')
 }
 
 function openConfirm() {
@@ -422,7 +421,7 @@ async function handleCancel() {
         })
     })
     if (!confirmed) return
-    haptic('heavy', 'ticket-cancel')
+    haptic('medium', 'ticket-cancel')
     try {
         await cancelTicket({ id: id.value })
         toast.info('已取消')

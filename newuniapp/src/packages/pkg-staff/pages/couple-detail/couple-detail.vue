@@ -691,30 +691,25 @@ onUnmounted(() => {
 
 function switchDetailTab(key: 'info' | 'checklist' | 'notes' | 'followups'): void {
     if (key === activeTab.value) return
-    haptic('light', 'couple-tab')
     activeTab.value = key
 }
 
 function openNotesTab(): void {
-    haptic('light', 'couple-pinned-note')
     activeTab.value = 'notes'
 }
 
 function pickStage(value: string): void {
     if (value === newCheckStage.value) return
-    haptic('light', 'couple-checklist-stage')
     newCheckStage.value = value
 }
 
 function dialPhone(mobile: string): void {
     if (!mobile) return
-    haptic('light', 'couple-dial')
     uni.makePhoneCall({ phoneNumber: mobile, fail: () => {} })
 }
 
 function copyText(text: string, msg: string): void {
     if (!text) return
-    haptic('light', 'couple-copy')
     uni.setClipboardData({
         data: text,
         success: () => toast.success(msg)
@@ -724,7 +719,6 @@ function copyText(text: string, msg: string): void {
 function goCopyTemplates(): void {
     const p = detail.value?.profile
     if (!p) return
-    haptic('light', 'couple-nav')
     const query =
         p.source_type === 'order' ? { order_id: p.order_id } : { manual_schedule_id: p.target_id }
     navigate({ path: '/packages/pkg-staff/pages/copy-templates/copy-templates', query })
@@ -733,7 +727,6 @@ function goCopyTemplates(): void {
 function goOrderDetail(): void {
     const p = detail.value?.profile
     if (!p?.order_id) return
-    haptic('light', 'couple-nav')
     navigate({
         path: '/packages/pkg-staff/pages/order-detail/order-detail',
         query: { id: p.order_id }
@@ -742,7 +735,6 @@ function goOrderDetail(): void {
 
 function goServiceDay(): void {
     const sDate = detail.value?.profile?.service_date
-    haptic('light', 'couple-nav')
     navigate({
         path: '/packages/pkg-staff/pages/service-day/service-day',
         query: sDate ? { date: sDate } : undefined
@@ -808,7 +800,6 @@ async function handleAddChecklist(): Promise<void> {
 
 async function handleToggleChecklist(id: number): Promise<void> {
     if (!detail.value || !id) return
-    haptic('light', 'couple-checklist-toggle')
     try {
         detail.value.checklist = await toggleStaffChecklistItem({ id })
     } catch (e: any) {

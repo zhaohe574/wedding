@@ -105,7 +105,6 @@
 /** 服务回访列表 */
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { onLoad, onReachBottom, onShow } from '@dcloudio/uni-app'
-import { haptic } from '@/utils/haptics'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     SERVICE_CALLBACK_STATUS_NAME_MAP,
@@ -237,7 +236,6 @@ onUnmounted(() => {
 })
 
 function goDetail(item: any) {
-    haptic('light', 'callback-item')
     navigate({
         path: '/packages/pkg-service/pages/aftersale/callback-detail',
         query: { id: item.id }

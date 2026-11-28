@@ -135,7 +135,6 @@ import { computed, reactive, ref, watch } from 'vue'
 import { uploadImage } from '@/api/app'
 import type { StaffServiceNoteItem } from '@/api/staff'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 
 const props = withDefaults(
     defineProps<{
@@ -219,17 +218,14 @@ function close(): void {
 
 function pickCategory(value: string): void {
     if (form.category === value) return
-    haptic('light', 'service-note-category')
     form.category = value
 }
 
 function togglePinned(): void {
-    haptic('light', 'service-note-pin')
     form.is_pinned = form.is_pinned === 1 ? 0 : 1
 }
 
 function removeImage(idx: number): void {
-    haptic('light', 'service-note-image')
     form.imageItems.splice(idx, 1)
 }
 
@@ -244,7 +240,6 @@ function chooseImages(): void {
     const remain = Math.max(0, 4 - form.imageItems.length)
     if (remain <= 0) return
 
-    haptic('light', 'service-note-image-add')
     uni.chooseImage({
         count: remain,
         sizeType: ['compressed'],

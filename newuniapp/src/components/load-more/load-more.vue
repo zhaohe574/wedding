@@ -29,7 +29,6 @@
  */
 import { computed } from 'vue'
 import { FB } from '@/constants/feedback'
-import { haptic } from '@/utils/haptics'
 
 const props = defineProps<{ status: 'idle' | 'loading' | 'nomore' | 'error' }>()
 const emit = defineEmits<{ (e: 'retry'): void }>()
@@ -45,10 +44,7 @@ const text = computed(
 )
 
 function onTap() {
-    if (props.status === 'error') {
-        haptic('light', 'load-more')
-        emit('retry')
-    }
+    if (props.status === 'error') emit('retry')
 }
 </script>
 

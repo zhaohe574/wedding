@@ -344,7 +344,6 @@ import { navigate } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { FB } from '@/constants/feedback'
 import { report } from '@/platform/report'
-import { haptic } from '@/utils/haptics'
 
 /** ✘ G-17：FAQ 无接口，三条按现有处理口径写，不含未定义的费用比例 */
 const FAQ: Array<{ q: string; a: string }> = [
@@ -698,17 +697,14 @@ async function loadPending() {
 }
 
 function toggleFaq(i: number) {
-    haptic('light', 'aftersale-faq')
     openFaq.value = openFaq.value === i ? -1 : i
 }
 
 function goPath(path: string, query?: Record<string, any>) {
-    haptic('light', 'aftersale-nav')
     navigate({ path, query })
 }
 
 function goCustomerService(query?: Record<string, any>) {
-    haptic('light', 'aftersale-support')
     const pages = getCurrentPages()
     const prevRoute = pages.length >= 2 ? String((pages[pages.length - 2] as any)?.route || '') : ''
     if (prevRoute === 'pages/customer-service/customer-service' && !query?.order_id) {
@@ -735,7 +731,6 @@ function onEntry(e: EntryItem) {
 }
 
 function goRule() {
-    haptic('light', 'aftersale-rule')
     navigate({ path: '/pages/agreement/agreement', query: { type: 'aftersale' } })
 }
 

@@ -410,11 +410,8 @@ function onPullTouchMove(e: any) {
     pullHeight.value = next
     if (next >= PULL_THRESHOLD) {
         if (pullState.value !== 'ready') {
+            // 越阈只切状态：轻震动由 pull-refresh 统一负责，这里不重复直调
             pullState.value = 'ready'
-            // 越过阈值一次性轻震动提示（uni 类型未收录 type，运行时 mp-weixin 支持）
-            try {
-                uni.vibrateShort({ type: 'light' } as any)
-            } catch {}
         }
     } else {
         pullState.value = 'pulling'

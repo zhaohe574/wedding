@@ -406,7 +406,6 @@ import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
-import { haptic } from '@/utils/haptics'
 import { toast } from '@/composables/useToast'
 
 const {
@@ -491,7 +490,6 @@ function statNum(value: unknown): number {
 
 function pickDate(date: string): void {
     if (!date || date === selected.value) return
-    haptic('light', 'schedule-pick-day')
     selected.value = date
 }
 
@@ -626,13 +624,11 @@ function orderStatusTone(o: any) {
 function goOrderDetail(o: any) {
     const id = Number(o?.order_id || o?.id || 0)
     if (!id) return
-    haptic('light', 'schedule-order-detail')
     navigate({ path: '/packages/pkg-staff/pages/order-detail/order-detail', query: { id } })
 }
 
 function goWaitlist() {
     if (!guardAllowed.value) return
-    haptic('light', 'schedule-waitlist')
     navigate({ path: '/packages/pkg-staff/pages/waitlist/waitlist' })
 }
 
@@ -704,7 +700,6 @@ function onToggleScheduleStatus() {
 
 function openAddManual() {
     if (!guardAllowed.value || acting.value || !selected.value) return
-    haptic('light', 'schedule-add-manual')
     editingManual.value = null
     sheetDate.value = selected.value
     sheetVisible.value = true
@@ -712,7 +707,6 @@ function openAddManual() {
 
 function openEditManual(item: any) {
     if (!guardAllowed.value || acting.value) return
-    haptic('light', 'schedule-edit-manual')
     editingManual.value = item
     sheetDate.value = String(item?.schedule_date || selected.value || '')
     sheetVisible.value = true
@@ -776,7 +770,6 @@ function onCompleteManual(item: any) {
 
 function goServiceDay() {
     if (!guardAllowed.value) return
-    haptic('light', 'schedule-service-day')
     navigate({
         path: '/packages/pkg-staff/pages/service-day/service-day',
         query: selected.value ? { date: selected.value } : undefined
@@ -818,7 +811,6 @@ async function onManualSaved(savedDate: string) {
 
 function prevMonth() {
     if (!guardAllowed.value) return
-    haptic('light', 'schedule-month')
     if (month.value === 1) {
         month.value = 12
         year.value -= 1
@@ -830,7 +822,6 @@ function prevMonth() {
 
 function nextMonth() {
     if (!guardAllowed.value) return
-    haptic('light', 'schedule-month')
     if (month.value === 12) {
         month.value = 1
         year.value += 1

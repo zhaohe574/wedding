@@ -118,7 +118,6 @@ import {
 } from '@shared/contracts'
 import { getPendingReviews, getMyReviews } from '@/api/content'
 import { navigate } from '@/utils/link'
-import { haptic } from '@/utils/haptics'
 
 const TABS = [
     { key: 'pending', label: '待评价' },
@@ -180,14 +179,12 @@ async function load() {
 
 function switchTab(key: string) {
     if (key === active.value) return
-    haptic('light', 'review-tab')
     active.value = key
     rows.value = []
     load()
 }
 
 function goPublish(item: any) {
-    haptic('light', 'review-publish')
     navigate({
         path: '/packages/pkg-order/pages/review/publish',
         query: {

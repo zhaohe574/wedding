@@ -84,7 +84,6 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { parseDateValue } from '@shared/utils/format'
 import { hasRegionContext, type RegionContext } from '@/utils/region'
-import { haptic } from '@/utils/haptics'
 import { dateKeyOf, tomorrowKey } from '../useStaffDetail'
 
 const WEEK_LABELS = ['日', '一', '二', '三', '四', '五', '六']
@@ -154,7 +153,6 @@ function canShiftMonth(delta: number) {
 
 function shiftMonth(delta: number) {
     if (!canShiftMonth(delta)) return
-    haptic('light', 'schedule-month')
     const target = new Date(pickerMonth.year, pickerMonth.month - 1 + delta, 1)
     pickerMonth.year = target.getFullYear()
     pickerMonth.month = target.getMonth() + 1
@@ -162,7 +160,6 @@ function shiftMonth(delta: number) {
 
 function pickDay(cell: any) {
     if (!cell?.day || cell.disabled) return
-    if (cell.date !== pickerDate.value) haptic('light', 'schedule-day')
     pickerDate.value = String(cell.date || '')
 }
 

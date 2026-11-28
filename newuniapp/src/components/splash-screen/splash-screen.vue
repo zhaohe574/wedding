@@ -144,7 +144,6 @@ import {
     resolveSplash
 } from '@/utils/splash'
 import { bootTrace } from '@/utils/boot-trace'
-import { haptic } from '@/utils/haptics'
 
 /** 首次安装（无缓存）最多等配置的时间，超过就露出首页 */
 const BOOT_TIMEOUT = 800
@@ -267,14 +266,12 @@ function startAd(next: SplashAdContent) {
 /** 右上角跳过：直接进入首页，不触发开屏跳转 */
 function onSkip() {
     if (!buttonEnabled.value) return
-    haptic('light', 'splash-skip')
     finish()
 }
 
 /** 主按钮 / 主图点击：可点击时关闭开屏；若配置了跳转目标则同步打开 */
 function onCta() {
     if (!buttonEnabled.value) return
-    haptic('light', 'splash-cta')
     const target = content.value.link
     finish()
     if (isDecorateLinkConfigured(target)) {

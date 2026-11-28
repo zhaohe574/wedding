@@ -257,18 +257,15 @@ function toggleMulti(q: any, val: any) {
     if (i >= 0) cur.splice(i, 1)
     else cur.push(val)
     answers[k] = cur
-    haptic('light', 'cb-option')
 }
 
 /** 单选：只换答案，卡片反色与圆点由模板的 is-active / is-on 表达 */
 function pickSingle(q: any, val: any) {
     answers[keyOf(q)] = val
-    haptic('light', 'cb-option')
 }
 
 function pickRating(q: any, n: number) {
     answers[keyOf(q)] = n
-    haptic('light', 'cb-star')
 }
 
 async function load() {

@@ -398,7 +398,6 @@ import { report } from '@/platform/report'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { resolveBookingContext, saveBookingContext } from '@/utils/booking-context'
-import { haptic } from '@/utils/haptics'
 import { navigate } from '@/utils/link'
 import { EMPTY_REGION, hasRegionContext, regionParams, type RegionContext } from '@/utils/region'
 import { resolveErrorView } from '@/utils/resolveErrorView'
@@ -970,7 +969,6 @@ function selectPackage(p: any) {
 }
 
 function toggleAddon(id: number) {
-    haptic('light', 'booking-addon')
     const i = selectedAddons.value.indexOf(id)
     if (i >= 0) selectedAddons.value.splice(i, 1)
     else selectedAddons.value.push(id)
@@ -1109,7 +1107,6 @@ function nextStep() {
             return
         }
     }
-    haptic('light', 'booking-step')
     step.value = Math.min(step.value + 1, confirmStep.value)
     resetScrollAfterStepChange()
     if (isConfirm.value) {
@@ -1126,7 +1123,6 @@ function skipAddons() {
 
 function prevStep() {
     if (step.value > 1) {
-        haptic('light', 'booking-step')
         step.value -= 1
         resetScrollAfterStepChange()
     }

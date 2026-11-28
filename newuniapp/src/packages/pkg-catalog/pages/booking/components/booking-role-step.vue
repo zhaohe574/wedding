@@ -108,7 +108,6 @@
 
 <script setup lang="ts">
 import { candidateMeta, type RolePickedPerson } from '../booking-helpers'
-import { haptic } from '@/utils/haptics'
 
 const props = defineProps<{
     role: any
@@ -131,19 +130,15 @@ function isPicked(candidate: any) {
     return !!props.picked && Number(props.picked.staff_id) === Number(candidate?.staff_id)
 }
 
-/** 三处点击共用 light 触觉：选择是否加入角色 / 选人 / 看详情，键位不同互不吞震 */
 function onSetNeeded(needed: boolean) {
-    haptic('light', 'role-needed')
     emit('setNeeded', needed)
 }
 
 function onPick(candidate: any) {
-    haptic('light', 'role-pick')
     emit('pick', candidate)
 }
 
 function onOpenDetail(candidate: any) {
-    haptic('light', 'role-detail')
     emit('openDetail', candidate)
 }
 </script>

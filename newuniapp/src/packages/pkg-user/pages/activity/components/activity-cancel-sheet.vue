@@ -63,6 +63,7 @@
                         :text="isDirect ? '确认取消' : '提交申请'"
                         variant="ink"
                         size="md"
+                        haptic-level="heavy"
                         :loading="submitting"
                         @click="submit"
                     />
@@ -77,7 +78,6 @@ import { computed, ref, watch } from 'vue'
 import type { ActivityRegistrationVO } from '@/api/types/activity'
 import { cancelActivityRegistration } from '@/api/activity'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import { activityTitle } from '@/utils/activityFormat'
 
 const PRESET_REASONS = ['临时行程变动', '选错票种或时间', '同行人无法参加', '其他原因']
@@ -117,7 +117,6 @@ const sheetTitle = computed(() => (isDirect.value ? '确认取消报名' : '申�
 
 function pickPreset(preset: string) {
     if (selectedPreset.value === preset) return
-    haptic('light', 'activity-cancel-reason')
     selectedPreset.value = preset
 }
 

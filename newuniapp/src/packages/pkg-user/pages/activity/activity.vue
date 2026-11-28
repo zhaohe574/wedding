@@ -317,7 +317,6 @@ import { normalizePage } from '@/request'
 import { requestPayment, sleep } from '@/platform/pay'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { report } from '@/platform/report'
@@ -595,7 +594,6 @@ function reload() {
 
 function switchSeg(key: SegKey) {
     if (activeSeg.value === key) return
-    haptic('light', 'activity-seg')
     activeSeg.value = key
     load(true)
 }

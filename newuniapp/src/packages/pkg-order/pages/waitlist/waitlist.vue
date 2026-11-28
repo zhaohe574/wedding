@@ -429,7 +429,6 @@ function onPrimary() {
 }
 
 function askCancel(item: WlItem) {
-    haptic('light', 'waitlist-cancel')
     modalRef.value?.showModal({
         title: '取消候补',
         content: '取消后你在这个档期的排队位次不再保留。',
@@ -444,6 +443,7 @@ function askCancel(item: WlItem) {
 }
 
 async function doCancel(item: WlItem) {
+    haptic('medium', 'waitlist-cancel')
     try {
         await cancelWaitlist({ id: item.id })
         list.value = list.value.filter((i) => i.id !== item.id)
@@ -456,7 +456,6 @@ async function doCancel(item: WlItem) {
 
 function bookNow(item: WlItem) {
     if (!canBook(item)) return
-    haptic('medium', 'waitlist-book')
     navigate({
         path: '/packages/pkg-catalog/pages/booking/booking',
         query: {
@@ -469,7 +468,6 @@ function bookNow(item: WlItem) {
 }
 
 function goQuery() {
-    haptic('light', 'waitlist-query')
     navigate({ path: '/pages/query/query' })
 }
 

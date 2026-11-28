@@ -63,7 +63,6 @@ import { useBrand } from '@/composables/useBrand'
 import { navigate } from '@/utils/link'
 import { isAllowedWebviewUrl } from '@/constants/domains'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 
 const appStore = useAppStore()
 /** 品牌（名称 / 图标 / Slogan）唯一来源；图标失败回退由 brand-mark 内部处理 */
@@ -76,17 +75,14 @@ const copyrights = computed<any[]>(() => {
 })
 
 function openAgreement(type: string) {
-    haptic('light', 'about-row')
     navigate({ path: '/pages/agreement/agreement', query: { type } })
 }
 
 function goContact() {
-    haptic('light', 'about-row')
     navigate({ path: '/pages/customer-service/customer-service' })
 }
 
 function openCopyright(item: any) {
-    haptic('light', 'about-copyright')
     const value = String(item?.value || '')
     if (!value) return
     // 判据从「是不是 https」改成「是否在白名单内」：备案类域名（如 beian.miit.gov.cn）

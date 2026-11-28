@@ -148,7 +148,6 @@ import { toast } from '@/composables/useToast'
 import { useBadgeStore } from '@/stores/badge'
 import { report } from '@/platform/report'
 import { schemeColor } from '@/utils/scheme-color'
-import { haptic } from '@/utils/haptics'
 
 const tabs = [
     { key: 0, label: '全部' },
@@ -289,7 +288,6 @@ function loadMore() {
 
 function switchType(key: number) {
     if (activeType.value === key) return
-    haptic('light', 'msg-tab')
     activeType.value = key
     list.value = []
     reload()

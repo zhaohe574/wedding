@@ -221,7 +221,6 @@ import { useAppStore } from '@/stores/app'
 import { navigate, safeDecodeParam } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
-import { haptic } from '@/utils/haptics'
 import { FB } from '@/constants/feedback'
 
 const HISTORY_KEY = 'search_history'
@@ -394,7 +393,6 @@ function clearKeyword() {
 }
 
 function applyKeyword(word: string) {
-    haptic('light', 'search-chip')
     keyword.value = word
     handleSearch()
 }

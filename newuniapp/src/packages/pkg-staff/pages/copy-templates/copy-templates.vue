@@ -250,7 +250,6 @@ import CopyTemplateSheet from '../../components/copy-template-sheet/copy-templat
 import { useStaffGuard } from '@/composables/useStaffGuard'
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
-import { haptic } from '@/utils/haptics'
 import { schemeColor } from '@/utils/scheme-color'
 
 const {
@@ -388,24 +387,20 @@ function reload(): void {
 }
 
 function onSceneChange(val: string | number): void {
-    // 触觉由 chip-group 内部统一发 light，页面不重复触发（避免双震）
     activeScene.value = String(val || 'all')
 }
 
 function selectTarget(key: string): void {
     if (selectedTargetKey.value === key) return
-    haptic('light', 'tpl-target')
     selectedTargetKey.value = key
 }
 
 function openCreateSheet(): void {
-    // 触觉由「新建模板」base-button 统一发 light
     editingItem.value = null
     sheetOpen.value = true
 }
 
 function openEditSheet(item: StaffCopyTemplateCustom): void {
-    // 触觉由「编辑」base-button 统一发 light
     editingItem.value = item
     sheetOpen.value = true
 }

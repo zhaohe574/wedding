@@ -239,7 +239,6 @@ import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
 import { getWorkDetail } from '@/api/catalog'
 import { report } from '@/platform/report'
 import { navigate } from '@/utils/link'
-import { haptic } from '@/utils/haptics'
 import { buildShare } from '@/utils/share'
 import { useAppStore } from '@/stores/app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
@@ -329,7 +328,6 @@ function onSwiperChange(e: any) {
 /** 媒体切换：同一模式不重复触发，切换时给一次 light 触觉 */
 function switchMedia(mode: 'video' | 'gallery') {
     if (mediaMode.value === mode) return
-    haptic('light', 'work-media')
     mediaMode.value = mode
 }
 

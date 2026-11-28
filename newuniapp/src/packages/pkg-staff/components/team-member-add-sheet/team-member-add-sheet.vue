@@ -131,7 +131,6 @@ watch(
 )
 
 function onSearch(): void {
-    haptic('light', 'team-member-search')
     void fetchCandidates()
 }
 

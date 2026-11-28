@@ -70,7 +70,6 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { onHide, onShow, onUnload } from '@dcloudio/uni-app'
 import { getDeviceInfo } from '@/platform/device'
 import { useColorSchemeStore } from '@/stores/colorScheme'
-import { haptic } from '@/utils/haptics'
 
 const props = withDefaults(
     defineProps<{
@@ -361,7 +360,6 @@ const titleStyle = computed<Record<string, string>>(() => ({
 }))
 
 function onBack() {
-    haptic('light', 'nav-back')
     emit('back')
     if (props.backMode === 'none') return
     const pages = getCurrentPages()

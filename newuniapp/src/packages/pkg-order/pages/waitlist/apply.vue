@@ -159,6 +159,7 @@
                         :text="submitting ? '提交中…' : '提交候补申请'"
                         variant="ink"
                         size="lg"
+                        haptic-level="medium"
                         :block="false"
                         :loading="submitting"
                         :disabled="submitting"
@@ -390,7 +391,6 @@ function openPackage() {
 }
 
 function pickPackage(p: PkgOption) {
-    haptic('light', 'waitlist-package')
     packageId.value = p.id
     errors.package = ''
     packagePopup.value = false
@@ -409,7 +409,6 @@ function saveMobile() {
         mobileErr.value = '请输入 11 位手机号'
         return
     }
-    haptic('light', 'waitlist-mobile')
     mobile.value = v
     mobilePopup.value = false
 }
